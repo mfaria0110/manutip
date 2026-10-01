@@ -1,11 +1,39 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAcesso } from "./AcessoContext";
 
+// Máscaras simples de entrada — formata o texto enquanto o usuário digita.
+const MASCARAS = {
+  cep: (v) =>
+    v
+      .replace(/\D/g, "")
+      .slice(0, 8)
+      .replace(/^(\d{5})(\d)/, "$1-$2"),
+  telefone: (v) =>
+    v
+      .replace(/\D/g, "")
+      .slice(0, 11)
+      .replace(/^(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{4,5})(\d{4})$/, "$1-$2"),
+  cnpj: (v) =>
+    v
+      .replace(/\D/g, "")
+      .slice(0, 14)
+      .replace(/^(\d{2})(\d)/, "$1.$2")
+      .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/\.(\d{3})(\d)/, ".$1/$2")
+      .replace(/(\d{4})(\d{2})$/, "$1-$2"),
+};
+
+function aplicarMascara(mascara, valor) {
+  const fn = MASCARAS[mascara];
+  return fn ? fn(valor) : valor;
+}
+
 /** Página de cadastro genérica: tabela + modal de formulário.
  *
- * campos: [{ name, label, type: 'text'|'number'|'select'|'checkbox'|'date',
+ * campos: [{ name, label, type: 'text'|'number'|'select'|'checkbox'|'date'|'textarea',
  *            required?, options?: [{value,label}] | (valoresForm) => options,
- *            step? }]
+ *            step?, mask?: 'cep'|'telefone'|'cnpj', rows? (textarea) }]
  * colunas: [{ key, label, render?: (item) => node }]
  * api: { listar: () => Promise<[]>, criar: (dados) => Promise, atualizar: (id, dados) => Promise }
  */
@@ -149,13 +177,28 @@ export default function CadastroPage({ titulo, modulo, campos, colunas, api, idK
                       onChange={(e) => setForm({ ...form, [c.name]: e.target.checked })}
                       style={{ width: 18, height: 18 }}
                     />
+                  ) : c.type === "textarea" ? (
+                    <textarea
+                      required={c.required}
+                      rows={c.rows || 4}
+                      value={form[c.name] ?? ""}
+                      onChange={(e) => setForm({ ...form, [c.name]: e.target.value })}
+                    />
                   ) : (
                     <input
                       type={c.type || "text"}
                       step={c.step}
                       required={c.required}
                       value={form[c.name] ?? ""}
-                      onChange={(e) => setForm({ ...form, [c.name]: e.target.value })}
+                      onChange={(e) => {
+                        const valor = c.mask ? aplicarMascara(c.mask, e.target.value) : e.target.value;
+                        setForm({ ...form, [c.name]: valor });
+                      }}
+                      onBlur={
+                        c.onBlur
+                          ? (e) => c.onBlur(e.target.value, (patch) => setForm((f) => ({ ...f, ...patch })))
+                          : undefined
+                      }
                     />
                   )}
                 </div>

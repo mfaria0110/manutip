@@ -26,6 +26,11 @@ export const PALETAS = [
   { id: "vermelho", nome: "Vermelho", cor: "#dc2626" },
   { id: "rosa", nome: "Rosa", cor: "#db2777" },
   { id: "grafite", nome: "Grafite", cor: "#475569" },
+  { id: "cinza-claro", nome: "Cinza claro", cor: "#e8e8e8" },
+  { id: "amarelo-claro", nome: "LightYellow", cor: "#ffffe0" },
+  { id: "cinza", nome: "Grey", cor: "#bebebe" },
+  { id: "prata", nome: "LightGray", cor: "#d3d3d3" },
+  { id: "bege", nome: "Beige", cor: "#f5f5dc" },
 ];
 
 const PADRAO = "azul";
