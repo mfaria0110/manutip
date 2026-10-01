@@ -16,8 +16,8 @@ class ItemIn(BaseModel):
     material_id: uuid.UUID
     movimento: MovimentoMaterial
     quantidade: float = 1
-    tipo_lampada: str | None = None
-    potencia_w: float | None = None
+    tipo_lampada_id: uuid.UUID | None = None
+    potencia_lampada_id: uuid.UUID | None = None
 
 
 class ItemOut(ItemIn):

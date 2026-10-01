@@ -10,6 +10,7 @@ from app.api import (
     equipes_dia,
     execucoes_reclamacao,
     funcionarios,
+    lampadas,
     mao_obra,
     materiais,
     ordens_servico,
@@ -32,6 +33,8 @@ app.include_router(atividades.router)
 app.include_router(cargos.router)
 app.include_router(mao_obra.router)
 app.include_router(materiais.router)
+app.include_router(lampadas.router_tipos)
+app.include_router(lampadas.router_potencias)
 app.include_router(veiculos.router)
 app.include_router(funcionarios.router)
 app.include_router(ordens_servico.router)

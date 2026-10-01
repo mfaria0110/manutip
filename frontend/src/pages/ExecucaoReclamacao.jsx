@@ -1,10 +1,20 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAcesso } from "../AcessoContext";
+import ComboCriavel from "../ComboCriavel";
 import ConfirmDialog from "../ConfirmDialog";
 import ModalNovaEquipe from "../ModalNovaEquipe";
 import ModalNovoMaterial from "../ModalNovoMaterial";
-import { apiBairros, apiCidades, apiEquipesDia, apiExecucoesReclamacao, apiMateriais, apiReclamacoes } from "../api";
+import {
+  apiBairros,
+  apiCidades,
+  apiEquipesDia,
+  apiExecucoesReclamacao,
+  apiMateriais,
+  apiPotenciasLampada,
+  apiReclamacoes,
+  apiTiposLampada,
+} from "../api";
 
 const MOVIMENTOS = [
   { value: "INSTALADO", label: "Instalado" },
@@ -16,7 +26,7 @@ const LABEL_STATUS = { ABERTA: "Aberta", EM_ANDAMENTO: "Em andamento", CONCLUIDA
 const rotuloCampo = { fontSize: 11.5, fontWeight: 600, color: "var(--text-secondary)" };
 
 function novoItem() {
-  return { material_id: "", movimento: "INSTALADO", quantidade: 1, tipo_lampada: "", potencia_w: "" };
+  return { material_id: "", movimento: "INSTALADO", quantidade: 1, tipo_lampada_id: "", potencia_lampada_id: "" };
 }
 
 export default function ExecucaoReclamacao() {
@@ -30,6 +40,8 @@ export default function ExecucaoReclamacao() {
   const [equipes, setEquipes] = useState([]);
   const [bairros, setBairros] = useState([]);
   const [cidades, setCidades] = useState([]);
+  const [tiposLampada, setTiposLampada] = useState([]);
+  const [potenciasLampada, setPotenciasLampada] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erroLista, setErroLista] = useState("");
 
@@ -63,6 +75,8 @@ export default function ExecucaoReclamacao() {
     apiEquipesDia.listar().then(setEquipes);
     apiBairros.listar().then(setBairros);
     apiCidades.listar().then(setCidades);
+    apiTiposLampada.listar().then(setTiposLampada);
+    apiPotenciasLampada.listar().then(setPotenciasLampada);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -70,6 +84,13 @@ export default function ExecucaoReclamacao() {
   const nomeCidade = (cid) => cidades.find((c) => c.id === cid)?.nome || "—";
   const materialPorId = (mid) => materiais.find((m) => m.id === mid);
   const labelMovimento = (v) => MOVIMENTOS.find((m) => m.value === v)?.label || v;
+  const nomeTipoLampada = (tid) => tiposLampada.find((t) => t.id === tid)?.nome || "—";
+  const labelPotenciaLampada = (pid) => {
+    const p = potenciasLampada.find((x) => x.id === pid);
+    return p ? `${p.valor_w}W` : "—";
+  };
+  const opcoesTiposLampada = tiposLampada.map((t) => ({ value: t.id, label: t.nome }));
+  const opcoesPotenciasLampada = potenciasLampada.map((p) => ({ value: p.id, label: `${p.valor_w} W` }));
   const nomeEquipe = (eid) => {
     const eq = equipes.find((e) => e.id === eid);
     if (!eq) return "—";
@@ -106,8 +127,20 @@ export default function ExecucaoReclamacao() {
 
   function materialCriado(novo) {
     setMateriais((prev) => [...prev, novo]);
-    atualizarItem(modalMaterialIdx, { material_id: novo.id });
+    selecionarMaterial(modalMaterialIdx, novo.id, novo);
     setModalMaterialIdx(null);
+  }
+
+  // Ao escolher um material de lâmpada, já pré-seleciona "LED" no tipo (se
+  // o catálogo tiver), poupando um clique no caso mais comum.
+  function selecionarMaterial(idx, materialId, materialObj) {
+    const mat = materialObj || materiais.find((m) => m.id === materialId);
+    const patch = { material_id: materialId };
+    if (mat?.categoria === "LAMPADA") {
+      const led = tiposLampada.find((t) => t.nome.toUpperCase() === "LED");
+      if (led) patch.tipo_lampada_id = led.id;
+    }
+    atualizarItem(idx, patch);
   }
 
   async function salvar(e) {
@@ -126,8 +159,8 @@ export default function ExecucaoReclamacao() {
             material_id: it.material_id,
             movimento: it.movimento,
             quantidade: Number(it.quantidade) || 1,
-            tipo_lampada: it.tipo_lampada || null,
-            potencia_w: it.potencia_w ? Number(it.potencia_w) : null,
+            tipo_lampada_id: it.tipo_lampada_id || null,
+            potencia_lampada_id: it.potencia_lampada_id || null,
           })),
       };
       await apiExecucoesReclamacao.criar(payload);
@@ -270,7 +303,11 @@ export default function ExecucaoReclamacao() {
                           <td>{labelMovimento(it.movimento)}</td>
                           <td>{it.quantidade}</td>
                           <td>
-                            {it.tipo_lampada ? `${it.tipo_lampada}${it.potencia_w ? ` — ${it.potencia_w}W` : ""}` : "—"}
+                            {it.tipo_lampada_id
+                              ? `${nomeTipoLampada(it.tipo_lampada_id)}${
+                                  it.potencia_lampada_id ? ` — ${labelPotenciaLampada(it.potencia_lampada_id)}` : ""
+                                }`
+                              : "—"}
                           </td>
                         </tr>
                       );
@@ -355,7 +392,7 @@ export default function ExecucaoReclamacao() {
                             required
                             style={{ flex: 1, minWidth: 0 }}
                             value={item.material_id}
-                            onChange={(e) => atualizarItem(idx, { material_id: e.target.value })}
+                            onChange={(e) => selecionarMaterial(idx, e.target.value)}
                           >
                             <option value="">Material...</option>
                             {materiais.map((m) => (
@@ -378,23 +415,34 @@ export default function ExecucaoReclamacao() {
                       {ehLampada && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                           <label style={rotuloCampo}>Tipo</label>
-                          <input
+                          <ComboCriavel
+                            value={item.tipo_lampada_id}
+                            onChange={(valor) => atualizarItem(idx, { tipo_lampada_id: valor })}
+                            options={opcoesTiposLampada}
                             placeholder="LED, vapor de sódio..."
-                            value={item.tipo_lampada}
-                            onChange={(e) => atualizarItem(idx, { tipo_lampada: e.target.value })}
+                            onCriar={async (texto) => {
+                              const novo = await apiTiposLampada.criar({ nome: texto });
+                              setTiposLampada((prev) => [...prev, novo]);
+                              return { value: novo.id, label: novo.nome };
+                            }}
                           />
                         </div>
                       )}
                       {ehLampada && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                           <label style={rotuloCampo}>Potência (W)</label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            style={{ textAlign: "center" }}
-                            value={item.potencia_w}
-                            onChange={(e) => atualizarItem(idx, { potencia_w: e.target.value })}
+                          <ComboCriavel
+                            value={item.potencia_lampada_id}
+                            onChange={(valor) => atualizarItem(idx, { potencia_lampada_id: valor })}
+                            options={opcoesPotenciasLampada}
+                            placeholder="100 W"
+                            onCriar={async (texto) => {
+                              const numero = Number(texto.replace(",", ".").replace(/[^\d.]/g, ""));
+                              if (!numero) throw new Error("Informe um número de potência válido.");
+                              const novo = await apiPotenciasLampada.criar({ valor_w: numero });
+                              setPotenciasLampada((prev) => [...prev, novo]);
+                              return { value: novo.id, label: `${novo.valor_w} W` };
+                            }}
                           />
                         </div>
                       )}

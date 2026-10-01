@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import date
 
-from sqlalchemy import Date, Enum, ForeignKey, Numeric, String, Text
+from sqlalchemy import Date, Enum, ForeignKey, Numeric, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -36,8 +36,9 @@ class ExecucaoReclamacao(TimestampMixin, Base):
 
 class ItemExecucaoMaterial(Base):
     """Material instalado ou retirado numa execução. Quando o material é da
-    categoria LAMPADA, tipo_lampada/potencia_w guardam os dados específicos
-    dela (vazio para os demais materiais)."""
+    categoria LAMPADA, tipo_lampada_id/potencia_lampada_id guardam os dados
+    específicos dela (vazio para os demais materiais) referenciando os
+    catálogos TipoLampada/PotenciaLampada."""
 
     __tablename__ = "itens_execucao_material"
 
@@ -46,7 +47,7 @@ class ItemExecucaoMaterial(Base):
     material_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("materiais.id"), nullable=False)
     movimento: Mapped[MovimentoMaterial] = mapped_column(Enum(MovimentoMaterial), nullable=False)
     quantidade: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=1)
-    tipo_lampada: Mapped[str | None] = mapped_column(String(100))
-    potencia_w: Mapped[float | None] = mapped_column(Numeric(8, 2))
+    tipo_lampada_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("tipos_lampada.id"))
+    potencia_lampada_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("potencias_lampada.id"))
 
     execucao: Mapped["ExecucaoReclamacao"] = relationship(back_populates="itens")
