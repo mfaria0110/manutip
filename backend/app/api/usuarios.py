@@ -1,7 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.acesso import requer_admin
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/api/usuarios", tags=["usuarios"])
 class UsuarioOut(BaseModel):
     id: uuid.UUID
     nome: str
-    email: str
+    username: str
     papel: PapelUsuario
     ativo: bool
     permissoes_extra: list[str]
@@ -26,7 +26,7 @@ class UsuarioOut(BaseModel):
 
 class UsuarioCreate(BaseModel):
     nome: str
-    email: EmailStr
+    username: str
     senha: str
     papel: PapelUsuario = PapelUsuario.USUARIO
     permissoes_extra: list[str] = []
@@ -49,11 +49,11 @@ def listar(db: Session = Depends(get_db)):
 
 @router.post("", response_model=UsuarioOut, dependencies=[Depends(requer_admin)])
 def criar(req: UsuarioCreate, db: Session = Depends(get_db)):
-    if db.query(Usuario).filter(Usuario.email == req.email).first():
-        raise HTTPException(status_code=400, detail="E-mail já cadastrado.")
+    if db.query(Usuario).filter(Usuario.username == req.username).first():
+        raise HTTPException(status_code=400, detail="Usuário já existe.")
     usuario = Usuario(
         nome=req.nome,
-        email=req.email,
+        username=req.username,
         senha_hash=hash_senha(req.senha),
         papel=req.papel,
         permissoes_extra=req.permissoes_extra,

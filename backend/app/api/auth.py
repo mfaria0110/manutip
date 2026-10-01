@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.acesso import usuario_atual
@@ -11,7 +11,7 @@ router = APIRouter(tags=["auth"])
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    username: str
     senha: str
 
 
@@ -23,9 +23,9 @@ class LoginResponse(BaseModel):
 
 @router.post("/api/login", response_model=LoginResponse)
 def login(req: LoginRequest, db: Session = Depends(get_db)):
-    usuario = db.query(Usuario).filter(Usuario.email == req.email).first()
+    usuario = db.query(Usuario).filter(Usuario.username == req.username).first()
     if not usuario or not verificar_senha(req.senha, usuario.senha_hash):
-        raise HTTPException(status_code=401, detail="E-mail ou senha inválidos.")
+        raise HTTPException(status_code=401, detail="Usuário ou senha inválidos.")
     if not usuario.ativo:
         raise HTTPException(status_code=403, detail="Usuário inativo.")
     token = gerar_token(usuario.id)
@@ -37,7 +37,7 @@ def me(usuario: Usuario = Depends(usuario_atual)):
     return {
         "id": str(usuario.id),
         "nome": usuario.nome,
-        "email": usuario.email,
+        "username": usuario.username,
         "papel": usuario.papel.value,
         "permissoes_extra": usuario.permissoes_extra or [],
     }

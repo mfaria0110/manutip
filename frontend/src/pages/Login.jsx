@@ -5,7 +5,7 @@ import { useAcesso } from "../AcessoContext";
 import logoSelles from "../assets/logo-selles.png";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ export default function Login() {
     e.preventDefault();
     setErro("");
     try {
-      await login(email, senha);
+      await login(username, senha);
       await recarregar();
       navigate("/");
     } catch (err) {
@@ -28,7 +28,7 @@ export default function Login() {
       <img src={logoSelles} alt="Selles" style={{ width: "100%", maxWidth: 380, marginBottom: 16 }} />
       <h1>Manutip</h1>
       <form onSubmit={onSubmit} style={{ textAlign: "left" }}>
-        <input placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <input placeholder="Usuário" value={username} onChange={(e) => setUsername(e.target.value)} />
         <input placeholder="Senha" type="password" value={senha} onChange={(e) => setSenha(e.target.value)} />
         <button type="submit">Entrar</button>
       </form>

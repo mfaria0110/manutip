@@ -17,8 +17,8 @@ async function req(path, options = {}) {
   return resp.json();
 }
 
-export function login(email, senha) {
-  return req("/login", { method: "POST", body: JSON.stringify({ email, senha }) }).then((r) => {
+export function login(username, senha) {
+  return req("/login", { method: "POST", body: JSON.stringify({ username, senha }) }).then((r) => {
     localStorage.setItem("manutip_token", r.token);
     return r;
   });
