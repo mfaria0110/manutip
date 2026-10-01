@@ -356,8 +356,8 @@ export default function ExecucaoReclamacao() {
                   <thead>
                     <tr>
                       <th>Material</th>
-                      <th>Qtd. Inst.</th>
-                      <th>Qtd. Ret.</th>
+                      <th style={{ textAlign: "center" }}>Qtd. Inst.</th>
+                      <th style={{ textAlign: "center" }}>Qtd. Ret.</th>
                       <th>Lâmpada</th>
                       <th style={{ width: 80 }} />
                     </tr>
