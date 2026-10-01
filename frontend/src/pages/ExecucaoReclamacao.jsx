@@ -369,7 +369,7 @@ export default function ExecucaoReclamacao() {
                   <label style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-secondary)" }}>
                     Materiais instalados/retirados
                   </label>
-                  <button type="button" className="btn btn-ghost" onClick={adicionarItem}>
+                  <button type="button" className="btn btn-primary" onClick={adicionarItem}>
                     <i className="ti ti-plus" aria-hidden="true" style={{ marginRight: 4 }} />
                     Adicionar material
                   </button>
@@ -479,7 +479,7 @@ export default function ExecucaoReclamacao() {
                         className="btn btn-ghost"
                         onClick={() => removerItem(idx)}
                         title="Remover"
-                        style={{ color: "var(--danger)", fontSize: 24, padding: "6px 10px", marginTop: 10 }}
+                        style={{ color: "var(--danger)", fontSize: 24, padding: "6px 10px", marginTop: 20 }}
                       >
                         <i className="ti ti-trash" aria-hidden="true" />
                       </button>
