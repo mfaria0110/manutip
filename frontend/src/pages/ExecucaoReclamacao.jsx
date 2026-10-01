@@ -179,7 +179,7 @@ export default function ExecucaoReclamacao() {
             style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}
           >
             <div>
-              <h3 style={{ margin: "0 0 4px" }}>{reclamacao.nome_reclamante}</h3>
+              <h3 style={{ margin: "0 0 4px" }}>Reclamante: {reclamacao.nome_reclamante}</h3>
               <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 14 }}>
                 {reclamacao.logradouro || "—"}
                 {reclamacao.numero ? `, ${reclamacao.numero}` : ""} — {nomeBairro(reclamacao.bairro_id)}, {nomeCidade(reclamacao.cidade_id)}
