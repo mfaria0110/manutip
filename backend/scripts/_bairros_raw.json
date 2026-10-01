@@ -1,0 +1,890 @@
+[
+{
+"bairro": "VILA REAL",
+"cidade_raw": "Porto Real"
+},
+{
+"bairro": "JD PRIMAVERA II",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "JD PRIMAVERA III",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "TOYOTA I",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "TOYOTA II",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "ENG. PASSOS",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "PALMITAL",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "MORADA DAS AGULHAS",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "BAIXADA DA OLARIA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "MORRO  CRUZEIRO",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "JD ESPERANÇA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "VILA ALEGRIA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "VILA ELIZABETH",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "ALTO DOS PASSOS",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "MORADA DA FELICIDADE",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "BARBOSA LIMA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "MORADA COLINA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "PRQ IPIRANGA 2",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "MORRO DO BATISTA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "MORRO DO MACHADO",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "MORRO DO QUEROSENE",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "JD ALEGRIA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "FAZ BOA VISTA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "NOVA ALEGRIA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "VILA NOVA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "JD BEIRA RIO",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "SURUBI VELHO",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "SURUBI NOVO",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "MIRANTE DA SERRA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "MORADA DAS GARÇAS",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "PARAÍSO",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "TOP CLUB A. NEGR",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "PEDRA SONORA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "MONTESE 2",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "ALAMBARI",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "SERRINHA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "FAZ CASTELO",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "SÃO CAETANO",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "MORADA DO CASTELO",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "FAZ BARRA 1",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "CAPELINHA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "PEDRA SELADA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "GRANJA M. GERAIS",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "MORADA DA BARRA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "CAMPO BELO",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "FUMAÇA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "VILA ARAMAGI - ENG P.",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "VILA SANTA ISABEL",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "VILA ARAUJO",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "POLO INDUSTRIAL",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "PEDRA PRETA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "SÃO CAETANO I",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "SÃO CAETANO II",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "ENG. PASSOS - NOVO",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "BAGAGEM",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "LOT. BOA VISTA I",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "MAUA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "VILA ISABEL",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "BOA VISTA 2",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "CIDADE ALEGRIA 2",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "JD JALISCO",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "PRQ EMBAIXADOR",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "NOVO SURUBI",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "NOVA LIBERDADE",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "MONTE CASTELO",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "MONTESE",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "LIBERDADE",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "LAVAPES",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "VILA MODERNA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "MANEJO",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "SANTA CECÍLIA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "SURUBI",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "VICENTINA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "VILA ADELAIDE",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "VILA CENTRAL",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "VILA JULIETA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "VILA VERDE",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "VALE DOS REIS",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "PRQ IPIRANGA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "VILA HULDA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "CIDADE ALEGRIA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "STO AMARO",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "CASTELO  BRANCO",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "CAMPOS ELÍSIOS",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "CASA DA LUA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "CABRAL",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "CENTRO R",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "COMERCIAL",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "ELITE",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "EUCALIPTAL",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "JD BRASILIA 2",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "JD ROSAS",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "FAZ BARRA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "JD BRASILIA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "ITAPUCA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "FAZ BARRA 3",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "GUARARAPES",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "FAZ BARRA 2",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "INDEPENDENCIA",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "JD TROPICAL",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "LOT. B. LUGANO",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "CAMPO ALEGRE",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "LOT. CASAL GARCIA",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "CENTRO I",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "LOT. JD. ITATIAIA",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "COND. AG. CLARAS",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "COND. AL. FLORES",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "COND. FL. GAVEA",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "SANATORIO",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "LOT. FAUSTO BACH",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "FAZ. DA SERRA",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "FAZ. PENEDO",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "FAZ. PINHEIRO",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "FAZ. VELHA",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "GRANJA  ITAUNA",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "ITA. COUN. CLUB",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "JD DAS ROSAS",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "JD OU B. PRADOS",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "JD LIDIA",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "JD LUGANO",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "JD MARTINELLI",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "JD PAINEIRAS",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "LINHA VELHA NORTE",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "MARECHAL JARDIM",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "MARINGÁ",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "MAROMBA",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "MILT T. DA SILVA",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "PRQ NAC ITATIAIA",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "REC. PED. GRANDE",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "REM. ITATIAIA",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "VALE DO PAVÃO",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "ST. BELOS PRADOS",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "SITIO VARGINHA",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "VALE DO SOL",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "VALE DOS REIS",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "VILA CAROLINA",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "VILA ESPERANÇA",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "VILA FLÓRIDA",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "VILA INDEPENDENTE",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "VILA MAGNOLIA",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "VILA MAIA",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "VILA MARTINS",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "VILA ODETE",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "VILA PARAISO",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "VILA PINHEIRO",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "VILAGE ALVORADA",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "VILAGE ITATIAIA",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "VALE DAS CRUZES",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "SÁVIA",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "FUNIL",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "EXN.C VISC.MAUÁ",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "HAM. NOG. CAMPOS",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "MARINGÁ",
+"cidade_raw": "BOCAINA DE MINAS"
+},
+{
+"bairro": "BULHÕES",
+"cidade_raw": "PORTO REAL"
+},
+{
+"bairro": "FREITAS SOARES",
+"cidade_raw": "PORTO REAL"
+},
+{
+"bairro": "BAIRRO DE FÁTIMA",
+"cidade_raw": "PORTO REAL"
+},
+{
+"bairro": "NOVO HORIZONTE",
+"cidade_raw": "PORTO REAL"
+},
+{
+"bairro": "COHAB",
+"cidade_raw": "PORTO REAL"
+},
+{
+"bairro": "JD DAS ACÁCIAS",
+"cidade_raw": "PORTO REAL"
+},
+{
+"bairro": "CENTRO P",
+"cidade_raw": "PORTO REAL"
+},
+{
+"bairro": "JD REAL",
+"cidade_raw": "PORTO REAL"
+},
+{
+"bairro": "SÃO JOSÉ",
+"cidade_raw": "PORTO REAL"
+},
+{
+"bairro": "NOVA COLONIA",
+"cidade_raw": "PORTO REAL"
+},
+{
+"bairro": "VILLAGE P. REAL",
+"cidade_raw": "PORTO REAL"
+},
+{
+"bairro": "LOT. CHINCHO",
+"cidade_raw": "PORTO REAL"
+},
+{
+"bairro": "JD PORTO REAL",
+"cidade_raw": "PORTO REAL"
+},
+{
+"bairro": "POLO INDUSTRIAL",
+"cidade_raw": "PORTO REAL"
+},
+{
+"bairro": "PRQ MARIANA",
+"cidade_raw": "PORTO REAL"
+},
+{
+"bairro": "RIB. DA DIVISA",
+"cidade_raw": "PORTO REAL"
+},
+{
+"bairro": "MORADA DO SOL",
+"cidade_raw": "PORTO REAL"
+},
+{
+"bairro": "LOT DAS PALMEIRA",
+"cidade_raw": "PORTO REAL"
+},
+{
+"bairro": "ASDR. CAVALCANTE",
+"cidade_raw": "PORTO REAL"
+},
+{
+"bairro": "PRQ VIADUTO",
+"cidade_raw": "PORTO REAL"
+},
+{
+"bairro": "VILA MARINA",
+"cidade_raw": "PORTO REAL"
+},
+{
+"bairro": "HUMBERTO ETTORE",
+"cidade_raw": "PORTO REAL"
+},
+{
+"bairro": "PORTO REAL",
+"cidade_raw": "PORTO REAL"
+},
+{
+"bairro": "LOT. MONET",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "VÁRIOS LOCAIS DO CORE",
+"cidade_raw": "CORE"
+},
+{
+"bairro": "MORADA DA MONTANHA",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "ALEGRIA VELHA",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "MIRANTE DAS AGULHAS",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "JD ITATIAIA",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "ALVORADA",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "VILA NITEROI",
+"cidade_raw": "itatiaia"
+},
+{
+"bairro": "JD DO SOL",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "JD PRIMAVERA",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "MORADA DO CONTORNO",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "BULHÕES",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "PENEDO",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "VILA ESPERANÇA",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "MORRO DO BATISTA",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "MONET",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "JD MERISA",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "SÃO JOSÉ",
+"cidade_raw": "Porto Real"
+},
+{
+"bairro": "ELITE",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "SÃO SEBATIAO",
+"cidade_raw": "RESENDE"
+},
+{
+"bairro": "IPIRANGA",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "BOA VISTA 1",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "SANTA ISABEL",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "EPTORI",
+"cidade_raw": "Porto Real"
+},
+{
+"bairro": "ALEGRIA 2",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "JD BEIRA RIO",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "JD DAS ROSAS",
+"cidade_raw": "Porto Real"
+},
+{
+"bairro": "MERISA",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "TANGARÁ",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "PRQ NACIONAL",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "BULHÕES",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "MORADA DA COLINA 2",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "CAMPO DA AVIAÇÃO",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "MORRO DO QUEROSENE",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "COUNTRY CLUB",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "LOTE 10",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "COM. DE RIO PRETO",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "MORRO CRUZEIRO",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "VARGEM GRANDE",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "BENFICA",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "FORMIGUEIRO",
+"cidade_raw": "ITATIAIA - PENEDO"
+},
+{
+"bairro": "BELOS PRADOS",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "BEIRA RIO",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "CRI",
+"cidade_raw": "ITATIAIA"
+},
+{
+"bairro": "NOVA RESENDE",
+"cidade_raw": "Resende"
+},
+{
+"bairro": "JD ALIANÇA",
+"cidade_raw": "Resende"
+}
+]
