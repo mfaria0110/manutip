@@ -10,7 +10,7 @@ from app.models.ativo import Ativo
 from app.models.material import Material
 from app.models.lampada import TipoLampada, PotenciaLampada
 from app.models.reclamacao import Reclamacao
-from app.models.execucao_reclamacao import ExecucaoReclamacao, ItemExecucaoMaterial, MovimentoMaterial
+from app.models.execucao_reclamacao import ExecucaoReclamacao, ItemExecucaoMaterial
 from app.models.ordem_servico import (
     OrdemServico,
     ItemOrdemServico,
@@ -49,7 +49,6 @@ __all__ = [
     "Reclamacao",
     "ExecucaoReclamacao",
     "ItemExecucaoMaterial",
-    "MovimentoMaterial",
     "OrdemServico",
     "ItemOrdemServico",
     "TipoOS",

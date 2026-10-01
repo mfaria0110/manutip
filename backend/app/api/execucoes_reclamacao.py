@@ -7,15 +7,15 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.core.acesso import requer_acesso, requer_admin
 from app.core.database import get_db
-from app.models.execucao_reclamacao import ExecucaoReclamacao, ItemExecucaoMaterial, MovimentoMaterial
+from app.models.execucao_reclamacao import ExecucaoReclamacao, ItemExecucaoMaterial
 
 router = APIRouter(prefix="/api/execucoes-reclamacao", tags=["execucoes_reclamacao"])
 
 
 class ItemIn(BaseModel):
     material_id: uuid.UUID
-    movimento: MovimentoMaterial
-    quantidade: float = 1
+    quantidade_instalada: float = 0
+    quantidade_retirada: float = 0
     tipo_lampada_id: uuid.UUID | None = None
     potencia_lampada_id: uuid.UUID | None = None
 

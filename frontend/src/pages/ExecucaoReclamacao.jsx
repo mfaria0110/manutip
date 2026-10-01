@@ -16,17 +16,18 @@ import {
   apiTiposLampada,
 } from "../api";
 
-const MOVIMENTOS = [
-  { value: "INSTALADO", label: "Instalado" },
-  { value: "RETIRADO", label: "Retirado" },
-];
-
 const LABEL_STATUS = { ABERTA: "Aberta", EM_ANDAMENTO: "Em andamento", CONCLUIDA: "Concluída" };
 
 const rotuloCampo = { fontSize: 11.5, fontWeight: 600, color: "var(--text-secondary)", whiteSpace: "nowrap" };
 
 function novoItem() {
-  return { material_id: "", movimento: "INSTALADO", quantidade: 1, tipo_lampada_id: "", potencia_lampada_id: "" };
+  return {
+    material_id: "",
+    quantidade_instalada: "",
+    quantidade_retirada: "",
+    tipo_lampada_id: "",
+    potencia_lampada_id: "",
+  };
 }
 
 export default function ExecucaoReclamacao() {
@@ -83,7 +84,6 @@ export default function ExecucaoReclamacao() {
   const nomeBairro = (bid) => bairros.find((b) => b.id === bid)?.nome || "—";
   const nomeCidade = (cid) => cidades.find((c) => c.id === cid)?.nome || "—";
   const materialPorId = (mid) => materiais.find((m) => m.id === mid);
-  const labelMovimento = (v) => MOVIMENTOS.find((m) => m.value === v)?.label || v;
   const nomeTipoLampada = (tid) => tiposLampada.find((t) => t.id === tid)?.nome || "—";
   const labelPotenciaLampada = (pid) => {
     const p = potenciasLampada.find((x) => x.id === pid);
@@ -157,8 +157,8 @@ export default function ExecucaoReclamacao() {
           .filter((it) => it.material_id)
           .map((it) => ({
             material_id: it.material_id,
-            movimento: it.movimento,
-            quantidade: Number(it.quantidade) || 1,
+            quantidade_instalada: Number(it.quantidade_instalada) || 0,
+            quantidade_retirada: Number(it.quantidade_retirada) || 0,
             tipo_lampada_id: it.tipo_lampada_id || null,
             potencia_lampada_id: it.potencia_lampada_id || null,
           })),
@@ -289,8 +289,8 @@ export default function ExecucaoReclamacao() {
                   <thead>
                     <tr>
                       <th>Material</th>
-                      <th>Movimento</th>
-                      <th>Qtd.</th>
+                      <th>Qtd. Inst.</th>
+                      <th>Qtd. Ret.</th>
                       <th>Lâmpada</th>
                     </tr>
                   </thead>
@@ -300,8 +300,8 @@ export default function ExecucaoReclamacao() {
                       return (
                         <tr key={it.id}>
                           <td>{mat?.nome || "—"}</td>
-                          <td>{labelMovimento(it.movimento)}</td>
-                          <td>{it.quantidade}</td>
+                          <td>{it.quantidade_instalada || "—"}</td>
+                          <td>{it.quantidade_retirada || "—"}</td>
                           <td>
                             {it.tipo_lampada_id
                               ? `${nomeTipoLampada(it.tipo_lampada_id)}${
@@ -323,7 +323,12 @@ export default function ExecucaoReclamacao() {
       {formAberto && (
         <div className="modal-overlay">
           <div className="modal" style={{ width: 980, maxWidth: "95vw" }}>
-            <h2>Nova execução</h2>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+              <h2 style={{ margin: 0 }}>Nova execução</h2>
+              <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                {nomeCidade(reclamacao.cidade_id)} — {nomeBairro(reclamacao.bairro_id)} — {reclamacao.logradouro || "—"}
+              </span>
+            </div>
             <form onSubmit={salvar}>
               <div className="form-grid">
                 <div className="form-field" style={{ "--span": 4 }}>
@@ -378,11 +383,11 @@ export default function ExecucaoReclamacao() {
                       style={{
                         display: "grid",
                         gridTemplateColumns: ehLampada
-                          ? "1fr 90px 100px 140px 76px 40px"
-                          : "1fr 140px 76px 40px",
+                          ? "1fr 90px 100px 90px 90px 40px"
+                          : "1fr 90px 90px 40px",
                         gap: 8,
                         alignItems: "flex-end",
-                        marginBottom: 8,
+                        marginBottom: 30,
                       }}
                     >
                       <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
@@ -447,28 +452,25 @@ export default function ExecucaoReclamacao() {
                         </div>
                       )}
                       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                        <label style={rotuloCampo}>Movimento</label>
-                        <select
-                          style={{ width: "100%", minWidth: 0 }}
-                          value={item.movimento}
-                          onChange={(e) => atualizarItem(idx, { movimento: e.target.value })}
-                        >
-                          {MOVIMENTOS.map((mv) => (
-                            <option key={mv.value} value={mv.value}>
-                              {mv.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                        <label style={rotuloCampo}>Qtd.</label>
+                        <label style={rotuloCampo}>Qtd. Inst.</label>
                         <input
                           type="number"
                           min="0"
                           step="0.01"
                           style={{ width: "100%", minWidth: 0, textAlign: "center" }}
-                          value={item.quantidade}
-                          onChange={(e) => atualizarItem(idx, { quantidade: e.target.value })}
+                          value={item.quantidade_instalada}
+                          onChange={(e) => atualizarItem(idx, { quantidade_instalada: e.target.value })}
+                        />
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <label style={rotuloCampo}>Qtd. Ret.</label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          style={{ width: "100%", minWidth: 0, textAlign: "center" }}
+                          value={item.quantidade_retirada}
+                          onChange={(e) => atualizarItem(idx, { quantidade_retirada: e.target.value })}
                         />
                       </div>
                       <button

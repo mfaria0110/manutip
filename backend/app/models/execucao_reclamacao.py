@@ -1,18 +1,12 @@
-import enum
 import uuid
 from datetime import date
 
-from sqlalchemy import Date, Enum, ForeignKey, Numeric, Text
+from sqlalchemy import Date, ForeignKey, Numeric, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.models.mixins import TimestampMixin
-
-
-class MovimentoMaterial(str, enum.Enum):
-    INSTALADO = "INSTALADO"
-    RETIRADO = "RETIRADO"
 
 
 class ExecucaoReclamacao(TimestampMixin, Base):
@@ -35,18 +29,20 @@ class ExecucaoReclamacao(TimestampMixin, Base):
 
 
 class ItemExecucaoMaterial(Base):
-    """Material instalado ou retirado numa execução. Quando o material é da
-    categoria LAMPADA, tipo_lampada_id/potencia_lampada_id guardam os dados
-    específicos dela (vazio para os demais materiais) referenciando os
-    catálogos TipoLampada/PotenciaLampada."""
+    """Material movimentado numa execução. quantidade_instalada/retirada ficam
+    na mesma linha — uma troca de lâmpada, por exemplo, é um único item com
+    instalada=1 e retirada=1, em vez de duas linhas separadas. Quando o
+    material é da categoria LAMPADA, tipo_lampada_id/potencia_lampada_id
+    guardam os dados específicos dela (vazio para os demais materiais)
+    referenciando os catálogos TipoLampada/PotenciaLampada."""
 
     __tablename__ = "itens_execucao_material"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     execucao_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("execucoes_reclamacao.id"), nullable=False)
     material_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("materiais.id"), nullable=False)
-    movimento: Mapped[MovimentoMaterial] = mapped_column(Enum(MovimentoMaterial), nullable=False)
-    quantidade: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=1)
+    quantidade_instalada: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0)
+    quantidade_retirada: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0)
     tipo_lampada_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("tipos_lampada.id"))
     potencia_lampada_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("potencias_lampada.id"))
 
