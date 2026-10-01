@@ -144,7 +144,16 @@ export default function CadastroPage({
   }, [autoAbrirNovo]);
 
   function abrirEdicao(item) {
-    setForm({ ...item });
+    // Campos vazios herdam o valor padrão do contexto atual (ex.: prefeitura
+    // selecionada na tela anterior) em vez de ficar em branco — registros
+    // antigos sem esse dado passam a ser corrigidos ao serem reabertos.
+    const mesclado = { ...item };
+    Object.entries(valoresPadrao || {}).forEach(([campo, valor]) => {
+      if (mesclado[campo] === "" || mesclado[campo] === null || mesclado[campo] === undefined) {
+        mesclado[campo] = valor;
+      }
+    });
+    setForm(mesclado);
     setEditando(item);
     setErro("");
   }
