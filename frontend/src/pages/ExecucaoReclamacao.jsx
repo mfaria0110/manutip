@@ -13,6 +13,8 @@ const MOVIMENTOS = [
 
 const LABEL_STATUS = { ABERTA: "Aberta", EM_ANDAMENTO: "Em andamento", CONCLUIDA: "Concluída" };
 
+const rotuloCampo = { fontSize: 11.5, fontWeight: 600, color: "var(--text-secondary)" };
+
 function novoItem() {
   return { material_id: "", movimento: "INSTALADO", quantidade: 1, tipo_lampada: "", potencia_w: "" };
 }
@@ -330,24 +332,6 @@ export default function ExecucaoReclamacao() {
                   </button>
                 </div>
 
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 140px 76px 40px",
-                    gap: 8,
-                    marginBottom: 4,
-                    fontSize: 12.5,
-                    fontWeight: 600,
-                    color: "var(--text-secondary)",
-                    textAlign: "left",
-                  }}
-                >
-                  <span>Material</span>
-                  <span>Movimento</span>
-                  <span>Qtd.</span>
-                  <span />
-                </div>
-
                 {itens.map((item, idx) => {
                   const mat = materialPorId(item.material_id);
                   const ehLampada = mat?.categoria === "LAMPADA";
@@ -357,42 +341,43 @@ export default function ExecucaoReclamacao() {
                       style={{
                         display: "grid",
                         gridTemplateColumns: ehLampada
-                          ? "1fr 160px 110px 140px 76px 40px"
+                          ? "1fr 120px 90px 140px 76px 40px"
                           : "1fr 140px 76px 40px",
                         gap: 8,
-                        alignItems: ehLampada ? "flex-end" : "center",
+                        alignItems: "flex-end",
                         marginBottom: 8,
                       }}
                     >
-                      <div style={{ display: "flex", gap: 6, minWidth: 0, alignItems: "center" }}>
-                        <select
-                          required
-                          style={{ flex: 1, minWidth: 0 }}
-                          value={item.material_id}
-                          onChange={(e) => atualizarItem(idx, { material_id: e.target.value })}
-                        >
-                          <option value="">Material...</option>
-                          {materiais.map((m) => (
-                            <option key={m.id} value={m.id}>
-                              {m.nome}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          type="button"
-                          className="btn btn-primary"
-                          onClick={() => setModalMaterialIdx(idx)}
-                          title="Cadastrar novo material"
-                          style={{ fontWeight: 700, fontSize: 15, padding: "4px 10px", flexShrink: 0 }}
-                        >
-                          <i className="ti ti-plus" aria-hidden="true" />
-                        </button>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                        <label style={rotuloCampo}>Material</label>
+                        <div style={{ display: "flex", gap: 6, minWidth: 0, alignItems: "center" }}>
+                          <select
+                            required
+                            style={{ flex: 1, minWidth: 0 }}
+                            value={item.material_id}
+                            onChange={(e) => atualizarItem(idx, { material_id: e.target.value })}
+                          >
+                            <option value="">Material...</option>
+                            {materiais.map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.nome}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={() => setModalMaterialIdx(idx)}
+                            title="Cadastrar novo material"
+                            style={{ fontWeight: 700, fontSize: 15, padding: "4px 10px", flexShrink: 0 }}
+                          >
+                            <i className="ti ti-plus" aria-hidden="true" />
+                          </button>
+                        </div>
                       </div>
                       {ehLampada && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                          <label style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-secondary)" }}>
-                            Tipo
-                          </label>
+                          <label style={rotuloCampo}>Tipo</label>
                           <input
                             placeholder="LED, vapor de sódio..."
                             value={item.tipo_lampada}
@@ -402,9 +387,7 @@ export default function ExecucaoReclamacao() {
                       )}
                       {ehLampada && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                          <label style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-secondary)" }}>
-                            Potência (W)
-                          </label>
+                          <label style={rotuloCampo}>Potência (W)</label>
                           <input
                             type="number"
                             min="0"
@@ -415,25 +398,31 @@ export default function ExecucaoReclamacao() {
                           />
                         </div>
                       )}
-                      <select
-                        style={{ width: "100%", minWidth: 0 }}
-                        value={item.movimento}
-                        onChange={(e) => atualizarItem(idx, { movimento: e.target.value })}
-                      >
-                        {MOVIMENTOS.map((mv) => (
-                          <option key={mv.value} value={mv.value}>
-                            {mv.label}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        style={{ width: "100%", minWidth: 0, textAlign: "center" }}
-                        value={item.quantidade}
-                        onChange={(e) => atualizarItem(idx, { quantidade: e.target.value })}
-                      />
+                      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <label style={rotuloCampo}>Movimento</label>
+                        <select
+                          style={{ width: "100%", minWidth: 0 }}
+                          value={item.movimento}
+                          onChange={(e) => atualizarItem(idx, { movimento: e.target.value })}
+                        >
+                          {MOVIMENTOS.map((mv) => (
+                            <option key={mv.value} value={mv.value}>
+                              {mv.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <label style={rotuloCampo}>Qtd.</label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          style={{ width: "100%", minWidth: 0, textAlign: "center" }}
+                          value={item.quantidade}
+                          onChange={(e) => atualizarItem(idx, { quantidade: e.target.value })}
+                        />
+                      </div>
                       <button
                         type="button"
                         className="btn btn-ghost"
