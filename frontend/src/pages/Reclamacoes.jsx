@@ -113,7 +113,6 @@ export default function Reclamacoes() {
       titulo="Reclamações"
       modulo="reclamacoes"
       api={apiReclamacoes}
-      autoAbrirNovo
       valoresPadrao={{ status: "ABERTA", nome_reclamante: "SELLES", prefeitura_id: prefeituraConfirmada }}
       colunas={[
         { key: "data_reclamacao", label: "Data" },
