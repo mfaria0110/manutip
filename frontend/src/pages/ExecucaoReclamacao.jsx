@@ -304,9 +304,10 @@ export default function ExecucaoReclamacao() {
                     </select>
                     <button
                       type="button"
-                      className="btn btn-ghost"
+                      className="btn btn-primary"
                       onClick={() => setModalEquipeAberto(true)}
                       title="Cadastrar nova equipe"
+                      style={{ fontWeight: 700, fontSize: 18, padding: "8px 14px" }}
                     >
                       <i className="ti ti-plus" aria-hidden="true" />
                     </button>
@@ -379,9 +380,10 @@ export default function ExecucaoReclamacao() {
                         </select>
                         <button
                           type="button"
-                          className="btn btn-ghost"
+                          className="btn btn-primary"
                           onClick={() => setModalMaterialIdx(idx)}
                           title="Cadastrar novo material"
+                          style={{ fontWeight: 700, fontSize: 18, padding: "8px 14px" }}
                         >
                           <i className="ti ti-plus" aria-hidden="true" />
                         </button>
