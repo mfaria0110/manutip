@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { login } from "../api";
 import { useAcesso } from "../AcessoContext";
 import logoSelles from "../assets/logo-selles.png";
+import loginBg from "../assets/login-bg.jpg";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -28,7 +29,12 @@ export default function Login() {
   }
 
   return (
-    <div className="login-page">
+    <div
+      className="login-page"
+      style={{
+        backgroundImage: `linear-gradient(rgba(6, 9, 16, 0.78), rgba(6, 9, 16, 0.85)), url(${loginBg})`,
+      }}
+    >
       <div className="login-card">
         <img src={logoSelles} alt="Selles" className="login-logo" />
         <h1 className="login-titulo">Manutip</h1>
