@@ -333,7 +333,7 @@ export default function ExecucaoReclamacao() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "4fr 1.3fr 0.3fr 40px",
+                    gridTemplateColumns: "1fr 140px 56px 40px",
                     gap: 8,
                     marginBottom: 4,
                     fontSize: 12.5,
@@ -357,8 +357,8 @@ export default function ExecucaoReclamacao() {
                       style={{
                         display: "grid",
                         gridTemplateColumns: ehLampada
-                          ? "4fr 1.3fr 0.3fr 1.3fr 1fr 40px"
-                          : "4fr 1.3fr 0.3fr 40px",
+                          ? "1fr 140px 56px 160px 110px 40px"
+                          : "1fr 140px 56px 40px",
                         gap: 8,
                         alignItems: "center",
                         marginBottom: 8,
@@ -388,7 +388,11 @@ export default function ExecucaoReclamacao() {
                           <i className="ti ti-plus" aria-hidden="true" />
                         </button>
                       </div>
-                      <select value={item.movimento} onChange={(e) => atualizarItem(idx, { movimento: e.target.value })}>
+                      <select
+                        style={{ width: "100%", minWidth: 0 }}
+                        value={item.movimento}
+                        onChange={(e) => atualizarItem(idx, { movimento: e.target.value })}
+                      >
                         {MOVIMENTOS.map((mv) => (
                           <option key={mv.value} value={mv.value}>
                             {mv.label}
@@ -399,7 +403,7 @@ export default function ExecucaoReclamacao() {
                         type="number"
                         min="0"
                         step="0.01"
-                        style={{ textAlign: "center" }}
+                        style={{ width: "100%", minWidth: 0, textAlign: "center" }}
                         value={item.quantidade}
                         onChange={(e) => atualizarItem(idx, { quantidade: e.target.value })}
                       />
