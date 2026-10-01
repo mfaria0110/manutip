@@ -283,7 +283,7 @@ export default function ExecucaoReclamacao() {
 
       {formAberto && (
         <div className="modal-overlay">
-          <div className="modal" style={{ width: 920, maxWidth: "95vw" }}>
+          <div className="modal" style={{ width: 760, maxWidth: "95vw" }}>
             <h2>Nova execução</h2>
             <form onSubmit={salvar}>
               <div className="form-grid">
@@ -332,12 +332,13 @@ export default function ExecucaoReclamacao() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "4fr 1.3fr 0.6fr auto",
+                    gridTemplateColumns: "4fr 1.3fr 0.3fr auto",
                     gap: 8,
                     marginBottom: 4,
                     fontSize: 12.5,
                     fontWeight: 600,
                     color: "var(--text-secondary)",
+                    textAlign: "left",
                   }}
                 >
                   <span>Material</span>
@@ -355,8 +356,8 @@ export default function ExecucaoReclamacao() {
                       style={{
                         display: "grid",
                         gridTemplateColumns: ehLampada
-                          ? "4fr 1.3fr 0.6fr 1.3fr 1fr auto"
-                          : "4fr 1.3fr 0.6fr auto",
+                          ? "4fr 1.3fr 0.3fr 1.3fr 1fr auto"
+                          : "4fr 1.3fr 0.3fr auto",
                         gap: 8,
                         alignItems: "center",
                         marginBottom: 8,
