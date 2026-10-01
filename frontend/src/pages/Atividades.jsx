@@ -13,7 +13,7 @@ export default function Atividades() {
       ]}
       campos={[
         { name: "nome", label: "Nome", required: true },
-        { name: "descricao", label: "Descrição" },
+        { name: "descricao", label: "Descrição", size: 8 },
       ]}
     />
   );
