@@ -13,6 +13,7 @@ class Funcionario(TimestampMixin, Base):
     __tablename__ = "funcionarios"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    matricula: Mapped[str | None] = mapped_column(String(20), unique=True)
     nome: Mapped[str] = mapped_column(String(200), nullable=False)
     cpf: Mapped[str | None] = mapped_column(String(14), unique=True)
     funcao: Mapped[str] = mapped_column(String(50), nullable=False)  # ex: tecnico, encarregado, motorista

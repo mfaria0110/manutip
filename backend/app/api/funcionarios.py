@@ -8,6 +8,7 @@ from app.models.pessoal import Funcionario
 
 class FuncionarioOut(BaseModel):
     id: uuid.UUID
+    matricula: str | None
     nome: str
     cpf: str | None
     funcao: str
@@ -18,12 +19,14 @@ class FuncionarioOut(BaseModel):
 
 
 class FuncionarioCreate(BaseModel):
+    matricula: str | None = None
     nome: str
     cpf: str | None = None
     funcao: str
 
 
 class FuncionarioUpdate(BaseModel):
+    matricula: str | None = None
     nome: str | None = None
     cpf: str | None = None
     funcao: str | None = None
