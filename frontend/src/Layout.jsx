@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAcesso } from "./AcessoContext";
 import { logout } from "./api";
+import SeletorTema from "./SeletorTema";
 import logoSelles from "./assets/logo-selles.png";
 
 const GRUPOS = [
@@ -78,7 +79,14 @@ export default function Layout() {
               <div className="sidebar-user-role">{perfil?.papel}</div>
             </div>
           </div>
-          <button className="btn btn-ghost" style={{ width: "100%", marginTop: 6 }} onClick={sair}>
+          <div style={{ marginTop: 6 }}>
+            <SeletorTema />
+          </div>
+          <button
+            className="btn btn-ghost"
+            style={{ width: "100%", marginTop: 6, color: "var(--text-inverse-muted)" }}
+            onClick={sair}
+          >
             <i className="ti ti-logout" aria-hidden="true" style={{ marginRight: 6 }} />
             Sair
           </button>

@@ -29,3 +29,4 @@ class Usuario(TimestampMixin, Base):
     # Mesmo formato do EcoWatt (slug_modulo:nivel) — permite dar exceção a um
     # usuário específico sem criar um perfil novo ou torná-lo admin geral.
     permissoes_extra: Mapped[list[str]] = mapped_column(JSONB, default=list)
+    tema: Mapped[str | None] = mapped_column(String(32))

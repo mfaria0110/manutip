@@ -40,4 +40,20 @@ def me(usuario: Usuario = Depends(usuario_atual)):
         "username": usuario.username,
         "papel": usuario.papel.value,
         "permissoes_extra": usuario.permissoes_extra or [],
+        "tema": usuario.tema,
     }
+
+
+class TemaRequest(BaseModel):
+    tema: str
+
+
+@router.put("/api/me/tema")
+def salvar_tema(req: TemaRequest, usuario: Usuario = Depends(usuario_atual), db: Session = Depends(get_db)):
+    """Salva a paleta de cores escolhida pelo usuário logado (por usuário, não global)."""
+    tema = (req.tema or "").strip()
+    if not tema or len(tema) > 32:
+        raise HTTPException(status_code=400, detail="Tema inválido.")
+    usuario.tema = tema
+    db.commit()
+    return {"tema": tema}

@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AcessoProvider, useAcesso } from "./AcessoContext";
+import { TemaProvider } from "./TemaContext";
 import Layout from "./Layout";
 import Login from "./pages/Login";
 import Cidades from "./pages/Cidades";
@@ -39,14 +40,25 @@ function Rotas() {
   );
 }
 
+function ComTema({ children }) {
+  const { perfil } = useAcesso();
+  return (
+    <TemaProvider username={perfil?.username} autenticado={!!perfil}>
+      {children}
+    </TemaProvider>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AcessoProvider>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/*" element={<Rotas />} />
-        </Routes>
+        <ComTema>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/*" element={<Rotas />} />
+          </Routes>
+        </ComTema>
       </AcessoProvider>
     </BrowserRouter>
   );

@@ -32,6 +32,10 @@ export function meuPerfil() {
   return req("/me");
 }
 
+export function salvarTema(tema) {
+  return req("/me/tema", { method: "PUT", body: JSON.stringify({ tema }) });
+}
+
 // Fábrica de um client CRUD padrão para os cadastros simples.
 function crud(path) {
   return {
