@@ -1,10 +1,11 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.acesso import requer_acesso
+from app.core.acesso import requer_acesso, requer_admin
 from app.core.database import get_db
 from app.models.localidade import Bairro
 
@@ -59,3 +60,17 @@ def atualizar(item_id: uuid.UUID, req: BairroUpdate, db: Session = Depends(get_d
     db.commit()
     db.refresh(obj)
     return obj
+
+
+@router.delete("/{item_id}", status_code=204, dependencies=[Depends(requer_admin)])
+def excluir(item_id: uuid.UUID, db: Session = Depends(get_db)):
+    obj = db.get(Bairro, item_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Não encontrado.")
+    db.delete(obj)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Não é possível excluir: este bairro está em uso em outro cadastro.")
+    return Response(status_code=204)

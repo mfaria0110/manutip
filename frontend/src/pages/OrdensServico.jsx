@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAcesso } from "../AcessoContext";
+import ConfirmDialog from "../ConfirmDialog";
 import { apiContratos, apiMateriais, apiOrdensServico, apiPrecosPonto } from "../api";
 
 const STATUS_LABEL = {
@@ -14,7 +15,7 @@ function novoItem() {
 }
 
 export default function OrdensServico() {
-  const { pode } = useAcesso();
+  const { pode, ehAdmin } = useAcesso();
   const podeEditar = pode("ordens_servico", "edit");
 
   const [ordens, setOrdens] = useState([]);
@@ -36,6 +37,24 @@ export default function OrdensServico() {
       .then(setOrdens)
       .catch((e) => setErro(e.message))
       .finally(() => setCarregando(false));
+  }
+
+  const [excluindo, setExcluindo] = useState(null);
+  const [apagando, setApagando] = useState(false);
+
+  async function confirmarExclusao() {
+    setApagando(true);
+    setErro("");
+    try {
+      await apiOrdensServico.excluir(excluindo.id);
+      setExcluindo(null);
+      carregar();
+    } catch (err) {
+      setErro(err.message);
+      setExcluindo(null);
+    } finally {
+      setApagando(false);
+    }
   }
 
   useEffect(() => {
@@ -140,6 +159,7 @@ export default function OrdensServico() {
                   <th>Data</th>
                   <th>Status</th>
                   <th>Valor total</th>
+                  {ehAdmin && <th style={{ width: 50 }} />}
                 </tr>
               </thead>
               <tbody>
@@ -153,6 +173,18 @@ export default function OrdensServico() {
                       <span className="badge badge-muted">{STATUS_LABEL[os.status] || os.status}</span>
                     </td>
                     <td>R$ {Number(os.valor_total || 0).toFixed(2)}</td>
+                    {ehAdmin && (
+                      <td>
+                        <button
+                          className="btn btn-ghost"
+                          onClick={() => setExcluindo(os)}
+                          title="Excluir"
+                          style={{ color: "var(--danger)" }}
+                        >
+                          <i className="ti ti-trash" aria-hidden="true" />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -282,6 +314,15 @@ export default function OrdensServico() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        aberto={!!excluindo}
+        titulo="Excluir ordem de serviço"
+        mensagem={`Excluir a OS "${excluindo?.numero}"? Essa ação não pode ser desfeita.`}
+        confirmando={apagando}
+        onConfirmar={confirmarExclusao}
+        onCancelar={() => setExcluindo(null)}
+      />
     </>
   );
 }

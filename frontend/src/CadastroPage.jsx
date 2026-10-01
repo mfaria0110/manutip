@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAcesso } from "./AcessoContext";
 import ComboCriavel from "./ComboCriavel";
+import ConfirmDialog from "./ConfirmDialog";
 
 // Máscaras simples de entrada — formata o texto enquanto o usuário digita.
 const MASCARAS = {
@@ -77,13 +78,16 @@ function tamanhoDoCampo(c) {
  * api: { listar: () => Promise<[]>, criar: (dados) => Promise, atualizar: (id, dados) => Promise }
  */
 export default function CadastroPage({ titulo, modulo, campos, colunas, api, idKey = "id" }) {
-  const { pode } = useAcesso();
+  const { pode, ehAdmin } = useAcesso();
   const [itens, setItens] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
   const [editando, setEditando] = useState(null); // null = fechado; {} = novo; {...} = editar
   const [form, setForm] = useState({});
   const [salvando, setSalvando] = useState(false);
+  const [erroLista, setErroLista] = useState("");
+  const [excluindo, setExcluindo] = useState(null); // item pendente de confirmação
+  const [apagando, setApagando] = useState(false);
 
   const podeEditar = pode(modulo, "edit");
 
@@ -116,6 +120,21 @@ export default function CadastroPage({ titulo, modulo, campos, colunas, api, idK
 
   function fechar() {
     setEditando(null);
+  }
+
+async function confirmarExclusao() {
+    setApagando(true);
+    setErroLista("");
+    try {
+      await api.excluir(excluindo[idKey]);
+      setExcluindo(null);
+      carregar();
+    } catch (err) {
+      setErroLista(err.message);
+      setExcluindo(null);
+    } finally {
+      setApagando(false);
+    }
   }
 
   async function salvar(e) {
@@ -152,6 +171,7 @@ export default function CadastroPage({ titulo, modulo, campos, colunas, api, idK
       </header>
 
       <div className="content">
+        {erroLista && <p className="erro-msg">{erroLista}</p>}
         <div className="card">
           {carregando ? (
             <div className="empty-state">Carregando...</div>
@@ -164,7 +184,7 @@ export default function CadastroPage({ titulo, modulo, campos, colunas, api, idK
                   {colunasFinal.map((c) => (
                     <th key={c.key}>{c.label}</th>
                   ))}
-                  {podeEditar && <th style={{ width: 70 }} />}
+                  {(podeEditar || ehAdmin) && <th style={{ width: 90 }} />}
                 </tr>
               </thead>
               <tbody>
@@ -173,11 +193,25 @@ export default function CadastroPage({ titulo, modulo, campos, colunas, api, idK
                     {colunasFinal.map((c) => (
                       <td key={c.key}>{c.render ? c.render(item) : String(item[c.key] ?? "")}</td>
                     ))}
-                    {podeEditar && (
+                    {(podeEditar || ehAdmin) && (
                       <td>
-                        <button className="btn btn-ghost" onClick={() => abrirEdicao(item)}>
-                          <i className="ti ti-edit" aria-hidden="true" />
-                        </button>
+                        <div style={{ display: "flex", gap: 4 }}>
+                          {podeEditar && (
+                            <button className="btn btn-ghost" onClick={() => abrirEdicao(item)} title="Editar">
+                              <i className="ti ti-edit" aria-hidden="true" />
+                            </button>
+                          )}
+                          {ehAdmin && (
+                            <button
+                              className="btn btn-ghost"
+                              onClick={() => setExcluindo(item)}
+                              title="Excluir"
+                              style={{ color: "var(--danger)" }}
+                            >
+                              <i className="ti ti-trash" aria-hidden="true" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     )}
                   </tr>
@@ -266,6 +300,15 @@ export default function CadastroPage({ titulo, modulo, campos, colunas, api, idK
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        aberto={!!excluindo}
+        titulo="Excluir registro"
+        mensagem={`Excluir "${excluindo?.nome || excluindo?.numero || excluindo?.placa || excluindo?.codigo || "este registro"}"? Essa ação não pode ser desfeita.`}
+        confirmando={apagando}
+        onConfirmar={confirmarExclusao}
+        onCancelar={() => setExcluindo(null)}
+      />
     </>
   );
 }

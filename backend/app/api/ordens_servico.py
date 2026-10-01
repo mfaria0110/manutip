@@ -1,11 +1,11 @@
 import uuid
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session, selectinload
 
-from app.core.acesso import requer_acesso
+from app.core.acesso import requer_acesso, requer_admin
 from app.core.database import get_db
 from app.models.ordem_servico import ItemOrdemServico, OrdemServico, StatusOS, TipoItem, TipoOS
 
@@ -111,6 +111,17 @@ def atualizar(os_id: uuid.UUID, req: OrdemServicoUpdate, db: Session = Depends(g
         setattr(obj, campo, valor)
     db.commit()
     return _com_itens(db.query(OrdemServico)).filter(OrdemServico.id == os_id).first()
+
+
+@router.delete("/{os_id}", status_code=204, dependencies=[Depends(requer_admin)])
+def excluir(os_id: uuid.UUID, db: Session = Depends(get_db)):
+    obj = db.get(OrdemServico, os_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="OS não encontrada.")
+    db.query(ItemOrdemServico).filter(ItemOrdemServico.ordem_servico_id == os_id).delete()
+    db.delete(obj)
+    db.commit()
+    return Response(status_code=204)
 
 
 @router.post(

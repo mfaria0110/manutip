@@ -43,6 +43,7 @@ function crud(path) {
     obter: (id) => req(`${path}/${id}`),
     criar: (dados) => req(path, { method: "POST", body: JSON.stringify(dados) }),
     atualizar: (id, dados) => req(`${path}/${id}`, { method: "PUT", body: JSON.stringify(dados) }),
+    excluir: (id) => req(`${path}/${id}`, { method: "DELETE" }),
   };
 }
 

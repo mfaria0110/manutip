@@ -10,11 +10,12 @@ factory — ficam com seu próprio router (ex.: bairros filtra por cidade).
 import uuid
 from typing import Type
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.acesso import requer_acesso
+from app.core.acesso import requer_acesso, requer_admin
 from app.core.database import get_db
 
 
@@ -53,5 +54,22 @@ def crud_simples(
         db.commit()
         db.refresh(obj)
         return obj
+
+    # Exclusão é sempre restrita a ADMIN, independente do nível do módulo —
+    # diferente de criar/editar, não existe concessão extra que libere excluir.
+    @router.delete("/{item_id}", status_code=204, dependencies=[Depends(requer_admin)])
+    def excluir(item_id: uuid.UUID, db: Session = Depends(get_db)):
+        obj = db.get(modelo, item_id)
+        if not obj:
+            raise HTTPException(status_code=404, detail="Não encontrado.")
+        db.delete(obj)
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(
+                status_code=409, detail="Não é possível excluir: este registro está em uso em outro cadastro."
+            )
+        return Response(status_code=204)
 
     return router
