@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAcesso } from "../AcessoContext";
 import ComboCriavel from "../ComboCriavel";
@@ -10,6 +10,7 @@ import {
   apiCidades,
   apiEquipesDia,
   apiExecucoesReclamacao,
+  apiItensExecucao,
   apiMateriais,
   apiPotenciasLampada,
   apiReclamacoes,
@@ -57,6 +58,13 @@ export default function ExecucaoReclamacao() {
   const [apagando, setApagando] = useState(false);
   const [modalEquipeAberto, setModalEquipeAberto] = useState(false);
   const [modalMaterialIdx, setModalMaterialIdx] = useState(null); // índice do item que pediu o material novo
+
+  const [itemEditando, setItemEditando] = useState(null);
+  const [itemForm, setItemForm] = useState(null);
+  const [erroItem, setErroItem] = useState("");
+  const [salvandoItem, setSalvandoItem] = useState(false);
+  const [itemExcluindo, setItemExcluindo] = useState(null);
+  const [apagandoItem, setApagandoItem] = useState(false);
 
   function carregar() {
     setCarregando(true);
@@ -188,6 +196,48 @@ export default function ExecucaoReclamacao() {
     }
   }
 
+  function abrirEdicaoItem(it) {
+    setItemForm({ ...it });
+    setErroItem("");
+    setItemEditando(it);
+  }
+
+  async function salvarItemEditado(e) {
+    e.preventDefault();
+    setSalvandoItem(true);
+    setErroItem("");
+    try {
+      await apiItensExecucao.atualizar(itemEditando.id, {
+        material_id: itemForm.material_id,
+        quantidade_instalada: Number(itemForm.quantidade_instalada) || 0,
+        quantidade_retirada: Number(itemForm.quantidade_retirada) || 0,
+        tipo_lampada_id: itemForm.tipo_lampada_id || null,
+        potencia_lampada_id: itemForm.potencia_lampada_id || null,
+      });
+      setItemEditando(null);
+      carregar();
+    } catch (err) {
+      setErroItem(err.message);
+    } finally {
+      setSalvandoItem(false);
+    }
+  }
+
+  async function confirmarExclusaoItem() {
+    setApagandoItem(true);
+    setErroLista("");
+    try {
+      await apiItensExecucao.excluir(itemExcluindo.id);
+      setItemExcluindo(null);
+      carregar();
+    } catch (err) {
+      setErroLista(err.message);
+      setItemExcluindo(null);
+    } finally {
+      setApagandoItem(false);
+    }
+  }
+
   if (carregando) {
     return (
       <>
@@ -213,6 +263,20 @@ export default function ExecucaoReclamacao() {
       </>
     );
   }
+
+  // Agrupa por data — só abre um card novo quando a data muda; execuções
+  // da mesma data ficam juntas (cada uma com sua equipe/observações).
+  const gruposPorData = [];
+  execucoes.forEach((ex) => {
+    let grupo = gruposPorData.find((g) => g.data === ex.data_execucao);
+    if (!grupo) {
+      grupo = { data: ex.data_execucao, execucoes: [] };
+      gruposPorData.push(grupo);
+    }
+    grupo.execucoes.push(ex);
+  });
+
+  const itemEhLampada = itemForm ? materialPorId(itemForm.material_id)?.categoria === "LAMPADA" : false;
 
   return (
     <>
@@ -263,28 +327,10 @@ export default function ExecucaoReclamacao() {
         {execucoes.length === 0 ? (
           <div className="card empty-state">Nenhuma execução registrada ainda.</div>
         ) : (
-          execucoes.map((ex) => (
-            <div className="card" key={ex.id} style={{ marginBottom: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-                <strong>{ex.data_execucao}</strong>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>{nomeEquipe(ex.equipe_dia_id)}</span>
-                  {ehAdmin && (
-                    <button
-                      className="btn btn-ghost"
-                      onClick={() => setExcluindo(ex)}
-                      title="Excluir execução"
-                      style={{ color: "var(--danger)" }}
-                    >
-                      <i className="ti ti-trash" aria-hidden="true" />
-                    </button>
-                  )}
-                </div>
-              </div>
-              {ex.observacoes && (
-                <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 6 }}>{ex.observacoes}</p>
-              )}
-              {ex.itens.length > 0 && (
+          gruposPorData.map((grupo) => (
+            <div className="card" key={grupo.data} style={{ marginBottom: 12 }}>
+              <strong>{grupo.data}</strong>
+              {grupo.execucoes.some((ex) => ex.itens.length > 0) && (
                 <table style={{ marginTop: 10 }}>
                   <thead>
                     <tr>
@@ -292,26 +338,70 @@ export default function ExecucaoReclamacao() {
                       <th>Qtd. Inst.</th>
                       <th>Qtd. Ret.</th>
                       <th>Lâmpada</th>
+                      <th style={{ width: 80 }} />
                     </tr>
                   </thead>
                   <tbody>
-                    {ex.itens.map((it) => {
-                      const mat = materialPorId(it.material_id);
-                      return (
-                        <tr key={it.id}>
-                          <td>{mat?.nome || "—"}</td>
-                          <td>{it.quantidade_instalada || "—"}</td>
-                          <td>{it.quantidade_retirada || "—"}</td>
-                          <td>
-                            {it.tipo_lampada_id
-                              ? `${nomeTipoLampada(it.tipo_lampada_id)}${
-                                  it.potencia_lampada_id ? ` — ${labelPotenciaLampada(it.potencia_lampada_id)}` : ""
-                                }`
-                              : "—"}
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {grupo.execucoes.map((ex) => (
+                      <Fragment key={ex.id}>
+                        {(grupo.execucoes.length > 1 || ex.equipe_dia_id || ex.observacoes) && (
+                          <tr>
+                            <td colSpan={5} style={{ background: "var(--accent-soft)" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+                                <span style={{ fontSize: 13 }}>
+                                  {nomeEquipe(ex.equipe_dia_id)}
+                                  {ex.observacoes ? ` — ${ex.observacoes}` : ""}
+                                </span>
+                                {ehAdmin && (
+                                  <button
+                                    className="btn btn-ghost"
+                                    onClick={() => setExcluindo(ex)}
+                                    title="Excluir esta execução"
+                                    style={{ color: "var(--danger)" }}
+                                  >
+                                    <i className="ti ti-trash" aria-hidden="true" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                        {ex.itens.map((it) => {
+                          const mat = materialPorId(it.material_id);
+                          return (
+                            <tr key={it.id}>
+                              <td>{mat?.nome || "—"}</td>
+                              <td style={{ textAlign: "center" }}>{it.quantidade_instalada || "—"}</td>
+                              <td style={{ textAlign: "center" }}>{it.quantidade_retirada || "—"}</td>
+                              <td>
+                                {it.tipo_lampada_id
+                                  ? `${nomeTipoLampada(it.tipo_lampada_id)}${
+                                      it.potencia_lampada_id ? ` — ${labelPotenciaLampada(it.potencia_lampada_id)}` : ""
+                                    }`
+                                  : "—"}
+                              </td>
+                              <td>
+                                <div style={{ display: "flex", gap: 4 }}>
+                                  <button className="btn btn-ghost" onClick={() => abrirEdicaoItem(it)} title="Editar">
+                                    <i className="ti ti-edit" aria-hidden="true" />
+                                  </button>
+                                  {ehAdmin && (
+                                    <button
+                                      className="btn btn-ghost"
+                                      onClick={() => setItemExcluindo(it)}
+                                      title="Excluir"
+                                      style={{ color: "var(--danger)" }}
+                                    >
+                                      <i className="ti ti-trash" aria-hidden="true" />
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </Fragment>
+                    ))}
                   </tbody>
                 </table>
               )}
@@ -520,6 +610,107 @@ export default function ExecucaoReclamacao() {
         aberto={modalMaterialIdx !== null}
         onFechar={() => setModalMaterialIdx(null)}
         onCriado={materialCriado}
+      />
+
+      {itemEditando && itemForm && (
+        <div className="modal-overlay">
+          <div className="modal" style={{ width: 600, maxWidth: "95vw" }}>
+            <h2>Editar material</h2>
+            <form onSubmit={salvarItemEditado}>
+              <div className="form-grid">
+                <div className="form-field" style={{ "--span": 12 }}>
+                  <label>Material</label>
+                  <select
+                    required
+                    value={itemForm.material_id}
+                    onChange={(e) => setItemForm({ ...itemForm, material_id: e.target.value })}
+                  >
+                    <option value="">Material...</option>
+                    {materiais.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {itemEhLampada && (
+                  <div className="form-field" style={{ "--span": 6 }}>
+                    <label>Tipo</label>
+                    <ComboCriavel
+                      value={itemForm.tipo_lampada_id}
+                      onChange={(valor) => setItemForm({ ...itemForm, tipo_lampada_id: valor })}
+                      options={opcoesTiposLampada}
+                      placeholder="LED, vapor de sódio..."
+                      onCriar={async (texto) => {
+                        const novo = await apiTiposLampada.criar({ nome: texto });
+                        setTiposLampada((prev) => [...prev, novo]);
+                        return { value: novo.id, label: novo.nome };
+                      }}
+                    />
+                  </div>
+                )}
+                {itemEhLampada && (
+                  <div className="form-field" style={{ "--span": 6 }}>
+                    <label>Potência (W)</label>
+                    <ComboCriavel
+                      value={itemForm.potencia_lampada_id}
+                      onChange={(valor) => setItemForm({ ...itemForm, potencia_lampada_id: valor })}
+                      options={opcoesPotenciasLampada}
+                      placeholder="100 W"
+                      onCriar={async (texto) => {
+                        const numero = Number(texto.replace(",", ".").replace(/[^\d.]/g, ""));
+                        if (!numero) throw new Error("Informe um número de potência válido.");
+                        const novo = await apiPotenciasLampada.criar({ valor_w: numero });
+                        setPotenciasLampada((prev) => [...prev, novo]);
+                        return { value: novo.id, label: `${novo.valor_w} W` };
+                      }}
+                    />
+                  </div>
+                )}
+                <div className="form-field" style={{ "--span": 6 }}>
+                  <label>Qtd. Instalada</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    style={{ textAlign: "center" }}
+                    value={itemForm.quantidade_instalada}
+                    onChange={(e) => setItemForm({ ...itemForm, quantidade_instalada: e.target.value })}
+                  />
+                </div>
+                <div className="form-field" style={{ "--span": 6 }}>
+                  <label>Qtd. Retirada</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    style={{ textAlign: "center" }}
+                    value={itemForm.quantidade_retirada}
+                    onChange={(e) => setItemForm({ ...itemForm, quantidade_retirada: e.target.value })}
+                  />
+                </div>
+              </div>
+              {erroItem && <p className="erro-msg">{erroItem}</p>}
+              <div className="modal-actions">
+                <button type="button" className="btn" onClick={() => setItemEditando(null)}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={salvandoItem}>
+                  {salvandoItem ? "Salvando..." : "Salvar"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        aberto={!!itemExcluindo}
+        titulo="Excluir material"
+        mensagem="Excluir este material lançado na execução? Essa ação não pode ser desfeita."
+        confirmando={apagandoItem}
+        onConfirmar={confirmarExclusaoItem}
+        onCancelar={() => setItemExcluindo(null)}
       />
     </>
   );

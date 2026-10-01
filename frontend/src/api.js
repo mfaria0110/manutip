@@ -81,6 +81,10 @@ export const apiOrdensServico = crud("/ordens-servico");
 export const apiReclamacoes = crud("/reclamacoes");
 export const apiEquipesDia = crud("/equipes");
 export const apiExecucoesReclamacao = crud("/execucoes-reclamacao");
+export const apiItensExecucao = {
+  atualizar: (id, dados) => req(`/execucoes-reclamacao/itens/${id}`, { method: "PUT", body: JSON.stringify(dados) }),
+  excluir: (id) => req(`/execucoes-reclamacao/itens/${id}`, { method: "DELETE" }),
+};
 export const apiTiposLampada = crud("/tipos-lampada");
 export const apiPotenciasLampada = crud("/potencias-lampada");
 

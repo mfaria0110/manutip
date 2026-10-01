@@ -108,3 +108,27 @@ def excluir(execucao_id: uuid.UUID, db: Session = Depends(get_db)):
     db.delete(obj)
     db.commit()
     return Response(status_code=204)
+
+
+# Edição/exclusão de um único material lançado, sem precisar reenviar a
+# execução inteira — usado pela lista agrupada por data na tela.
+@router.put("/itens/{item_id}", response_model=ItemOut, dependencies=[Depends(requer_acesso("execucoes", "edit"))])
+def atualizar_item(item_id: uuid.UUID, req: ItemIn, db: Session = Depends(get_db)):
+    item = db.get(ItemExecucaoMaterial, item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Item não encontrado.")
+    for campo, valor in req.model_dump().items():
+        setattr(item, campo, valor)
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+@router.delete("/itens/{item_id}", status_code=204, dependencies=[Depends(requer_admin)])
+def excluir_item(item_id: uuid.UUID, db: Session = Depends(get_db)):
+    item = db.get(ItemExecucaoMaterial, item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Item não encontrado.")
+    db.delete(item)
+    db.commit()
+    return Response(status_code=204)
