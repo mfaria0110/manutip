@@ -24,8 +24,8 @@ export default function Login() {
   }
 
   return (
-    <div style={{ maxWidth: 360, margin: "80px auto", textAlign: "center" }}>
-      <img src={logoSelles} alt="Selles" style={{ maxWidth: 220, marginBottom: 16 }} />
+    <div style={{ maxWidth: 420, margin: "80px auto", textAlign: "center" }}>
+      <img src={logoSelles} alt="Selles" style={{ width: "100%", maxWidth: 380, marginBottom: 16 }} />
       <h1>Manutip</h1>
       <form onSubmit={onSubmit} style={{ textAlign: "left" }}>
         <input placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} />
