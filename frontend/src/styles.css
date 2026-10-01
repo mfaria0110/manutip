@@ -408,10 +408,19 @@ button {
   margin-bottom: 16px;
 }
 
+.filtros-linha {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
 .filtro-wrap {
   position: relative;
   margin-bottom: 12px;
   max-width: 320px;
+  flex: 1;
+  min-width: 200px;
 }
 
 .filtro-wrap i {
@@ -424,7 +433,8 @@ button {
   pointer-events: none;
 }
 
-.filtro-wrap input {
+.filtro-wrap input,
+.filtro-wrap select {
   width: 100%;
   padding-left: 32px;
 }

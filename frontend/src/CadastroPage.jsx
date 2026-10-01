@@ -77,7 +77,18 @@ function tamanhoDoCampo(c) {
  * colunas: [{ key, label, render?: (item) => node }]
  * api: { listar: () => Promise<[]>, criar: (dados) => Promise, atualizar: (id, dados) => Promise }
  */
-export default function CadastroPage({ titulo, modulo, campos, colunas, api, idKey = "id" }) {
+export default function CadastroPage({
+  titulo,
+  modulo,
+  campos,
+  colunas,
+  api,
+  idKey = "id",
+  filtroTopo,
+  queryExtra,
+  exigeFiltro,
+  valoresPadrao,
+}) {
   const { pode, ehAdmin } = useAcesso();
   const [itens, setItens] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -93,22 +104,27 @@ export default function CadastroPage({ titulo, modulo, campos, colunas, api, idK
   const podeEditar = pode(modulo, "edit");
 
   function carregar() {
+    if (exigeFiltro && !queryExtra) {
+      setItens([]);
+      setCarregando(false);
+      return;
+    }
     setCarregando(true);
     api
-      .listar()
+      .listar(queryExtra || "")
       .then(setItens)
       .catch((e) => setErro(e.message))
       .finally(() => setCarregando(false));
   }
 
-  useEffect(carregar, []);
+  useEffect(carregar, [queryExtra]);
 
   function abrirNovo() {
     const base = {};
     campos.forEach((c) => {
       base[c.name] = c.type === "checkbox" ? true : "";
     });
-    setForm(base);
+    setForm({ ...base, ...valoresPadrao });
     setEditando({});
     setErro("");
   }
@@ -184,19 +200,24 @@ async function confirmarExclusao() {
 
       <div className="content">
         {erroLista && <p className="erro-msg">{erroLista}</p>}
-        {itens.length > 0 && (
-          <div className="filtro-wrap">
-            <i className="ti ti-search" aria-hidden="true" />
-            <input
-              placeholder="Buscar..."
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-            />
-          </div>
-        )}
+        <div className="filtros-linha">
+          {filtroTopo}
+          {itens.length > 0 && (
+            <div className="filtro-wrap">
+              <i className="ti ti-search" aria-hidden="true" />
+              <input
+                placeholder="Buscar..."
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+              />
+            </div>
+          )}
+        </div>
         <div className="card">
           {carregando ? (
             <div className="empty-state">Carregando...</div>
+          ) : exigeFiltro && !queryExtra ? (
+            <div className="empty-state">Selecione um município para ver os bairros.</div>
           ) : itens.length === 0 ? (
             <div className="empty-state">Nenhum registro ainda.</div>
           ) : itensFiltrados.length === 0 ? (
