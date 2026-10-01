@@ -16,7 +16,7 @@ export default function Veiculos() {
       campos={[
         { name: "placa", label: "Placa", required: true, mask: "placa" },
         { name: "modelo", label: "Modelo", required: true, size: 5 },
-        { name: "tipo", label: "Tipo (caminhão, munck, utilitário...)", size: 3 },
+        { name: "tipo", label: "Tipo", size: 3, placeholder: "Caminhão, munck, utilitário..." },
         { name: "cor", label: "Cor", size: 3, center: true },
         { name: "ano_fabricacao", label: "Ano fabricação", mask: "ano", center: true },
         { name: "ano_modelo", label: "Ano modelo", mask: "ano", center: true },

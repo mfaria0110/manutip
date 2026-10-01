@@ -320,6 +320,7 @@ async function confirmarExclusao() {
                       type={c.type || "text"}
                       step={c.step}
                       required={c.required}
+                      placeholder={c.placeholder}
                       style={c.center ? { textAlign: "center" } : undefined}
                       value={form[c.name] ?? ""}
                       onChange={(e) => {
