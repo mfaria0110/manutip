@@ -23,8 +23,8 @@ const rotuloCampo = { fontSize: 11.5, fontWeight: 600, color: "var(--text-second
 function novoItem() {
   return {
     material_id: "",
-    quantidade_instalada: "",
-    quantidade_retirada: "",
+    quantidade_instalada: 0,
+    quantidade_retirada: 0,
     tipo_lampada_id: "",
     potencia_lampada_id: "",
   };
