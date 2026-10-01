@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAcesso } from "./AcessoContext";
+import ComboCriavel from "./ComboCriavel";
 
 // Máscaras simples de entrada — formata o texto enquanto o usuário digita.
 const MASCARAS = {
@@ -209,6 +210,14 @@ export default function CadastroPage({ titulo, modulo, campos, colunas, api, idK
                         </option>
                       ))}
                     </select>
+                  ) : c.type === "combo" ? (
+                    <ComboCriavel
+                      value={form[c.name] ?? ""}
+                      onChange={(valor) => setForm((f) => ({ ...f, [c.name]: valor }))}
+                      options={typeof c.options === "function" ? c.options(form) : c.options || []}
+                      onCriar={(texto) => c.onCriar(texto, form)}
+                      placeholder={c.placeholder}
+                    />
                   ) : c.type === "checkbox" ? (
                     <input
                       type="checkbox"
@@ -228,6 +237,7 @@ export default function CadastroPage({ titulo, modulo, campos, colunas, api, idK
                       type={c.type || "text"}
                       step={c.step}
                       required={c.required}
+                      style={c.center ? { textAlign: "center" } : undefined}
                       value={form[c.name] ?? ""}
                       onChange={(e) => {
                         const valor = c.mask ? aplicarMascara(c.mask, e.target.value) : e.target.value;

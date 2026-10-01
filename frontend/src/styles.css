@@ -65,19 +65,28 @@ select,
 textarea,
 button {
   font-family: inherit;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 input,
 select,
 textarea {
-  padding: 8px 10px;
+  padding: 0 8px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: #fff;
   color: var(--text-primary);
   outline: none;
   transition: border-color 0.15s;
+}
+
+input,
+select {
+  height: 30px;
+}
+
+textarea {
+  padding: 5px 8px;
 }
 
 input:focus,
@@ -266,6 +275,43 @@ button {
 
 .tema-opt:hover {
   background: var(--bg-page);
+}
+
+.combo-pop {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px;
+  max-height: 180px;
+  overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(10, 14, 22, 0.12);
+  z-index: 60;
+}
+
+.combo-opt {
+  display: block;
+  width: 100%;
+  padding: 7px 9px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 13.5px;
+  text-align: left;
+  color: var(--text-primary);
+}
+
+.combo-opt:hover {
+  background: var(--bg-page);
+}
+
+.combo-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 4px 0 0;
 }
 
 .tema-opt.ativa {

@@ -75,10 +75,10 @@ export default function Prefeituras() {
       campos={[
         { name: "nome", label: "Nome", required: true, size: 8 },
         { name: "cnpj", label: "CNPJ", mask: "cnpj", size: 4 },
-        { name: "cep", label: "CEP", mask: "cep", onBlur: aoSairDoCep },
+        { name: "cep", label: "CEP", mask: "cep", center: true, onBlur: aoSairDoCep },
         { name: "logradouro", label: "Logradouro", size: 7 },
-        { name: "numero", label: "Número", size: 2 },
-        { name: "complemento", label: "Complemento", size: 4 },
+        { name: "numero", label: "Número", size: 2, center: true },
+        { name: "complemento", label: "Complemento", size: 6 },
         {
           name: "cidade_id",
           label: "Cidade",
@@ -89,17 +89,23 @@ export default function Prefeituras() {
         {
           name: "bairro_id",
           label: "Bairro",
-          type: "select",
+          type: "combo",
           size: 6,
+          placeholder: "Digite para buscar ou criar...",
           options: (valores) =>
             bairros
               .filter((b) => !valores.cidade_id || b.cidade_id === valores.cidade_id)
               .map((b) => ({ value: b.id, label: b.nome })),
+          onCriar: async (texto, valores) => {
+            if (!valores.cidade_id) throw new Error("Selecione a cidade antes de criar o bairro.");
+            const novo = await apiBairros.criar({ nome: texto, cidade_id: valores.cidade_id });
+            setBairros((prev) => [...prev, novo]);
+            return { value: novo.id, label: novo.nome };
+          },
         },
-        { name: "telefone", label: "Telefone", mask: "telefone" },
-        { name: "fax", label: "Fax", mask: "telefone" },
+        { name: "telefone", label: "Telefone", mask: "telefone", center: true },
         { name: "contato_nome", label: "Contato (nome)", size: 6 },
-        { name: "contato_telefone", label: "Telefone do contato", mask: "telefone" },
+        { name: "contato_telefone", label: "Telefone do contato", mask: "telefone", center: true },
         { name: "observacoes", label: "Observações", type: "textarea", rows: 4 },
       ]}
     />

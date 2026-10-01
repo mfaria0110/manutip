@@ -28,10 +28,8 @@ class Prefeitura(TimestampMixin, Base):
     bairro_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("bairros.id"))
     cidade_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("cidades.id"))
     telefone: Mapped[str | None] = mapped_column(String(20))
-    fax: Mapped[str | None] = mapped_column(String(20))
     contato_nome: Mapped[str | None] = mapped_column(String(150))
     contato_telefone: Mapped[str | None] = mapped_column(String(20))
-    contato_fax: Mapped[str | None] = mapped_column(String(20))
     observacoes: Mapped[str | None] = mapped_column(Text)
     ativo: Mapped[bool] = mapped_column(default=True)
 

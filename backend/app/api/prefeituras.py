@@ -17,10 +17,8 @@ class PrefeituraOut(BaseModel):
     bairro_id: uuid.UUID | None
     cidade_id: uuid.UUID | None
     telefone: str | None
-    fax: str | None
     contato_nome: str | None
     contato_telefone: str | None
-    contato_fax: str | None
     observacoes: str | None
     ativo: bool
 
@@ -38,10 +36,8 @@ class PrefeituraCreate(BaseModel):
     bairro_id: uuid.UUID | None = None
     cidade_id: uuid.UUID | None = None
     telefone: str | None = None
-    fax: str | None = None
     contato_nome: str | None = None
     contato_telefone: str | None = None
-    contato_fax: str | None = None
     observacoes: str | None = None
 
 
@@ -55,10 +51,8 @@ class PrefeituraUpdate(BaseModel):
     bairro_id: uuid.UUID | None = None
     cidade_id: uuid.UUID | None = None
     telefone: str | None = None
-    fax: str | None = None
     contato_nome: str | None = None
     contato_telefone: str | None = None
-    contato_fax: str | None = None
     observacoes: str | None = None
     ativo: bool | None = None
 
