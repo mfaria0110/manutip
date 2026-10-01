@@ -264,13 +264,14 @@ export default function ExecucaoReclamacao() {
     );
   }
 
-  // Agrupa por data — só abre um card novo quando a data muda; execuções
-  // da mesma data ficam juntas (cada uma com sua equipe/observações).
+  // Agrupa por data + equipe — só abre um card novo quando a data ou a
+  // equipe mudam; a equipe fica no cabeçalho do card, não repetida linha a
+  // linha dentro da tabela.
   const gruposPorData = [];
   execucoes.forEach((ex) => {
-    let grupo = gruposPorData.find((g) => g.data === ex.data_execucao);
+    let grupo = gruposPorData.find((g) => g.data === ex.data_execucao && g.equipeId === (ex.equipe_dia_id || ""));
     if (!grupo) {
-      grupo = { data: ex.data_execucao, execucoes: [] };
+      grupo = { data: ex.data_execucao, equipeId: ex.equipe_dia_id || "", execucoes: [] };
       gruposPorData.push(grupo);
     }
     grupo.execucoes.push(ex);
@@ -328,8 +329,28 @@ export default function ExecucaoReclamacao() {
           <div className="card empty-state">Nenhuma execução registrada ainda.</div>
         ) : (
           gruposPorData.map((grupo) => (
-            <div className="card" key={grupo.data} style={{ marginBottom: 12 }}>
-              <strong>{grupo.data}</strong>
+            <div className="card" key={`${grupo.data}|${grupo.equipeId}`} style={{ marginBottom: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+                <strong>
+                  {grupo.data}
+                  {grupo.equipeId ? ` — ${nomeEquipe(grupo.equipeId)}` : ""}
+                </strong>
+                {grupo.execucoes.length === 1 && ehAdmin && (
+                  <button
+                    className="btn btn-ghost"
+                    onClick={() => setExcluindo(grupo.execucoes[0])}
+                    title="Excluir esta execução"
+                    style={{ color: "var(--danger)" }}
+                  >
+                    <i className="ti ti-trash" aria-hidden="true" />
+                  </button>
+                )}
+              </div>
+              {grupo.execucoes.length === 1 && grupo.execucoes[0].observacoes && (
+                <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 6 }}>
+                  {grupo.execucoes[0].observacoes}
+                </p>
+              )}
               {grupo.execucoes.some((ex) => ex.itens.length > 0) && (
                 <table style={{ marginTop: 10 }}>
                   <thead>
@@ -344,14 +365,11 @@ export default function ExecucaoReclamacao() {
                   <tbody>
                     {grupo.execucoes.map((ex) => (
                       <Fragment key={ex.id}>
-                        {(grupo.execucoes.length > 1 || ex.equipe_dia_id || ex.observacoes) && (
+                        {grupo.execucoes.length > 1 && (
                           <tr>
                             <td colSpan={5} style={{ background: "var(--accent-soft)" }}>
                               <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-                                <span style={{ fontSize: 13 }}>
-                                  {nomeEquipe(ex.equipe_dia_id)}
-                                  {ex.observacoes ? ` — ${ex.observacoes}` : ""}
-                                </span>
+                                <span style={{ fontSize: 13 }}>{ex.observacoes || ""}</span>
                                 {ehAdmin && (
                                   <button
                                     className="btn btn-ghost"
