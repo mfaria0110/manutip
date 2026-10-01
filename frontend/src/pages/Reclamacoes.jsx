@@ -155,10 +155,9 @@ export default function Reclamacoes() {
         {
           name: "prefeitura_id",
           label: "Prefeitura",
-          type: "select",
           size: 7,
           disabled: true,
-          options: prefeituras.map((p) => ({ value: p.id, label: p.nome })),
+          valorCalculado: (valores) => prefeituras.find((p) => p.id === valores.prefeitura_id)?.nome || "",
         },
         {
           name: "sigla_prefeitura",
