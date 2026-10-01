@@ -24,6 +24,8 @@ export default function Reclamacoes() {
   const [cidades, setCidades] = useState([]);
   const [bairros, setBairros] = useState([]);
   const [prefeituras, setPrefeituras] = useState([]);
+  const [prefeituraEscolhida, setPrefeituraEscolhida] = useState("");
+  const [prefeituraConfirmada, setPrefeituraConfirmada] = useState(null);
 
   useEffect(() => {
     apiCidades.listar().then(setCidades);
@@ -71,12 +73,48 @@ export default function Reclamacoes() {
     }
   }
 
+  if (!prefeituraConfirmada) {
+    return (
+      <>
+        <header className="topbar">
+          <h1>Reclamações</h1>
+        </header>
+        <div className="content">
+          <div className="card" style={{ maxWidth: 420 }}>
+            <h3 style={{ marginTop: 0 }}>De qual prefeitura é essa reclamação?</h3>
+            <div className="form-field">
+              <label>Prefeitura</label>
+              <select value={prefeituraEscolhida} onChange={(e) => setPrefeituraEscolhida(e.target.value)}>
+                <option value="">Selecione...</option>
+                {prefeituras.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              className="btn btn-primary"
+              style={{ marginTop: 10 }}
+              disabled={!prefeituraEscolhida}
+              onClick={() => setPrefeituraConfirmada(prefeituraEscolhida)}
+            >
+              Continuar
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <CadastroPage
+      key={prefeituraConfirmada}
       titulo="Reclamações"
       modulo="reclamacoes"
       api={apiReclamacoes}
-      valoresPadrao={{ status: "ABERTA" }}
+      autoAbrirNovo
+      valoresPadrao={{ status: "ABERTA", nome_reclamante: "SELLES", prefeitura_id: prefeituraConfirmada }}
       colunas={[
         { key: "data_reclamacao", label: "Data" },
         { key: "nome_reclamante", label: "Reclamante" },
@@ -116,7 +154,7 @@ export default function Reclamacoes() {
           name: "prefeitura_id",
           label: "Prefeitura",
           type: "select",
-          size: 4,
+          size: 7,
           options: prefeituras.map((p) => ({ value: p.id, label: p.nome })),
         },
         { name: "cep", label: "CEP", mask: "cep", center: true, onBlur: aoSairDoCep },
@@ -149,6 +187,19 @@ export default function Reclamacoes() {
         { name: "ponto_referencia", label: "Ponto de referência", fullWidth: true },
         { name: "observacoes", label: "Observações", type: "textarea", rows: 3, fullWidth: true },
       ]}
+      filtroTopo={
+        <button
+          type="button"
+          className="btn"
+          onClick={() => {
+            setPrefeituraConfirmada(null);
+            setPrefeituraEscolhida("");
+          }}
+        >
+          <i className="ti ti-replace" aria-hidden="true" style={{ marginRight: 6 }} />
+          Trocar prefeitura
+        </button>
+      }
     />
   );
 }

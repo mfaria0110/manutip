@@ -92,6 +92,7 @@ export default function CadastroPage({
   queryExtra,
   exigeFiltro,
   valoresPadrao,
+  autoAbrirNovo,
 }) {
   const { pode, ehAdmin } = useAcesso();
   const [itens, setItens] = useState([]);
@@ -132,6 +133,14 @@ export default function CadastroPage({
     setEditando({});
     setErro("");
   }
+
+  // Abre o formulário de "Novo" automaticamente ao montar — usado quando a
+  // página já define um contexto (ex.: prefeitura escolhida antes) e quer
+  // ir direto pro cadastro, sem passar pela listagem primeiro.
+  useEffect(() => {
+    if (autoAbrirNovo) abrirNovo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoAbrirNovo]);
 
   function abrirEdicao(item) {
     setForm({ ...item });

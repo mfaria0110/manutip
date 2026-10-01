@@ -9,6 +9,7 @@ import {
   apiMateriais,
   apiOrdensServico,
   apiPrefeituras,
+  apiReclamacoes,
   apiVeiculos,
 } from "../api";
 import { useAcesso } from "../AcessoContext";
@@ -16,6 +17,7 @@ import logoSelles from "../assets/logo-selles.png";
 import heroIluminacao from "../assets/login-bg.jpg";
 
 const STATUS_ABERTA = new Set(["ABERTA", "VALIDADA"]);
+const STATUS_RECLAMACAO_ABERTA = new Set(["ABERTA", "EM_ANDAMENTO"]);
 
 export default function Dashboard() {
   const { perfil } = useAcesso();
@@ -33,31 +35,35 @@ export default function Dashboard() {
       apiAtividades.listar(),
       apiCidades.listar(),
       apiBairros.listar(),
+      apiReclamacoes.listar(),
     ])
-      .then(([prefeituras, contratos, ordens, veiculos, funcionarios, materiais, atividades, cidades, bairros]) => {
-        setDados({
-          prefeituras,
-          contratos,
-          ordens,
-          veiculos,
-          funcionarios,
-          materiais,
-          atividades,
-          cidades,
-          bairros,
-        });
-      })
+      .then(
+        ([prefeituras, contratos, ordens, veiculos, funcionarios, materiais, atividades, cidades, bairros, reclamacoes]) => {
+          setDados({
+            prefeituras,
+            contratos,
+            ordens,
+            veiculos,
+            funcionarios,
+            materiais,
+            atividades,
+            cidades,
+            bairros,
+            reclamacoes,
+          });
+        }
+      )
       .finally(() => setCarregando(false));
   }, []);
 
-  const osAbertas = dados?.ordens.filter((o) => STATUS_ABERTA.has(o.status)).length ?? 0;
   const contratosAtivos = dados?.contratos.filter((c) => c.ativo).length ?? 0;
+  const reclamacoesAbertas = dados?.reclamacoes.filter((r) => STATUS_RECLAMACAO_ABERTA.has(r.status)).length ?? 0;
   const valorTotalOS = (dados?.ordens || []).reduce((acc, o) => acc + Number(o.valor_total || 0), 0);
 
   const cartoes = [
     { label: "Prefeituras atendidas", valor: dados?.prefeituras.length, icon: "ti-building-bank", to: "/prefeituras" },
     { label: "Contratos ativos", valor: contratosAtivos, icon: "ti-file-text", to: "/contratos" },
-    { label: "Ordens de serviço abertas", valor: osAbertas, icon: "ti-clipboard-list", to: "/ordens-servico" },
+    { label: "Reclamações abertas", valor: reclamacoesAbertas, icon: "ti-phone-call", to: "/reclamacoes" },
     { label: "Veículos da frota", valor: dados?.veiculos.length, icon: "ti-truck", to: "/veiculos" },
     { label: "Funcionários", valor: dados?.funcionarios.length, icon: "ti-users", to: "/funcionarios" },
     { label: "Tipos de serviço", valor: dados?.atividades.length, icon: "ti-list-check", to: "/atividades" },
