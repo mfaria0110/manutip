@@ -283,7 +283,7 @@ export default function ExecucaoReclamacao() {
 
       {formAberto && (
         <div className="modal-overlay">
-          <div className="modal" style={{ width: 760, maxWidth: "95vw" }}>
+          <div className="modal" style={{ width: 980, maxWidth: "95vw" }}>
             <h2>Nova execução</h2>
             <form onSubmit={salvar}>
               <div className="form-grid">
@@ -357,7 +357,7 @@ export default function ExecucaoReclamacao() {
                       style={{
                         display: "grid",
                         gridTemplateColumns: ehLampada
-                          ? "1fr 140px 76px 160px 110px 40px"
+                          ? "1fr 160px 110px 140px 76px 40px"
                           : "1fr 140px 76px 40px",
                         gap: 8,
                         alignItems: ehLampada ? "flex-end" : "center",
@@ -388,25 +388,6 @@ export default function ExecucaoReclamacao() {
                           <i className="ti ti-plus" aria-hidden="true" />
                         </button>
                       </div>
-                      <select
-                        style={{ width: "100%", minWidth: 0 }}
-                        value={item.movimento}
-                        onChange={(e) => atualizarItem(idx, { movimento: e.target.value })}
-                      >
-                        {MOVIMENTOS.map((mv) => (
-                          <option key={mv.value} value={mv.value}>
-                            {mv.label}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        style={{ width: "100%", minWidth: 0, textAlign: "center" }}
-                        value={item.quantidade}
-                        onChange={(e) => atualizarItem(idx, { quantidade: e.target.value })}
-                      />
                       {ehLampada && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                           <label style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-secondary)" }}>
@@ -434,6 +415,25 @@ export default function ExecucaoReclamacao() {
                           />
                         </div>
                       )}
+                      <select
+                        style={{ width: "100%", minWidth: 0 }}
+                        value={item.movimento}
+                        onChange={(e) => atualizarItem(idx, { movimento: e.target.value })}
+                      >
+                        {MOVIMENTOS.map((mv) => (
+                          <option key={mv.value} value={mv.value}>
+                            {mv.label}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        style={{ width: "100%", minWidth: 0, textAlign: "center" }}
+                        value={item.quantidade}
+                        onChange={(e) => atualizarItem(idx, { quantidade: e.target.value })}
+                      />
                       <button
                         type="button"
                         className="btn btn-ghost"
