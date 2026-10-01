@@ -73,7 +73,7 @@ export default function Prefeituras() {
         },
       ]}
       campos={[
-        { name: "nome", label: "Nome", required: true },
+        { name: "nome", label: "Nome", required: true, fullWidth: true },
         {
           name: "porte",
           label: "Porte",
@@ -88,7 +88,7 @@ export default function Prefeituras() {
         { name: "inscricao_estadual", label: "Inscrição estadual" },
         { name: "ramo_atividade", label: "Ramo de atividade", type: "text" },
         { name: "cep", label: "CEP", mask: "cep", onBlur: aoSairDoCep },
-        { name: "logradouro", label: "Logradouro" },
+        { name: "logradouro", label: "Logradouro", fullWidth: true },
         { name: "numero", label: "Número" },
         { name: "complemento", label: "Complemento" },
         {

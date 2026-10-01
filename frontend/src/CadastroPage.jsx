@@ -33,7 +33,8 @@ function aplicarMascara(mascara, valor) {
  *
  * campos: [{ name, label, type: 'text'|'number'|'select'|'checkbox'|'date'|'textarea',
  *            required?, options?: [{value,label}] | (valoresForm) => options,
- *            step?, mask?: 'cep'|'telefone'|'cnpj', rows? (textarea) }]
+ *            step?, mask?: 'cep'|'telefone'|'cnpj', rows? (textarea),
+ *            fullWidth? (ocupa as 2 colunas do formulário) }]
  * colunas: [{ key, label, render?: (item) => node }]
  * api: { listar: () => Promise<[]>, criar: (dados) => Promise, atualizar: (id, dados) => Promise }
  */
@@ -154,8 +155,9 @@ export default function CadastroPage({ titulo, modulo, campos, colunas, api, idK
           <div className="modal">
             <h2>{editando[idKey] ? "Editar" : "Novo"} registro</h2>
             <form onSubmit={salvar}>
+              <div className="form-grid">
               {campos.map((c) => (
-                <div className="form-field" key={c.name}>
+                <div className={"form-field" + (c.fullWidth || c.type === "textarea" ? " full" : "")} key={c.name}>
                   <label>{c.label}</label>
                   {c.type === "select" ? (
                     <select
@@ -203,6 +205,7 @@ export default function CadastroPage({ titulo, modulo, campos, colunas, api, idK
                   )}
                 </div>
               ))}
+              </div>
               {erro && <p className="erro-msg">{erro}</p>}
               <div className="modal-actions">
                 <button type="button" className="btn" onClick={fechar}>

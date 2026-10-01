@@ -1,4 +1,5 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAcesso } from "./AcessoContext";
 import { logout } from "./api";
 import SeletorTema from "./SeletorTema";
@@ -39,6 +40,13 @@ const GRUPOS = [
 export default function Layout() {
   const { perfil } = useAcesso();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [menuAberto, setMenuAberto] = useState(false);
+
+  // Fecha a gaveta do menu (mobile/tablet) sempre que a rota muda.
+  useEffect(() => {
+    setMenuAberto(false);
+  }, [location.pathname]);
 
   function sair() {
     logout();
@@ -49,7 +57,17 @@ export default function Layout() {
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
+      <button
+        className="mobile-menu-btn"
+        onClick={() => setMenuAberto((v) => !v)}
+        aria-label="Abrir menu"
+      >
+        <i className={`ti ${menuAberto ? "ti-x" : "ti-menu-2"}`} aria-hidden="true" />
+      </button>
+
+      <div className={"sidebar-backdrop" + (menuAberto ? " visivel" : "")} onClick={() => setMenuAberto(false)} />
+
+      <aside className={"sidebar" + (menuAberto ? " aberta" : "")}>
         <div className="sidebar-logo">
           <img src={logoSelles} alt="Selles" />
           <span>Manutip</span>
