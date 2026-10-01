@@ -51,6 +51,15 @@ body {
   color: var(--text-primary);
 }
 
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font);
+  color: var(--text-primary);
+  margin: 0;
+}
+
 input,
 select,
 textarea,
@@ -440,4 +449,51 @@ tbody tr:hover {
   text-align: center;
   padding: 40px 20px;
   color: var(--text-secondary);
+}
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-app);
+  padding: 20px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 36px 32px 32px;
+  text-align: center;
+}
+
+.login-logo {
+  width: 100%;
+  max-width: 220px;
+  margin: 0 auto 20px;
+  display: block;
+}
+
+.login-titulo {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.login-subtitulo {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 6px 0 26px;
+}
+
+.login-card form {
+  text-align: left;
+}
+
+.login-botao {
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px;
 }
