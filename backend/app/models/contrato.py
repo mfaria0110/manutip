@@ -20,20 +20,21 @@ class Contrato(TimestampMixin, Base):
 
     Entidade central do sistema: ativos, OS, preços e indicadores de SLA
     pendem de um contrato, não diretamente da prefeitura, porque a
-    prefeitura pode trocar de prestadora sem o ativo mudar de dono.
+    prefeitura pode trocar de prestadora sem o ativo mudar de dono. Uma
+    mesma prefeitura pode ter vários contratos ao longo do tempo.
     """
 
     __tablename__ = "contratos"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    prefeitura_nome: Mapped[str] = mapped_column(String(200), nullable=False)
-    prefeitura_cnpj: Mapped[str | None] = mapped_column(String(20))
+    prefeitura_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("prefeituras.id"), nullable=False)
     numero_contrato: Mapped[str | None] = mapped_column(String(50))
     data_inicio: Mapped[date] = mapped_column(Date, nullable=False)
     data_fim: Mapped[date | None] = mapped_column(Date)
     ativo: Mapped[bool] = mapped_column(default=True)
     observacoes: Mapped[str | None] = mapped_column(Text)
 
+    prefeitura: Mapped["object"] = relationship("Prefeitura")
     precos: Mapped[list["PrecoPonto"]] = relationship(back_populates="contrato")
 
 

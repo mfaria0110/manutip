@@ -1,0 +1,22 @@
+import CadastroPage from "../CadastroPage";
+import { apiFuncionarios } from "../api";
+
+export default function Funcionarios() {
+  return (
+    <CadastroPage
+      titulo="Funcionários"
+      modulo="funcionarios"
+      api={apiFuncionarios}
+      colunas={[
+        { key: "nome", label: "Nome" },
+        { key: "funcao", label: "Função" },
+        { key: "cpf", label: "CPF" },
+      ]}
+      campos={[
+        { name: "nome", label: "Nome", required: true },
+        { name: "funcao", label: "Função (técnico, encarregado, motorista...)", required: true },
+        { name: "cpf", label: "CPF" },
+      ]}
+    />
+  );
+}

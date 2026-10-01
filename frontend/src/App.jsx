@@ -1,17 +1,18 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AcessoProvider, useAcesso } from "./AcessoContext";
+import Layout from "./Layout";
 import Login from "./pages/Login";
-
-function Dashboard() {
-  const { perfil, ehAdmin } = useAcesso();
-  return (
-    <div style={{ padding: 24 }}>
-      <h1>Manutip</h1>
-      <p>Bem-vindo, {perfil?.nome}.</p>
-      <p>Perfil: {perfil?.papel} {ehAdmin && "(acesso total)"}</p>
-    </div>
-  );
-}
+import Cidades from "./pages/Cidades";
+import Bairros from "./pages/Bairros";
+import Prefeituras from "./pages/Prefeituras";
+import Atividades from "./pages/Atividades";
+import Contratos from "./pages/Contratos";
+import Materiais from "./pages/Materiais";
+import MaoObra from "./pages/MaoObra";
+import Veiculos from "./pages/Veiculos";
+import Funcionarios from "./pages/Funcionarios";
+import OrdensServico from "./pages/OrdensServico";
+import Usuarios from "./pages/Usuarios";
 
 function Rotas() {
   const { perfil, carregando } = useAcesso();
@@ -19,7 +20,20 @@ function Rotas() {
   if (!perfil) return <Navigate to="/login" replace />;
   return (
     <Routes>
-      <Route path="/" element={<Dashboard />} />
+      <Route element={<Layout />}>
+        <Route path="/" element={<Navigate to="/cidades" replace />} />
+        <Route path="/cidades" element={<Cidades />} />
+        <Route path="/bairros" element={<Bairros />} />
+        <Route path="/prefeituras" element={<Prefeituras />} />
+        <Route path="/atividades" element={<Atividades />} />
+        <Route path="/contratos" element={<Contratos />} />
+        <Route path="/materiais" element={<Materiais />} />
+        <Route path="/mao-obra" element={<MaoObra />} />
+        <Route path="/veiculos" element={<Veiculos />} />
+        <Route path="/funcionarios" element={<Funcionarios />} />
+        <Route path="/ordens-servico" element={<OrdensServico />} />
+        <Route path="/usuarios" element={<Usuarios />} />
+      </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

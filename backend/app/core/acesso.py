@@ -22,8 +22,13 @@ from app.core.security import decodificar_token
 from app.models.usuario import PapelUsuario, Usuario
 
 MODULOS = [
+    "cidades",
+    "bairros",
+    "prefeituras",
     "contratos",
     "precos",
+    "atividades",
+    "mao_obra",
     "ativos",
     "materiais",
     "funcionarios",

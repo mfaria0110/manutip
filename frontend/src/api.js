@@ -32,14 +32,30 @@ export function meuPerfil() {
   return req("/me");
 }
 
-export function listarUsuarios() {
-  return req("/usuarios");
+// Fábrica de um client CRUD padrão para os cadastros simples.
+function crud(path) {
+  return {
+    listar: (query = "") => req(`${path}${query}`),
+    obter: (id) => req(`${path}/${id}`),
+    criar: (dados) => req(path, { method: "POST", body: JSON.stringify(dados) }),
+    atualizar: (id, dados) => req(`${path}/${id}`, { method: "PUT", body: JSON.stringify(dados) }),
+  };
 }
 
-export function criarUsuario(dados) {
-  return req("/usuarios", { method: "POST", body: JSON.stringify(dados) });
-}
+export const apiUsuarios = crud("/usuarios");
+export const apiCidades = crud("/cidades");
+export const apiBairros = crud("/bairros");
+export const apiPrefeituras = crud("/prefeituras");
+export const apiAtividades = crud("/atividades");
+export const apiMaoObra = crud("/mao-obra");
+export const apiMateriais = crud("/materiais");
+export const apiVeiculos = crud("/veiculos");
+export const apiFuncionarios = crud("/funcionarios");
+export const apiContratos = crud("/contratos");
+export const apiPrecosPonto = crud("/precos-ponto");
+export const apiOrdensServico = crud("/ordens-servico");
 
-export function atualizarUsuario(id, dados) {
-  return req(`/usuarios/${id}`, { method: "PUT", body: JSON.stringify(dados) });
-}
+// Mantidos para compatibilidade com código existente.
+export const listarUsuarios = apiUsuarios.listar;
+export const criarUsuario = apiUsuarios.criar;
+export const atualizarUsuario = apiUsuarios.atualizar;

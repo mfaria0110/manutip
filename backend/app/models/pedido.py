@@ -31,6 +31,7 @@ class PedidoManutencao(TimestampMixin, Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     contrato_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("contratos.id"), nullable=False)
     ativo_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("ativos.id"))
+    atividade_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("atividades.id"))
     origem: Mapped[OrigemPedido] = mapped_column(Enum(OrigemPedido), nullable=False)
     status: Mapped[StatusPedido] = mapped_column(Enum(StatusPedido), default=StatusPedido.ABERTO)
     endereco_livre: Mapped[str | None] = mapped_column(String(300))  # quando criado em campo sem ativo cadastrado
