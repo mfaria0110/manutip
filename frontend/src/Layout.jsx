@@ -74,6 +74,11 @@ export default function Layout() {
           <span>Manutip</span>
         </div>
 
+        <NavLink to="/" end className={({ isActive }) => "sidebar-link" + (isActive ? " active" : "")}>
+          <i className="ti ti-home" aria-hidden="true" />
+          Início
+        </NavLink>
+
         {GRUPOS.map((grupo) => (
           <div className="sidebar-group" key={grupo.label}>
             <div className="sidebar-group-label">{grupo.label}</div>

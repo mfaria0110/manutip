@@ -3,6 +3,7 @@ import { AcessoProvider, useAcesso } from "./AcessoContext";
 import { TemaProvider } from "./TemaContext";
 import Layout from "./Layout";
 import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
 import Cidades from "./pages/Cidades";
 import Bairros from "./pages/Bairros";
 import Prefeituras from "./pages/Prefeituras";
@@ -23,7 +24,7 @@ function Rotas() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route path="/" element={<Navigate to="/cidades" replace />} />
+        <Route path="/" element={<Dashboard />} />
         <Route path="/cidades" element={<Cidades />} />
         <Route path="/bairros" element={<Bairros />} />
         <Route path="/prefeituras" element={<Prefeituras />} />
