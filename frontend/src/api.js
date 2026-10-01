@@ -8,10 +8,19 @@ async function req(path, options = {}) {
   const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
   const t = token();
   if (t) headers.Authorization = `Bearer ${t}`;
-  const resp = await fetch(`${BASE}${path}`, { ...options, headers });
+  let resp;
+  try {
+    resp = await fetch(`${BASE}${path}`, { ...options, headers });
+  } catch {
+    throw new Error("Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.");
+  }
   if (!resp.ok) {
     const body = await resp.json().catch(() => ({}));
-    throw new Error(body.detail || `Erro ${resp.status}`);
+    const generico =
+      resp.status >= 500
+        ? "O servidor está indisponível no momento. Tente novamente em instantes."
+        : `Erro ${resp.status}`;
+    throw new Error(body.detail || generico);
   }
   if (resp.status === 204) return null;
   return resp.json();
