@@ -12,8 +12,8 @@ export default function Cidades() {
         { key: "uf", label: "UF" },
       ]}
       campos={[
-        { name: "nome", label: "Nome", required: true },
-        { name: "uf", label: "UF", required: true },
+        { name: "nome", label: "Nome", required: true, size: 8 },
+        { name: "uf", label: "UF", required: true, mask: "uf" },
       ]}
     />
   );

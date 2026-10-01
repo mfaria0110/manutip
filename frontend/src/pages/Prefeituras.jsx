@@ -73,34 +73,24 @@ export default function Prefeituras() {
         },
       ]}
       campos={[
-        { name: "nome", label: "Nome", required: true, fullWidth: true },
-        {
-          name: "porte",
-          label: "Porte",
-          type: "select",
-          options: [
-            { value: "PEQUENO", label: "Pequeno porte" },
-            { value: "MEDIO", label: "Médio porte" },
-            { value: "GRANDE", label: "Grande porte" },
-          ],
-        },
-        { name: "cnpj", label: "CNPJ", mask: "cnpj" },
-        { name: "inscricao_estadual", label: "Inscrição estadual" },
-        { name: "ramo_atividade", label: "Ramo de atividade", type: "text" },
+        { name: "nome", label: "Nome", required: true, size: 8 },
+        { name: "cnpj", label: "CNPJ", mask: "cnpj", size: 4 },
         { name: "cep", label: "CEP", mask: "cep", onBlur: aoSairDoCep },
-        { name: "logradouro", label: "Logradouro", fullWidth: true },
-        { name: "numero", label: "Número" },
-        { name: "complemento", label: "Complemento" },
+        { name: "logradouro", label: "Logradouro", size: 7 },
+        { name: "numero", label: "Número", size: 2 },
+        { name: "complemento", label: "Complemento", size: 4 },
         {
           name: "cidade_id",
           label: "Cidade",
           type: "select",
+          size: 6,
           options: cidades.map((c) => ({ value: c.id, label: `${c.nome} - ${c.uf}` })),
         },
         {
           name: "bairro_id",
           label: "Bairro",
           type: "select",
+          size: 6,
           options: (valores) =>
             bairros
               .filter((b) => !valores.cidade_id || b.cidade_id === valores.cidade_id)
@@ -108,7 +98,7 @@ export default function Prefeituras() {
         },
         { name: "telefone", label: "Telefone", mask: "telefone" },
         { name: "fax", label: "Fax", mask: "telefone" },
-        { name: "contato_nome", label: "Contato (nome)" },
+        { name: "contato_nome", label: "Contato (nome)", size: 6 },
         { name: "contato_telefone", label: "Telefone do contato", mask: "telefone" },
         { name: "observacoes", label: "Observações", type: "textarea", rows: 4 },
       ]}

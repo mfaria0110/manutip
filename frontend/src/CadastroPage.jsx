@@ -22,6 +22,20 @@ const MASCARAS = {
       .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
       .replace(/\.(\d{3})(\d)/, ".$1/$2")
       .replace(/(\d{4})(\d{2})$/, "$1-$2"),
+  cpf: (v) =>
+    v
+      .replace(/\D/g, "")
+      .slice(0, 11)
+      .replace(/^(\d{3})(\d)/, "$1.$2")
+      .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/\.(\d{3})(\d{1,2})$/, ".$1-$2"),
+  placa: (v) =>
+    v
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, 7)
+      .replace(/^([A-Z]{3})(\d)/, "$1-$2"),
+  uf: (v) => v.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 2),
 };
 
 function aplicarMascara(mascara, valor) {
@@ -29,12 +43,35 @@ function aplicarMascara(mascara, valor) {
   return fn ? fn(valor) : valor;
 }
 
+// Largura padrão (em colunas de 12) por tipo/máscara de campo, usada quando
+// o campo não define `size` explicitamente — assim CEP/UF/data ficam
+// estreitos e texto livre fica médio, sem precisar configurar um por um.
+const TAMANHO_PADRAO = {
+  cep: 3,
+  telefone: 3,
+  cnpj: 4,
+  cpf: 4,
+  placa: 3,
+  uf: 2,
+};
+
+function tamanhoDoCampo(c) {
+  if (c.size) return c.size;
+  if (c.type === "textarea" || c.fullWidth) return 12;
+  if (c.type === "checkbox") return 3;
+  if (c.type === "date") return 3;
+  if (c.mask && TAMANHO_PADRAO[c.mask]) return TAMANHO_PADRAO[c.mask];
+  if (c.type === "select") return 4;
+  return 4;
+}
+
 /** Página de cadastro genérica: tabela + modal de formulário.
  *
  * campos: [{ name, label, type: 'text'|'number'|'select'|'checkbox'|'date'|'textarea',
  *            required?, options?: [{value,label}] | (valoresForm) => options,
- *            step?, mask?: 'cep'|'telefone'|'cnpj', rows? (textarea),
- *            fullWidth? (ocupa as 2 colunas do formulário) }]
+ *            step?, mask?: 'cep'|'telefone'|'cnpj'|'cpf'|'placa'|'uf', rows? (textarea),
+ *            fullWidth? (ocupa a linha toda), size? (1-12, largura explícita no
+ *            grid de 12 colunas — sobrepõe o tamanho padrão por tipo) }]
  * colunas: [{ key, label, render?: (item) => node }]
  * api: { listar: () => Promise<[]>, criar: (dados) => Promise, atualizar: (id, dados) => Promise }
  */
@@ -157,7 +194,7 @@ export default function CadastroPage({ titulo, modulo, campos, colunas, api, idK
             <form onSubmit={salvar}>
               <div className="form-grid">
               {campos.map((c) => (
-                <div className={"form-field" + (c.fullWidth || c.type === "textarea" ? " full" : "")} key={c.name}>
+                <div className="form-field" style={{ "--span": tamanhoDoCampo(c) }} key={c.name}>
                   <label>{c.label}</label>
                   {c.type === "select" ? (
                     <select

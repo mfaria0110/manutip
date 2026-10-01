@@ -9,10 +9,7 @@ from app.models.prefeitura import Prefeitura
 class PrefeituraOut(BaseModel):
     id: uuid.UUID
     nome: str
-    porte: str | None
     cnpj: str | None
-    inscricao_estadual: str | None
-    ramo_atividade: str | None
     logradouro: str | None
     complemento: str | None
     numero: str | None
@@ -33,10 +30,7 @@ class PrefeituraOut(BaseModel):
 
 class PrefeituraCreate(BaseModel):
     nome: str
-    porte: str | None = None
     cnpj: str | None = None
-    inscricao_estadual: str | None = None
-    ramo_atividade: str | None = None
     logradouro: str | None = None
     complemento: str | None = None
     numero: str | None = None
@@ -53,10 +47,7 @@ class PrefeituraCreate(BaseModel):
 
 class PrefeituraUpdate(BaseModel):
     nome: str | None = None
-    porte: str | None = None
     cnpj: str | None = None
-    inscricao_estadual: str | None = None
-    ramo_atividade: str | None = None
     logradouro: str | None = None
     complemento: str | None = None
     numero: str | None = None

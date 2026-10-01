@@ -13,9 +13,9 @@ export default function Funcionarios() {
         { key: "cpf", label: "CPF" },
       ]}
       campos={[
-        { name: "nome", label: "Nome", required: true },
-        { name: "funcao", label: "Função (técnico, encarregado, motorista...)", required: true },
-        { name: "cpf", label: "CPF" },
+        { name: "nome", label: "Nome", required: true, fullWidth: true },
+        { name: "funcao", label: "Função (técnico, encarregado, motorista...)", required: true, size: 6 },
+        { name: "cpf", label: "CPF", mask: "cpf" },
       ]}
     />
   );

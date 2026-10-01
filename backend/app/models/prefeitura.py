@@ -20,10 +20,7 @@ class Prefeitura(TimestampMixin, Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     nome: Mapped[str] = mapped_column(String(200), nullable=False)
-    porte: Mapped[str | None] = mapped_column(String(50))  # ex.: pequeno, médio, grande porte
     cnpj: Mapped[str | None] = mapped_column(String(20))
-    inscricao_estadual: Mapped[str | None] = mapped_column(String(30))
-    ramo_atividade: Mapped[str | None] = mapped_column(String(150))  # ex.: Administração Pública Municipal
     logradouro: Mapped[str | None] = mapped_column(String(300))
     complemento: Mapped[str | None] = mapped_column(String(100))
     numero: Mapped[str | None] = mapped_column(String(20))

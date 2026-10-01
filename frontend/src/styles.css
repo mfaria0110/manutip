@@ -418,21 +418,25 @@ tbody tr:hover {
 .modal {
   background: #fff;
   border-radius: 14px;
-  width: 560px;
-  max-width: 92vw;
+  width: 760px;
+  max-width: 94vw;
   max-height: 88vh;
   overflow-y: auto;
   padding: 24px;
 }
 
+/* Grid de 12 colunas — cada campo define quantas ocupa (gridColumn inline,
+   ver tamanhoDoCampo() em CadastroPage.jsx), permitindo larguras variadas
+   (CEP/UF estreitos, nome/observações a linha toda) na mesma fileira. */
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(12, 1fr);
   gap: 0 16px;
 }
 
-.form-grid .form-field.full {
-  grid-column: 1 / -1;
+.form-grid .form-field {
+  grid-column: span var(--span, 4);
+  min-width: 0;
 }
 
 .modal h2 {
@@ -605,8 +609,8 @@ tbody tr:hover {
 }
 
 @media (max-width: 640px) {
-  .form-grid {
-    grid-template-columns: 1fr;
+  .form-grid .form-field {
+    grid-column: 1 / -1;
   }
 
   .topbar h1 {
