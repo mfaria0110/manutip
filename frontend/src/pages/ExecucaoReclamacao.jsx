@@ -48,6 +48,7 @@ export default function ExecucaoReclamacao() {
   const [erroLista, setErroLista] = useState("");
 
   const [formAberto, setFormAberto] = useState(false);
+  const [execucaoEditando, setExecucaoEditando] = useState(null); // null = criando nova
   const [dataExecucao, setDataExecucao] = useState("");
   const [equipeId, setEquipeId] = useState("");
   const [observacoes, setObservacoes] = useState("");
@@ -59,10 +60,6 @@ export default function ExecucaoReclamacao() {
   const [modalEquipeAberto, setModalEquipeAberto] = useState(false);
   const [modalMaterialIdx, setModalMaterialIdx] = useState(null); // índice do item que pediu o material novo
 
-  const [itemEditando, setItemEditando] = useState(null);
-  const [itemForm, setItemForm] = useState(null);
-  const [erroItem, setErroItem] = useState("");
-  const [salvandoItem, setSalvandoItem] = useState(false);
   const [itemExcluindo, setItemExcluindo] = useState(null);
   const [apagandoItem, setApagandoItem] = useState(false);
 
@@ -107,10 +104,34 @@ export default function ExecucaoReclamacao() {
   };
 
   function abrirNovaExecucao() {
+    setExecucaoEditando(null);
     setDataExecucao(new Date().toISOString().slice(0, 10));
     setEquipeId("");
     setObservacoes("");
     setItens([novoItem()]);
+    setErro("");
+    setFormAberto(true);
+  }
+
+  // Edita a execução inteira (data/equipe/observações + todos os itens) —
+  // aberta a partir do lápis de qualquer material daquela execução, já que
+  // às vezes o que precisa corrigir é a data ou a equipe, não só o item.
+  function abrirEdicaoExecucao(ex) {
+    setExecucaoEditando(ex);
+    setDataExecucao(ex.data_execucao);
+    setEquipeId(ex.equipe_dia_id || "");
+    setObservacoes(ex.observacoes || "");
+    setItens(
+      ex.itens.length > 0
+        ? ex.itens.map((it) => ({
+            material_id: it.material_id,
+            quantidade_instalada: it.quantidade_instalada,
+            quantidade_retirada: it.quantidade_retirada,
+            tipo_lampada_id: it.tipo_lampada_id || "",
+            potencia_lampada_id: it.potencia_lampada_id || "",
+          }))
+        : [novoItem()]
+    );
     setErro("");
     setFormAberto(true);
   }
@@ -156,22 +177,31 @@ export default function ExecucaoReclamacao() {
     setSalvando(true);
     setErro("");
     try {
-      const payload = {
-        reclamacao_id: id,
-        data_execucao: dataExecucao,
-        equipe_dia_id: equipeId || null,
-        observacoes: observacoes || null,
-        itens: itens
-          .filter((it) => it.material_id)
-          .map((it) => ({
-            material_id: it.material_id,
-            quantidade_instalada: Number(it.quantidade_instalada) || 0,
-            quantidade_retirada: Number(it.quantidade_retirada) || 0,
-            tipo_lampada_id: it.tipo_lampada_id || null,
-            potencia_lampada_id: it.potencia_lampada_id || null,
-          })),
-      };
-      await apiExecucoesReclamacao.criar(payload);
+      const itensPayload = itens
+        .filter((it) => it.material_id)
+        .map((it) => ({
+          material_id: it.material_id,
+          quantidade_instalada: Number(it.quantidade_instalada) || 0,
+          quantidade_retirada: Number(it.quantidade_retirada) || 0,
+          tipo_lampada_id: it.tipo_lampada_id || null,
+          potencia_lampada_id: it.potencia_lampada_id || null,
+        }));
+      if (execucaoEditando) {
+        await apiExecucoesReclamacao.atualizar(execucaoEditando.id, {
+          data_execucao: dataExecucao,
+          equipe_dia_id: equipeId || null,
+          observacoes: observacoes || null,
+          itens: itensPayload,
+        });
+      } else {
+        await apiExecucoesReclamacao.criar({
+          reclamacao_id: id,
+          data_execucao: dataExecucao,
+          equipe_dia_id: equipeId || null,
+          observacoes: observacoes || null,
+          itens: itensPayload,
+        });
+      }
       setFormAberto(false);
       carregar();
     } catch (err) {
@@ -193,33 +223,6 @@ export default function ExecucaoReclamacao() {
       setExcluindo(null);
     } finally {
       setApagando(false);
-    }
-  }
-
-  function abrirEdicaoItem(it) {
-    setItemForm({ ...it });
-    setErroItem("");
-    setItemEditando(it);
-  }
-
-  async function salvarItemEditado(e) {
-    e.preventDefault();
-    setSalvandoItem(true);
-    setErroItem("");
-    try {
-      await apiItensExecucao.atualizar(itemEditando.id, {
-        material_id: itemForm.material_id,
-        quantidade_instalada: Number(itemForm.quantidade_instalada) || 0,
-        quantidade_retirada: Number(itemForm.quantidade_retirada) || 0,
-        tipo_lampada_id: itemForm.tipo_lampada_id || null,
-        potencia_lampada_id: itemForm.potencia_lampada_id || null,
-      });
-      setItemEditando(null);
-      carregar();
-    } catch (err) {
-      setErroItem(err.message);
-    } finally {
-      setSalvandoItem(false);
     }
   }
 
@@ -276,8 +279,6 @@ export default function ExecucaoReclamacao() {
     }
     grupo.execucoes.push(ex);
   });
-
-  const itemEhLampada = itemForm ? materialPorId(itemForm.material_id)?.categoria === "LAMPADA" : false;
 
   return (
     <>
@@ -381,7 +382,11 @@ export default function ExecucaoReclamacao() {
                               </td>
                               <td>
                                 <div style={{ display: "flex", gap: 4 }}>
-                                  <button className="btn btn-ghost" onClick={() => abrirEdicaoItem(it)} title="Editar">
+                                  <button
+                                    className="btn btn-ghost"
+                                    onClick={() => abrirEdicaoExecucao(ex)}
+                                    title="Editar execução"
+                                  >
                                     <i className="ti ti-edit" aria-hidden="true" />
                                   </button>
                                   {ehAdmin && (
@@ -413,7 +418,7 @@ export default function ExecucaoReclamacao() {
         <div className="modal-overlay">
           <div className="modal" style={{ width: 980, maxWidth: "95vw" }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
-              <h2 style={{ margin: 0 }}>Nova execução</h2>
+              <h2 style={{ margin: 0 }}>{execucaoEditando ? "Editar execução" : "Nova execução"}</h2>
               <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
                 {nomeCidade(reclamacao.cidade_id)} — {nomeBairro(reclamacao.bairro_id)} — {reclamacao.logradouro || "—"}
                 {reclamacao.numero ? ` — ${reclamacao.numero}` : ""}
@@ -610,98 +615,6 @@ export default function ExecucaoReclamacao() {
         onFechar={() => setModalMaterialIdx(null)}
         onCriado={materialCriado}
       />
-
-      {itemEditando && itemForm && (
-        <div className="modal-overlay">
-          <div className="modal" style={{ width: 600, maxWidth: "95vw" }}>
-            <h2>Editar material</h2>
-            <form onSubmit={salvarItemEditado}>
-              <div className="form-grid">
-                <div className="form-field" style={{ "--span": 12 }}>
-                  <label>Material</label>
-                  <select
-                    required
-                    value={itemForm.material_id}
-                    onChange={(e) => setItemForm({ ...itemForm, material_id: e.target.value })}
-                  >
-                    <option value="">Material...</option>
-                    {materiais.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.nome}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {itemEhLampada && (
-                  <div className="form-field" style={{ "--span": 6 }}>
-                    <label>Tipo</label>
-                    <ComboCriavel
-                      value={itemForm.tipo_lampada_id}
-                      onChange={(valor) => setItemForm({ ...itemForm, tipo_lampada_id: valor })}
-                      options={opcoesTiposLampada}
-                      placeholder="LED, vapor de sódio..."
-                      onCriar={async (texto) => {
-                        const novo = await apiTiposLampada.criar({ nome: texto });
-                        setTiposLampada((prev) => [...prev, novo]);
-                        return { value: novo.id, label: novo.nome };
-                      }}
-                    />
-                  </div>
-                )}
-                {itemEhLampada && (
-                  <div className="form-field" style={{ "--span": 6 }}>
-                    <label>Potência (W)</label>
-                    <ComboCriavel
-                      value={itemForm.potencia_lampada_id}
-                      onChange={(valor) => setItemForm({ ...itemForm, potencia_lampada_id: valor })}
-                      options={opcoesPotenciasLampada}
-                      placeholder="100 W"
-                      onCriar={async (texto) => {
-                        const numero = Number(texto.replace(",", ".").replace(/[^\d.]/g, ""));
-                        if (!numero) throw new Error("Informe um número de potência válido.");
-                        const novo = await apiPotenciasLampada.criar({ valor_w: numero });
-                        setPotenciasLampada((prev) => [...prev, novo]);
-                        return { value: novo.id, label: `${novo.valor_w} W` };
-                      }}
-                    />
-                  </div>
-                )}
-                <div className="form-field" style={{ "--span": 6 }}>
-                  <label>Qtd. Instalada</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    style={{ textAlign: "center" }}
-                    value={itemForm.quantidade_instalada}
-                    onChange={(e) => setItemForm({ ...itemForm, quantidade_instalada: e.target.value })}
-                  />
-                </div>
-                <div className="form-field" style={{ "--span": 6 }}>
-                  <label>Qtd. Retirada</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    style={{ textAlign: "center" }}
-                    value={itemForm.quantidade_retirada}
-                    onChange={(e) => setItemForm({ ...itemForm, quantidade_retirada: e.target.value })}
-                  />
-                </div>
-              </div>
-              {erroItem && <p className="erro-msg">{erroItem}</p>}
-              <div className="modal-actions">
-                <button type="button" className="btn" onClick={() => setItemEditando(null)}>
-                  Cancelar
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={salvandoItem}>
-                  {salvandoItem ? "Salvando..." : "Salvar"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       <ConfirmDialog
         aberto={!!itemExcluindo}
