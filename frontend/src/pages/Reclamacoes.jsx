@@ -35,7 +35,7 @@ export default function Reclamacoes() {
 
   const nomeCidade = (id) => cidades.find((c) => c.id === id)?.nome || "—";
   const nomeBairro = (id) => bairros.find((b) => b.id === id)?.nome || "—";
-  const labelTipo = (v) => TIPOS_RECLAMACAO.find((t) => t.value === v)?.label || v;
+  const siglaPrefeitura = (id) => prefeituras.find((p) => p.id === id)?.sigla || "—";
   const labelStatus = (v) => STATUS_RECLAMACAO.find((s) => s.value === v)?.label || v;
 
   async function aoSairDoCep(valor, atualizarCampos) {
@@ -118,7 +118,9 @@ export default function Reclamacoes() {
       colunas={[
         { key: "data_reclamacao", label: "Data" },
         { key: "nome_reclamante", label: "Reclamante" },
-        { key: "tipo_reclamacao", label: "Canal", render: (item) => labelTipo(item.tipo_reclamacao) },
+        { key: "prefeitura_id", label: "Sigla", render: (item) => siglaPrefeitura(item.prefeitura_id) },
+        { key: "logradouro", label: "Logradouro", render: (item) => item.logradouro || "—" },
+        { key: "numero", label: "Número", render: (item) => item.numero || "—" },
         { key: "bairro_id", label: "Bairro", render: (item) => nomeBairro(item.bairro_id) },
         { key: "cidade_id", label: "Cidade", render: (item) => nomeCidade(item.cidade_id) },
         {

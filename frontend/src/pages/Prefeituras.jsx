@@ -60,6 +60,7 @@ export default function Prefeituras() {
       api={apiPrefeituras}
       colunas={[
         { key: "nome", label: "Nome" },
+        { key: "sigla", label: "Sigla" },
         { key: "cnpj", label: "CNPJ" },
         { key: "cidade_id", label: "Cidade", render: (item) => nomeCidade(item.cidade_id) },
         {
@@ -73,8 +74,9 @@ export default function Prefeituras() {
         },
       ]}
       campos={[
-        { name: "nome", label: "Nome", required: true, size: 8 },
-        { name: "cnpj", label: "CNPJ", mask: "cnpj", size: 4 },
+        { name: "nome", label: "Nome", required: true, size: 7, uppercase: true },
+        { name: "sigla", label: "Sigla", size: 2, maxLength: 8, uppercase: true, center: true },
+        { name: "cnpj", label: "CNPJ", mask: "cnpj", size: 3 },
         { name: "cep", label: "CEP", mask: "cep", center: true, onBlur: aoSairDoCep },
         { name: "logradouro", label: "Logradouro", size: 7 },
         { name: "numero", label: "Número", size: 2, center: true },

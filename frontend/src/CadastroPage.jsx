@@ -338,8 +338,10 @@ async function confirmarExclusao() {
                       placeholder={c.placeholder}
                       style={c.center ? { textAlign: "center" } : undefined}
                       value={form[c.name] ?? ""}
+                      maxLength={c.maxLength}
                       onChange={(e) => {
-                        const valor = c.mask ? aplicarMascara(c.mask, e.target.value) : e.target.value;
+                        let valor = c.mask ? aplicarMascara(c.mask, e.target.value) : e.target.value;
+                        if (c.uppercase) valor = valor.toUpperCase();
                         setForm({ ...form, [c.name]: valor });
                       }}
                       onBlur={

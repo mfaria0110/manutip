@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from app.core.crud_simples import crud_simples
 from app.models.prefeitura import Prefeitura
@@ -9,6 +9,7 @@ from app.models.prefeitura import Prefeitura
 class PrefeituraOut(BaseModel):
     id: uuid.UUID
     nome: str
+    sigla: str | None
     cnpj: str | None
     logradouro: str | None
     complemento: str | None
@@ -26,8 +27,13 @@ class PrefeituraOut(BaseModel):
         from_attributes = True
 
 
+def _maiusculo(v: str | None) -> str | None:
+    return v.upper() if v else v
+
+
 class PrefeituraCreate(BaseModel):
     nome: str
+    sigla: str | None = None
     cnpj: str | None = None
     logradouro: str | None = None
     complemento: str | None = None
@@ -40,9 +46,12 @@ class PrefeituraCreate(BaseModel):
     contato_telefone: str | None = None
     observacoes: str | None = None
 
+    _maiusculo_nome = field_validator("nome", "sigla")(_maiusculo)
+
 
 class PrefeituraUpdate(BaseModel):
     nome: str | None = None
+    sigla: str | None = None
     cnpj: str | None = None
     logradouro: str | None = None
     complemento: str | None = None
@@ -55,6 +64,8 @@ class PrefeituraUpdate(BaseModel):
     contato_telefone: str | None = None
     observacoes: str | None = None
     ativo: bool | None = None
+
+    _maiusculo_nome = field_validator("nome", "sigla")(_maiusculo)
 
 
 router = crud_simples(

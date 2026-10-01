@@ -9,3 +9,4 @@ backend/storage/
 *.db
 .DS_Store
 frontend/vite.log
+backend/backend.log
