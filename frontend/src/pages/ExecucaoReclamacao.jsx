@@ -413,7 +413,7 @@ export default function ExecucaoReclamacao() {
                         </div>
                       </div>
                       {ehLampada && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
                           <label style={rotuloCampo}>Tipo</label>
                           <ComboCriavel
                             value={item.tipo_lampada_id}
@@ -429,7 +429,7 @@ export default function ExecucaoReclamacao() {
                         </div>
                       )}
                       {ehLampada && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
                           <label style={rotuloCampo}>Potência (W)</label>
                           <ComboCriavel
                             value={item.potencia_lampada_id}

@@ -67,8 +67,9 @@ export default function ComboCriavel({ value, onChange, options, onCriar, placeh
   }
 
   return (
-    <div style={{ position: "relative" }} ref={ref}>
+    <div style={{ position: "relative", width: "100%", minWidth: 0 }} ref={ref}>
       <input
+        style={{ width: "100%", minWidth: 0 }}
         value={texto}
         placeholder={placeholder}
         disabled={criando}
