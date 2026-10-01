@@ -36,6 +36,7 @@ MODULOS = [
     "veiculos",
     "equipes",
     "ordens_servico",
+    "reclamacoes",
     "pedidos",
     "execucoes",
     "usuarios",

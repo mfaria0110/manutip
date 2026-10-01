@@ -163,10 +163,16 @@ async function confirmarExclusao() {
     setSalvando(true);
     setErro("");
     try {
+      // Selects de FK (convenção "*_id") sem seleção ficam como "" no form,
+      // mas o backend espera UUID válido ou null — nunca string vazia.
+      // Outros campos de texto continuam aceitando "" normalmente.
+      const payload = Object.fromEntries(
+        Object.entries(form).map(([k, v]) => [k, v === "" && k.endsWith("_id") ? null : v])
+      );
       if (editando && editando[idKey]) {
-        await api.atualizar(editando[idKey], form);
+        await api.atualizar(editando[idKey], payload);
       } else {
-        await api.criar(form);
+        await api.criar(payload);
       }
       fechar();
       carregar();

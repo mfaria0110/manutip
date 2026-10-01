@@ -20,7 +20,16 @@ async function req(path, options = {}) {
       resp.status >= 500
         ? "O servidor está indisponível no momento. Tente novamente em instantes."
         : `Erro ${resp.status}`;
-    throw new Error(body.detail || generico);
+    // FastAPI manda `detail` como string normalmente, mas em erro de
+    // validação (422) vem uma lista de {loc, msg, type} — nunca jogar
+    // esse array direto num Error (vira "[object Object]" na tela).
+    let mensagem = generico;
+    if (typeof body.detail === "string") {
+      mensagem = body.detail;
+    } else if (Array.isArray(body.detail)) {
+      mensagem = body.detail.map((e) => e.msg || JSON.stringify(e)).join("; ");
+    }
+    throw new Error(mensagem);
   }
   if (resp.status === 204) return null;
   return resp.json();
@@ -69,6 +78,7 @@ export const apiFuncionarios = crud("/funcionarios");
 export const apiContratos = crud("/contratos");
 export const apiPrecosPonto = crud("/precos-ponto");
 export const apiOrdensServico = crud("/ordens-servico");
+export const apiReclamacoes = crud("/reclamacoes");
 
 // Mantidos para compatibilidade com código existente.
 export const listarUsuarios = apiUsuarios.listar;

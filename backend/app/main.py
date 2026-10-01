@@ -12,6 +12,7 @@ from app.api import (
     materiais,
     ordens_servico,
     prefeituras,
+    reclamacoes,
     usuarios,
     veiculos,
 )
@@ -32,6 +33,7 @@ app.include_router(materiais.router)
 app.include_router(veiculos.router)
 app.include_router(funcionarios.router)
 app.include_router(ordens_servico.router)
+app.include_router(reclamacoes.router)
 
 
 @app.get("/health")
