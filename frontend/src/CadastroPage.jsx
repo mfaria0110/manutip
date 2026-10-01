@@ -298,6 +298,7 @@ async function confirmarExclusao() {
                   {c.type === "select" ? (
                     <select
                       required={c.required}
+                      disabled={c.disabled}
                       value={form[c.name] ?? ""}
                       onChange={(e) => setForm({ ...form, [c.name]: e.target.value })}
                     >
@@ -335,9 +336,10 @@ async function confirmarExclusao() {
                       type={c.type || "text"}
                       step={c.step}
                       required={c.required}
+                      disabled={c.disabled}
                       placeholder={c.placeholder}
                       style={c.center ? { textAlign: "center" } : undefined}
-                      value={form[c.name] ?? ""}
+                      value={c.valorCalculado ? c.valorCalculado(form) : form[c.name] ?? ""}
                       maxLength={c.maxLength}
                       onChange={(e) => {
                         let valor = c.mask ? aplicarMascara(c.mask, e.target.value) : e.target.value;
