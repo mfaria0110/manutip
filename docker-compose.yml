@@ -1,0 +1,25 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: manutip
+      POSTGRES_USER: manutip
+      POSTGRES_PASSWORD: manutip
+    ports:
+      - "5432:5432"
+    volumes:
+      - manutip_db_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://manutip:manutip@db:5432/manutip
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/app
+
+volumes:
+  manutip_db_data:
