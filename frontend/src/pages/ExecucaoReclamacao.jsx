@@ -365,25 +365,6 @@ export default function ExecucaoReclamacao() {
                   <tbody>
                     {grupo.execucoes.map((ex) => (
                       <Fragment key={ex.id}>
-                        {grupo.execucoes.length > 1 && (
-                          <tr>
-                            <td colSpan={5} style={{ background: "var(--accent-soft)" }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-                                <span style={{ fontSize: 13 }}>{ex.observacoes || ""}</span>
-                                {ehAdmin && (
-                                  <button
-                                    className="btn btn-ghost"
-                                    onClick={() => setExcluindo(ex)}
-                                    title="Excluir esta execução"
-                                    style={{ color: "var(--danger)" }}
-                                  >
-                                    <i className="ti ti-trash" aria-hidden="true" />
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        )}
                         {ex.itens.map((it) => {
                           const mat = materialPorId(it.material_id);
                           return (
