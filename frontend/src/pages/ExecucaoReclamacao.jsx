@@ -360,7 +360,7 @@ export default function ExecucaoReclamacao() {
                           ? "1fr 140px 76px 160px 110px 40px"
                           : "1fr 140px 76px 40px",
                         gap: 8,
-                        alignItems: "center",
+                        alignItems: ehLampada ? "flex-end" : "center",
                         marginBottom: 8,
                       }}
                     >
@@ -408,22 +408,31 @@ export default function ExecucaoReclamacao() {
                         onChange={(e) => atualizarItem(idx, { quantidade: e.target.value })}
                       />
                       {ehLampada && (
-                        <input
-                          placeholder="Tipo (LED, vapor de sódio...)"
-                          value={item.tipo_lampada}
-                          onChange={(e) => atualizarItem(idx, { tipo_lampada: e.target.value })}
-                        />
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                          <label style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-secondary)" }}>
+                            Tipo
+                          </label>
+                          <input
+                            placeholder="LED, vapor de sódio..."
+                            value={item.tipo_lampada}
+                            onChange={(e) => atualizarItem(idx, { tipo_lampada: e.target.value })}
+                          />
+                        </div>
                       )}
                       {ehLampada && (
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          placeholder="Potência (W)"
-                          style={{ textAlign: "center" }}
-                          value={item.potencia_w}
-                          onChange={(e) => atualizarItem(idx, { potencia_w: e.target.value })}
-                        />
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                          <label style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-secondary)" }}>
+                            Potência (W)
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            style={{ textAlign: "center" }}
+                            value={item.potencia_w}
+                            onChange={(e) => atualizarItem(idx, { potencia_w: e.target.value })}
+                          />
+                        </div>
                       )}
                       <button
                         type="button"
