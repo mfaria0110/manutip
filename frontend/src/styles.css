@@ -408,6 +408,27 @@ button {
   margin-bottom: 16px;
 }
 
+.filtro-wrap {
+  position: relative;
+  margin-bottom: 12px;
+  max-width: 320px;
+}
+
+.filtro-wrap i {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  font-size: 15px;
+  pointer-events: none;
+}
+
+.filtro-wrap input {
+  width: 100%;
+  padding-left: 32px;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -431,7 +452,7 @@ thead tr {
 }
 
 th {
-  padding: 20px 12px;
+  padding: 14px 12px;
   color: var(--text-primary);
   font-weight: 600;
   font-size: 12px;

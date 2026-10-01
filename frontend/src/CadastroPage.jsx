@@ -88,6 +88,7 @@ export default function CadastroPage({ titulo, modulo, campos, colunas, api, idK
   const [erroLista, setErroLista] = useState("");
   const [excluindo, setExcluindo] = useState(null); // item pendente de confirmação
   const [apagando, setApagando] = useState(false);
+  const [busca, setBusca] = useState("");
 
   const podeEditar = pode(modulo, "edit");
 
@@ -158,6 +159,17 @@ async function confirmarExclusao() {
 
   const colunasFinal = useMemo(() => colunas, [colunas]);
 
+  const itensFiltrados = useMemo(() => {
+    const termo = busca.trim().toLowerCase();
+    if (!termo) return itens;
+    return itens.filter((item) =>
+      colunasFinal.some((c) => {
+        const valor = c.render ? c.render(item) : item[c.key];
+        return String(valor ?? "").toLowerCase().includes(termo);
+      })
+    );
+  }, [itens, busca, colunasFinal]);
+
   return (
     <>
       <header className="topbar">
@@ -172,11 +184,23 @@ async function confirmarExclusao() {
 
       <div className="content">
         {erroLista && <p className="erro-msg">{erroLista}</p>}
+        {itens.length > 0 && (
+          <div className="filtro-wrap">
+            <i className="ti ti-search" aria-hidden="true" />
+            <input
+              placeholder="Buscar..."
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+            />
+          </div>
+        )}
         <div className="card">
           {carregando ? (
             <div className="empty-state">Carregando...</div>
           ) : itens.length === 0 ? (
             <div className="empty-state">Nenhum registro ainda.</div>
+          ) : itensFiltrados.length === 0 ? (
+            <div className="empty-state">Nenhum resultado para "{busca}".</div>
           ) : (
             <table>
               <thead>
@@ -188,7 +212,7 @@ async function confirmarExclusao() {
                 </tr>
               </thead>
               <tbody>
-                {itens.map((item) => (
+                {itensFiltrados.map((item) => (
                   <tr key={item[idKey]}>
                     {colunasFinal.map((c) => (
                       <td key={c.key}>{c.render ? c.render(item) : String(item[c.key] ?? "")}</td>
