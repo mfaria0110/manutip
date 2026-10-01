@@ -76,7 +76,7 @@ export default function ExecucaoReclamacao() {
   };
 
   function abrirNovaExecucao() {
-    setDataExecucao("");
+    setDataExecucao(new Date().toISOString().slice(0, 10));
     setEquipeId("");
     setObservacoes("");
     setItens([novoItem()]);
