@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../api";
 import { useAcesso } from "../AcessoContext";
+import logoSelles from "../assets/logo-selles.png";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -23,9 +24,10 @@ export default function Login() {
   }
 
   return (
-    <div style={{ maxWidth: 360, margin: "80px auto" }}>
+    <div style={{ maxWidth: 360, margin: "80px auto", textAlign: "center" }}>
+      <img src={logoSelles} alt="Selles" style={{ maxWidth: 220, marginBottom: 16 }} />
       <h1>Manutip</h1>
-      <form onSubmit={onSubmit}>
+      <form onSubmit={onSubmit} style={{ textAlign: "left" }}>
         <input placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} />
         <input placeholder="Senha" type="password" value={senha} onChange={(e) => setSenha(e.target.value)} />
         <button type="submit">Entrar</button>
