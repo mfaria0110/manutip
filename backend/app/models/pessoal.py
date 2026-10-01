@@ -16,8 +16,10 @@ class Funcionario(TimestampMixin, Base):
     matricula: Mapped[str | None] = mapped_column(String(20), unique=True)
     nome: Mapped[str] = mapped_column(String(200), nullable=False)
     cpf: Mapped[str | None] = mapped_column(String(14), unique=True)
-    funcao: Mapped[str] = mapped_column(String(50), nullable=False)  # ex: tecnico, encarregado, motorista
+    cargo_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("cargos.id"), nullable=False)
     ativo: Mapped[bool] = mapped_column(default=True)
+
+    cargo: Mapped["object"] = relationship("Cargo")
 
 
 class Veiculo(TimestampMixin, Base):

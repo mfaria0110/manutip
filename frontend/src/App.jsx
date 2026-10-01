@@ -11,6 +11,7 @@ import Contratos from "./pages/Contratos";
 import Materiais from "./pages/Materiais";
 import MaoObra from "./pages/MaoObra";
 import Veiculos from "./pages/Veiculos";
+import Cargos from "./pages/Cargos";
 import Funcionarios from "./pages/Funcionarios";
 import OrdensServico from "./pages/OrdensServico";
 import Usuarios from "./pages/Usuarios";
@@ -31,6 +32,7 @@ function Rotas() {
         <Route path="/materiais" element={<Materiais />} />
         <Route path="/mao-obra" element={<MaoObra />} />
         <Route path="/veiculos" element={<Veiculos />} />
+        <Route path="/cargos" element={<Cargos />} />
         <Route path="/funcionarios" element={<Funcionarios />} />
         <Route path="/ordens-servico" element={<OrdensServico />} />
         <Route path="/usuarios" element={<Usuarios />} />

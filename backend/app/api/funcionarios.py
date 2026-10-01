@@ -11,7 +11,7 @@ class FuncionarioOut(BaseModel):
     matricula: str | None
     nome: str
     cpf: str | None
-    funcao: str
+    cargo_id: uuid.UUID
     ativo: bool
 
     class Config:
@@ -22,14 +22,14 @@ class FuncionarioCreate(BaseModel):
     matricula: str | None = None
     nome: str
     cpf: str | None = None
-    funcao: str
+    cargo_id: uuid.UUID
 
 
 class FuncionarioUpdate(BaseModel):
     matricula: str | None = None
     nome: str | None = None
     cpf: str | None = None
-    funcao: str | None = None
+    cargo_id: uuid.UUID | None = None
     ativo: bool | None = None
 
 

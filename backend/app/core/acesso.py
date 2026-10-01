@@ -28,6 +28,7 @@ MODULOS = [
     "contratos",
     "precos",
     "atividades",
+    "cargos",
     "mao_obra",
     "ativos",
     "materiais",

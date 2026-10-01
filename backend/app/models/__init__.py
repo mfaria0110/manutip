@@ -4,6 +4,7 @@ from app.models.prefeitura import Prefeitura
 from app.models.contrato import Contrato, PrecoPonto, CategoriaPreco
 from app.models.atividade import Atividade
 from app.models.mao_obra import MaoDeObra
+from app.models.cargo import Cargo
 from app.models.pessoal import Funcionario, Veiculo, EquipeDia, EquipeMembro
 from app.models.ativo import Ativo
 from app.models.material import Material
@@ -33,6 +34,7 @@ __all__ = [
     "CategoriaPreco",
     "Atividade",
     "MaoDeObra",
+    "Cargo",
     "Funcionario",
     "Veiculo",
     "EquipeDia",

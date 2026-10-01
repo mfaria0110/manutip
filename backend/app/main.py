@@ -4,6 +4,7 @@ from app.api import (
     atividades,
     auth,
     bairros,
+    cargos,
     cidades,
     contratos,
     funcionarios,
@@ -25,6 +26,7 @@ app.include_router(prefeituras.router)
 app.include_router(contratos.router)
 app.include_router(contratos.router_precos)
 app.include_router(atividades.router)
+app.include_router(cargos.router)
 app.include_router(mao_obra.router)
 app.include_router(materiais.router)
 app.include_router(veiculos.router)

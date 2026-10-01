@@ -27,6 +27,7 @@ const GRUPOS = [
     label: "Operação",
     itens: [
       { to: "/veiculos", icon: "ti-truck", label: "Veículos" },
+      { to: "/cargos", icon: "ti-id-badge-2", label: "Cargos" },
       { to: "/funcionarios", icon: "ti-users", label: "Funcionários" },
       { to: "/ordens-servico", icon: "ti-clipboard-list", label: "Ordens de serviço" },
     ],

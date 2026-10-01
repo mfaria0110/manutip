@@ -52,6 +52,7 @@ export const apiCidades = crud("/cidades");
 export const apiBairros = crud("/bairros");
 export const apiPrefeituras = crud("/prefeituras");
 export const apiAtividades = crud("/atividades");
+export const apiCargos = crud("/cargos");
 export const apiMaoObra = crud("/mao-obra");
 export const apiMateriais = crud("/materiais");
 export const apiVeiculos = crud("/veiculos");
