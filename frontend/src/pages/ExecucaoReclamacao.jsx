@@ -332,7 +332,7 @@ export default function ExecucaoReclamacao() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "4fr 1.3fr 0.3fr auto",
+                    gridTemplateColumns: "4fr 1.3fr 0.3fr 40px",
                     gap: 8,
                     marginBottom: 4,
                     fontSize: 12.5,
@@ -356,8 +356,8 @@ export default function ExecucaoReclamacao() {
                       style={{
                         display: "grid",
                         gridTemplateColumns: ehLampada
-                          ? "4fr 1.3fr 0.3fr 1.3fr 1fr auto"
-                          : "4fr 1.3fr 0.3fr auto",
+                          ? "4fr 1.3fr 0.3fr 1.3fr 1fr 40px"
+                          : "4fr 1.3fr 0.3fr 40px",
                         gap: 8,
                         alignItems: "center",
                         marginBottom: 8,
