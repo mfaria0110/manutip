@@ -134,7 +134,7 @@ export default function OrdensServico() {
   return (
     <>
       <header className="topbar">
-        <h1>Ordens de serviço (OSM/OSO)</h1>
+        <h1>Ordens de serviço</h1>
         {podeEditar && (
           <button className="btn btn-primary" onClick={abrirNova}>
             <i className="ti ti-plus" aria-hidden="true" style={{ marginRight: 6 }} />
