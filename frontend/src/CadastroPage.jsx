@@ -150,8 +150,8 @@ export default function CadastroPage({ titulo, modulo, campos, colunas, api, idK
       </div>
 
       {editando !== null && (
-        <div className="modal-overlay" onClick={fechar}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay">
+          <div className="modal">
             <h2>{editando[idKey] ? "Editar" : "Novo"} registro</h2>
             <form onSubmit={salvar}>
               {campos.map((c) => (

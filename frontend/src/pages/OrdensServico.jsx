@@ -162,8 +162,8 @@ export default function OrdensServico() {
       </div>
 
       {aberto && (
-        <div className="modal-overlay" onClick={() => setAberto(false)}>
-          <div className="modal" style={{ width: 620 }} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay">
+          <div className="modal" style={{ width: 620 }}>
             <h2>Nova ordem de serviço</h2>
             <form onSubmit={salvar}>
               <div style={{ display: "flex", gap: 12 }}>
