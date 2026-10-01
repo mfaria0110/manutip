@@ -327,6 +327,7 @@ export default function ExecucaoReclamacao() {
               <h2 style={{ margin: 0 }}>Nova execução</h2>
               <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
                 {nomeCidade(reclamacao.cidade_id)} — {nomeBairro(reclamacao.bairro_id)} — {reclamacao.logradouro || "—"}
+                {reclamacao.numero ? ` — ${reclamacao.numero}` : ""}
               </span>
             </div>
             <form onSubmit={salvar}>
