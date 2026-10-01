@@ -195,7 +195,7 @@ export default function Reclamacoes() {
             return { value: novo.id, label: novo.nome };
           },
         },
-        { name: "ponto_referencia", label: "Ponto de referência", fullWidth: true },
+        { name: "ponto_referencia", label: "Ponto de referência", type: "textarea", rows: 2, fullWidth: true },
         { name: "observacoes", label: "Observações", type: "textarea", rows: 3, fullWidth: true },
       ]}
       filtroTopo={
