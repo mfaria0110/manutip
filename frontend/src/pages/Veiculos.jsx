@@ -20,7 +20,7 @@ export default function Veiculos() {
         { name: "cor", label: "Cor", size: 3, center: true },
         { name: "ano_fabricacao", label: "Ano fabricação", mask: "ano", center: true },
         { name: "ano_modelo", label: "Ano modelo", mask: "ano", center: true },
-        { name: "renavam", label: "Renavam", mask: "renavam", center: true },
+        { name: "renavam", label: "Renavam", mask: "renavam", center: true, size: 5 },
         { name: "acessorios", label: "Acessórios", type: "textarea", rows: 3, fullWidth: true },
       ]}
     />
