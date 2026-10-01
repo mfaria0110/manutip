@@ -11,11 +11,17 @@ export default function Veiculos() {
         { key: "placa", label: "Placa" },
         { key: "modelo", label: "Modelo" },
         { key: "tipo", label: "Tipo" },
+        { key: "cor", label: "Cor" },
       ]}
       campos={[
         { name: "placa", label: "Placa", required: true, mask: "placa" },
         { name: "modelo", label: "Modelo", required: true, size: 5 },
-        { name: "tipo", label: "Tipo (caminhão, munck, utilitário...)", size: 4 },
+        { name: "tipo", label: "Tipo (caminhão, munck, utilitário...)", size: 3 },
+        { name: "cor", label: "Cor", size: 3, center: true },
+        { name: "ano_fabricacao", label: "Ano fabricação", mask: "ano", center: true },
+        { name: "ano_modelo", label: "Ano modelo", mask: "ano", center: true },
+        { name: "renavam", label: "Renavam", mask: "renavam", center: true },
+        { name: "acessorios", label: "Acessórios", type: "textarea", rows: 3, fullWidth: true },
       ]}
     />
   );

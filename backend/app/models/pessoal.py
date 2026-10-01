@@ -1,7 +1,7 @@
 import uuid
 from datetime import date
 
-from sqlalchemy import Date, ForeignKey, String
+from sqlalchemy import Date, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -26,6 +26,11 @@ class Veiculo(TimestampMixin, Base):
     placa: Mapped[str] = mapped_column(String(10), unique=True, nullable=False)
     modelo: Mapped[str] = mapped_column(String(100), nullable=False)
     tipo: Mapped[str | None] = mapped_column(String(50))  # ex: caminhao munck, utilitario
+    ano_fabricacao: Mapped[int | None] = mapped_column()
+    ano_modelo: Mapped[int | None] = mapped_column()
+    cor: Mapped[str | None] = mapped_column(String(30))
+    renavam: Mapped[str | None] = mapped_column(String(11))
+    acessorios: Mapped[str | None] = mapped_column(Text)
     ativo: Mapped[bool] = mapped_column(default=True)
 
 

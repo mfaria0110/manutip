@@ -38,6 +38,8 @@ const MASCARAS = {
       .slice(0, 7)
       .replace(/^([A-Z]{3})(\d)/, "$1-$2"),
   uf: (v) => v.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 2),
+  renavam: (v) => v.replace(/\D/g, "").slice(0, 11),
+  ano: (v) => v.replace(/\D/g, "").slice(0, 4),
 };
 
 function aplicarMascara(mascara, valor) {
@@ -55,6 +57,8 @@ const TAMANHO_PADRAO = {
   cpf: 4,
   placa: 3,
   uf: 2,
+  renavam: 3,
+  ano: 2,
 };
 
 function tamanhoDoCampo(c) {

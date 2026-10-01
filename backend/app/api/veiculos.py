@@ -11,6 +11,11 @@ class VeiculoOut(BaseModel):
     placa: str
     modelo: str
     tipo: str | None
+    ano_fabricacao: int | None
+    ano_modelo: int | None
+    cor: str | None
+    renavam: str | None
+    acessorios: str | None
     ativo: bool
 
     class Config:
@@ -21,12 +26,22 @@ class VeiculoCreate(BaseModel):
     placa: str
     modelo: str
     tipo: str | None = None
+    ano_fabricacao: int | None = None
+    ano_modelo: int | None = None
+    cor: str | None = None
+    renavam: str | None = None
+    acessorios: str | None = None
 
 
 class VeiculoUpdate(BaseModel):
     placa: str | None = None
     modelo: str | None = None
     tipo: str | None = None
+    ano_fabricacao: int | None = None
+    ano_modelo: int | None = None
+    cor: str | None = None
+    renavam: str | None = None
+    acessorios: str | None = None
     ativo: bool | None = None
 
 
