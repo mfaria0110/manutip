@@ -14,13 +14,13 @@ export default function Veiculos() {
         { key: "cor", label: "Cor" },
       ]}
       campos={[
-        { name: "placa", label: "Placa", required: true, mask: "placa" },
-        { name: "modelo", label: "Modelo", required: true, size: 5 },
-        { name: "tipo", label: "Tipo", size: 3, placeholder: "Caminhão, munck, utilitário..." },
-        { name: "cor", label: "Cor", size: 3, center: true },
-        { name: "ano_fabricacao", label: "Ano fabricação", mask: "ano", center: true },
-        { name: "ano_modelo", label: "Ano modelo", mask: "ano", center: true },
-        { name: "renavam", label: "Renavam", mask: "renavam", center: true, size: 5 },
+        { name: "placa", label: "Placa", required: true, mask: "placa", size: 4 },
+        { name: "modelo", label: "Modelo", required: true, size: 4 },
+        { name: "tipo", label: "Tipo", size: 4, placeholder: "Caminhão, munck, utilitário..." },
+        { name: "cor", label: "Cor", size: 4, center: true },
+        { name: "ano_fabricacao", label: "Ano fabricação", mask: "ano", center: true, size: 2 },
+        { name: "ano_modelo", label: "Ano modelo", mask: "ano", center: true, size: 2 },
+        { name: "renavam", label: "Renavam", mask: "renavam", center: true, size: 4 },
         { name: "acessorios", label: "Acessórios", type: "textarea", rows: 3, fullWidth: true },
       ]}
     />
