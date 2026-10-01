@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAcesso } from "../AcessoContext";
 import ConfirmDialog from "../ConfirmDialog";
+import ModalNovaEquipe from "../ModalNovaEquipe";
+import ModalNovoMaterial from "../ModalNovoMaterial";
 import { apiBairros, apiCidades, apiEquipesDia, apiExecucoesReclamacao, apiMateriais, apiReclamacoes } from "../api";
 
 const MOVIMENTOS = [
@@ -38,6 +40,8 @@ export default function ExecucaoReclamacao() {
   const [salvando, setSalvando] = useState(false);
   const [excluindo, setExcluindo] = useState(null);
   const [apagando, setApagando] = useState(false);
+  const [modalEquipeAberto, setModalEquipeAberto] = useState(false);
+  const [modalMaterialIdx, setModalMaterialIdx] = useState(null); // índice do item que pediu o material novo
 
   function carregar() {
     setCarregando(true);
@@ -90,6 +94,18 @@ export default function ExecucaoReclamacao() {
 
   function removerItem(idx) {
     setItens((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function equipeCriada(nova) {
+    setEquipes((prev) => [nova, ...prev]);
+    setEquipeId(nova.id);
+    setModalEquipeAberto(false);
+  }
+
+  function materialCriado(novo) {
+    setMateriais((prev) => [...prev, novo]);
+    atualizarItem(modalMaterialIdx, { material_id: novo.id });
+    setModalMaterialIdx(null);
   }
 
   async function salvar(e) {
@@ -267,7 +283,7 @@ export default function ExecucaoReclamacao() {
 
       {formAberto && (
         <div className="modal-overlay">
-          <div className="modal" style={{ width: 720, maxWidth: "95vw" }}>
+          <div className="modal" style={{ width: 920, maxWidth: "95vw" }}>
             <h2>Nova execução</h2>
             <form onSubmit={salvar}>
               <div className="form-grid">
@@ -277,14 +293,24 @@ export default function ExecucaoReclamacao() {
                 </div>
                 <div className="form-field" style={{ "--span": 8 }}>
                   <label>Equipe</label>
-                  <select value={equipeId} onChange={(e) => setEquipeId(e.target.value)}>
-                    <option value="">Selecione...</option>
-                    {equipes.map((eq) => (
-                      <option key={eq.id} value={eq.id}>
-                        {nomeEquipe(eq.id)}
-                      </option>
-                    ))}
-                  </select>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <select style={{ flex: 1 }} value={equipeId} onChange={(e) => setEquipeId(e.target.value)}>
+                      <option value="">Selecione...</option>
+                      {equipes.map((eq) => (
+                        <option key={eq.id} value={eq.id}>
+                          {nomeEquipe(eq.id)}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      onClick={() => setModalEquipeAberto(true)}
+                      title="Cadastrar nova equipe"
+                    >
+                      <i className="ti ti-plus" aria-hidden="true" />
+                    </button>
+                  </div>
                 </div>
                 <div className="form-field" style={{ "--span": 12 }}>
                   <label>Observações</label>
@@ -303,6 +329,23 @@ export default function ExecucaoReclamacao() {
                   </button>
                 </div>
 
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "4fr 1.3fr 0.6fr auto",
+                    gap: 8,
+                    marginBottom: 4,
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  <span>Material</span>
+                  <span>Movimento</span>
+                  <span>Qtd.</span>
+                  <span />
+                </div>
+
                 {itens.map((item, idx) => {
                   const mat = materialPorId(item.material_id);
                   const ehLampada = mat?.categoria === "LAMPADA";
@@ -311,20 +354,37 @@ export default function ExecucaoReclamacao() {
                       key={idx}
                       style={{
                         display: "grid",
-                        gridTemplateColumns: ehLampada ? "2fr 1.2fr 0.7fr 1.3fr 1fr auto" : "2fr 1.2fr 0.7fr auto",
+                        gridTemplateColumns: ehLampada
+                          ? "4fr 1.3fr 0.6fr 1.3fr 1fr auto"
+                          : "4fr 1.3fr 0.6fr auto",
                         gap: 8,
                         alignItems: "center",
                         marginBottom: 8,
                       }}
                     >
-                      <select required value={item.material_id} onChange={(e) => atualizarItem(idx, { material_id: e.target.value })}>
-                        <option value="">Material...</option>
-                        {materiais.map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {m.nome}
-                          </option>
-                        ))}
-                      </select>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <select
+                          required
+                          style={{ flex: 1 }}
+                          value={item.material_id}
+                          onChange={(e) => atualizarItem(idx, { material_id: e.target.value })}
+                        >
+                          <option value="">Material...</option>
+                          {materiais.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.nome}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          onClick={() => setModalMaterialIdx(idx)}
+                          title="Cadastrar novo material"
+                        >
+                          <i className="ti ti-plus" aria-hidden="true" />
+                        </button>
+                      </div>
                       <select value={item.movimento} onChange={(e) => atualizarItem(idx, { movimento: e.target.value })}>
                         {MOVIMENTOS.map((mv) => (
                           <option key={mv.value} value={mv.value}>
@@ -393,6 +453,17 @@ export default function ExecucaoReclamacao() {
         confirmando={apagando}
         onConfirmar={confirmarExclusao}
         onCancelar={() => setExcluindo(null)}
+      />
+
+      <ModalNovaEquipe
+        aberto={modalEquipeAberto}
+        onFechar={() => setModalEquipeAberto(false)}
+        onCriada={equipeCriada}
+      />
+      <ModalNovoMaterial
+        aberto={modalMaterialIdx !== null}
+        onFechar={() => setModalMaterialIdx(null)}
+        onCriado={materialCriado}
       />
     </>
   );
