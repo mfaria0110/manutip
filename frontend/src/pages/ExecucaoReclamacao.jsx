@@ -293,7 +293,7 @@ export default function ExecucaoReclamacao() {
                 </div>
                 <div className="form-field" style={{ "--span": 8 }}>
                   <label>Equipe</label>
-                  <div style={{ display: "flex", gap: 6 }}>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                     <select style={{ flex: 1 }} value={equipeId} onChange={(e) => setEquipeId(e.target.value)}>
                       <option value="">Selecione...</option>
                       {equipes.map((eq) => (
@@ -307,7 +307,7 @@ export default function ExecucaoReclamacao() {
                       className="btn btn-primary"
                       onClick={() => setModalEquipeAberto(true)}
                       title="Cadastrar nova equipe"
-                      style={{ fontWeight: 700, fontSize: 18, padding: "8px 14px" }}
+                      style={{ fontWeight: 700, fontSize: 15, padding: "4px 10px", flexShrink: 0 }}
                     >
                       <i className="ti ti-plus" aria-hidden="true" />
                     </button>
@@ -364,10 +364,10 @@ export default function ExecucaoReclamacao() {
                         marginBottom: 8,
                       }}
                     >
-                      <div style={{ display: "flex", gap: 6 }}>
+                      <div style={{ display: "flex", gap: 6, minWidth: 0, alignItems: "center" }}>
                         <select
                           required
-                          style={{ flex: 1 }}
+                          style={{ flex: 1, minWidth: 0 }}
                           value={item.material_id}
                           onChange={(e) => atualizarItem(idx, { material_id: e.target.value })}
                         >
@@ -383,7 +383,7 @@ export default function ExecucaoReclamacao() {
                           className="btn btn-primary"
                           onClick={() => setModalMaterialIdx(idx)}
                           title="Cadastrar novo material"
-                          style={{ fontWeight: 700, fontSize: 18, padding: "8px 14px" }}
+                          style={{ fontWeight: 700, fontSize: 15, padding: "4px 10px", flexShrink: 0 }}
                         >
                           <i className="ti ti-plus" aria-hidden="true" />
                         </button>
