@@ -8,7 +8,7 @@ factory — ficam com seu próprio router (ex.: bairros filtra por cidade).
 """
 
 import uuid
-from typing import Type
+from typing import Callable, Type
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel
@@ -29,6 +29,7 @@ def crud_simples(
     schema_create: Type[BaseModel],
     schema_update: Type[BaseModel],
     ordenar_por,
+    ao_excluir: Callable[[object, Session], None] | None = None,
 ) -> APIRouter:
     router = APIRouter(prefix=prefix, tags=tags)
 
@@ -69,6 +70,8 @@ def crud_simples(
         obj = db.get(modelo, item_id)
         if not obj:
             raise HTTPException(status_code=404, detail="Não encontrado.")
+        if ao_excluir:
+            ao_excluir(obj, db)
         db.delete(obj)
         try:
             db.commit()

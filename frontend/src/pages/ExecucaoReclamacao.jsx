@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useAcesso } from "../AcessoContext";
+import ConfirmDialog from "../ConfirmDialog";
 import { apiBairros, apiCidades, apiEquipesDia, apiExecucoesReclamacao, apiMateriais, apiReclamacoes } from "../api";
 
 const MOVIMENTOS = [
@@ -16,6 +18,7 @@ function novoItem() {
 export default function ExecucaoReclamacao() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { ehAdmin } = useAcesso();
 
   const [reclamacao, setReclamacao] = useState(null);
   const [execucoes, setExecucoes] = useState([]);
@@ -33,6 +36,8 @@ export default function ExecucaoReclamacao() {
   const [itens, setItens] = useState([novoItem()]);
   const [erro, setErro] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [excluindo, setExcluindo] = useState(null);
+  const [apagando, setApagando] = useState(false);
 
   function carregar() {
     setCarregando(true);
@@ -117,6 +122,21 @@ export default function ExecucaoReclamacao() {
     }
   }
 
+  async function confirmarExclusao() {
+    setApagando(true);
+    setErroLista("");
+    try {
+      await apiExecucoesReclamacao.excluir(excluindo.id);
+      setExcluindo(null);
+      carregar();
+    } catch (err) {
+      setErroLista(err.message);
+      setExcluindo(null);
+    } finally {
+      setApagando(false);
+    }
+  }
+
   if (carregando) {
     return (
       <>
@@ -196,7 +216,19 @@ export default function ExecucaoReclamacao() {
             <div className="card" key={ex.id} style={{ marginBottom: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
                 <strong>{ex.data_execucao}</strong>
-                <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>{nomeEquipe(ex.equipe_dia_id)}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>{nomeEquipe(ex.equipe_dia_id)}</span>
+                  {ehAdmin && (
+                    <button
+                      className="btn btn-ghost"
+                      onClick={() => setExcluindo(ex)}
+                      title="Excluir execução"
+                      style={{ color: "var(--danger)" }}
+                    >
+                      <i className="ti ti-trash" aria-hidden="true" />
+                    </button>
+                  )}
+                </div>
               </div>
               {ex.observacoes && (
                 <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 6 }}>{ex.observacoes}</p>
@@ -353,6 +385,15 @@ export default function ExecucaoReclamacao() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        aberto={!!excluindo}
+        titulo="Excluir execução"
+        mensagem="Excluir esta execução e os materiais lançados nela? Essa ação não pode ser desfeita."
+        confirmando={apagando}
+        onConfirmar={confirmarExclusao}
+        onCancelar={() => setExcluindo(null)}
+      />
     </>
   );
 }

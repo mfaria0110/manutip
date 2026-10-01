@@ -2,8 +2,10 @@ import uuid
 from datetime import date
 
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from app.core.crud_simples import crud_simples
+from app.models.execucao_reclamacao import ExecucaoReclamacao, ItemExecucaoMaterial
 from app.models.reclamacao import Reclamacao
 
 
@@ -59,6 +61,22 @@ class ReclamacaoUpdate(BaseModel):
     status: str | None = None
 
 
+def _excluir_execucoes(reclamacao: Reclamacao, db: Session) -> None:
+    """Exclui em cascata as execuções (e seus itens de material) da
+    reclamação — sem isso, apagar uma reclamação já executada falharia
+    por violação de FK."""
+    execucao_ids = [
+        e.id for e in db.query(ExecucaoReclamacao.id).filter(ExecucaoReclamacao.reclamacao_id == reclamacao.id)
+    ]
+    if execucao_ids:
+        db.query(ItemExecucaoMaterial).filter(ItemExecucaoMaterial.execucao_id.in_(execucao_ids)).delete(
+            synchronize_session=False
+        )
+        db.query(ExecucaoReclamacao).filter(ExecucaoReclamacao.id.in_(execucao_ids)).delete(
+            synchronize_session=False
+        )
+
+
 router = crud_simples(
     prefix="/api/reclamacoes",
     tags=["reclamacoes"],
@@ -68,4 +86,5 @@ router = crud_simples(
     schema_create=ReclamacaoCreate,
     schema_update=ReclamacaoUpdate,
     ordenar_por=Reclamacao.data_reclamacao.desc(),
+    ao_excluir=_excluir_execucoes,
 )
