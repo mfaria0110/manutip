@@ -378,7 +378,7 @@ export default function ExecucaoReclamacao() {
                       style={{
                         display: "grid",
                         gridTemplateColumns: ehLampada
-                          ? "1fr 120px 90px 140px 76px 40px"
+                          ? "1fr 90px 70px 140px 76px 40px"
                           : "1fr 140px 76px 40px",
                         gap: 8,
                         alignItems: "flex-end",
