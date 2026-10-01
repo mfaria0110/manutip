@@ -79,6 +79,8 @@ export const apiContratos = crud("/contratos");
 export const apiPrecosPonto = crud("/precos-ponto");
 export const apiOrdensServico = crud("/ordens-servico");
 export const apiReclamacoes = crud("/reclamacoes");
+export const apiEquipesDia = crud("/equipes");
+export const apiExecucoesReclamacao = crud("/execucoes-reclamacao");
 
 // Mantidos para compatibilidade com código existente.
 export const listarUsuarios = apiUsuarios.listar;

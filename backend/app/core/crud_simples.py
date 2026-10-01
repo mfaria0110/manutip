@@ -36,6 +36,13 @@ def crud_simples(
     def listar(db: Session = Depends(get_db)):
         return db.query(modelo).order_by(ordenar_por).all()
 
+    @router.get("/{item_id}", response_model=schema_out, dependencies=[Depends(requer_acesso(modulo, "use"))])
+    def obter(item_id: uuid.UUID, db: Session = Depends(get_db)):
+        obj = db.get(modelo, item_id)
+        if not obj:
+            raise HTTPException(status_code=404, detail="Não encontrado.")
+        return obj
+
     @router.post("", response_model=schema_out, dependencies=[Depends(requer_acesso(modulo, "edit"))])
     def criar(req: schema_create, db: Session = Depends(get_db)):
         obj = modelo(**req.model_dump())

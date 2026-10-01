@@ -9,6 +9,7 @@ from app.models.pessoal import Funcionario, Veiculo, EquipeDia, EquipeMembro
 from app.models.ativo import Ativo
 from app.models.material import Material
 from app.models.reclamacao import Reclamacao
+from app.models.execucao_reclamacao import ExecucaoReclamacao, ItemExecucaoMaterial, MovimentoMaterial
 from app.models.ordem_servico import (
     OrdemServico,
     ItemOrdemServico,
@@ -43,6 +44,9 @@ __all__ = [
     "Ativo",
     "Material",
     "Reclamacao",
+    "ExecucaoReclamacao",
+    "ItemExecucaoMaterial",
+    "MovimentoMaterial",
     "OrdemServico",
     "ItemOrdemServico",
     "TipoOS",

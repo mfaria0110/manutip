@@ -17,5 +17,8 @@ class Material(TimestampMixin, Base):
     codigo: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     nome: Mapped[str] = mapped_column(String(200), nullable=False)
     unidade: Mapped[str] = mapped_column(String(10), nullable=False)  # UN, M, KG...
+    # GERAL ou LAMPADA — lâmpada pede tipo+potência na hora de registrar a
+    # execução (instalação/retirada), os demais materiais não.
+    categoria: Mapped[str] = mapped_column(String(20), nullable=False, default="GERAL")
     custo_unitario: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
     ativo: Mapped[bool] = mapped_column(default=True)

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import CadastroPage from "../CadastroPage";
 import { apiBairros, apiCidades, apiPrefeituras, apiReclamacoes } from "../api";
 import { buscarEnderecoPorCep } from "../viacep";
@@ -21,6 +22,7 @@ const STATUS_RECLAMACAO = [
 ];
 
 export default function Reclamacoes() {
+  const navigate = useNavigate();
   const [cidades, setCidades] = useState([]);
   const [bairros, setBairros] = useState([]);
   const [prefeituras, setPrefeituras] = useState([]);
@@ -114,6 +116,15 @@ export default function Reclamacoes() {
       modulo="reclamacoes"
       api={apiReclamacoes}
       valoresPadrao={{ status: "ABERTA", nome_reclamante: "SELLES", prefeitura_id: prefeituraConfirmada }}
+      acoesExtras={(item) => (
+        <button
+          className="btn btn-ghost"
+          onClick={() => navigate(`/reclamacoes/${item.id}/execucao`)}
+          title="Registrar execução"
+        >
+          <i className="ti ti-tool" aria-hidden="true" />
+        </button>
+      )}
       colunas={[
         { key: "data_reclamacao", label: "Data" },
         { key: "nome_reclamante", label: "Reclamante" },

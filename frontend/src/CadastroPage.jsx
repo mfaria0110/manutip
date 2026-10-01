@@ -93,6 +93,7 @@ export default function CadastroPage({
   exigeFiltro,
   valoresPadrao,
   autoAbrirNovo,
+  acoesExtras,
 }) {
   const { pode, ehAdmin } = useAcesso();
   const [itens, setItens] = useState([]);
@@ -248,7 +249,7 @@ async function confirmarExclusao() {
                   {colunasFinal.map((c) => (
                     <th key={c.key}>{c.label}</th>
                   ))}
-                  {(podeEditar || ehAdmin) && <th style={{ width: 90 }} />}
+                  {(podeEditar || ehAdmin || acoesExtras) && <th style={{ width: 90 }} />}
                 </tr>
               </thead>
               <tbody>
@@ -257,9 +258,10 @@ async function confirmarExclusao() {
                     {colunasFinal.map((c) => (
                       <td key={c.key}>{c.render ? c.render(item) : String(item[c.key] ?? "")}</td>
                     ))}
-                    {(podeEditar || ehAdmin) && (
+                    {(podeEditar || ehAdmin || acoesExtras) && (
                       <td>
                         <div style={{ display: "flex", gap: 4 }}>
+                          {acoesExtras && acoesExtras(item)}
                           {podeEditar && (
                             <button className="btn btn-ghost" onClick={() => abrirEdicao(item)} title="Editar">
                               <i className="ti ti-edit" aria-hidden="true" />

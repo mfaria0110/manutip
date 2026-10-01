@@ -7,6 +7,8 @@ from app.api import (
     cargos,
     cidades,
     contratos,
+    equipes_dia,
+    execucoes_reclamacao,
     funcionarios,
     mao_obra,
     materiais,
@@ -34,6 +36,8 @@ app.include_router(veiculos.router)
 app.include_router(funcionarios.router)
 app.include_router(ordens_servico.router)
 app.include_router(reclamacoes.router)
+app.include_router(equipes_dia.router)
+app.include_router(execucoes_reclamacao.router)
 
 
 @app.get("/health")

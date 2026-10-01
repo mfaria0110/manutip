@@ -11,6 +11,7 @@ class MaterialOut(BaseModel):
     codigo: str
     nome: str
     unidade: str
+    categoria: str
     custo_unitario: float
     ativo: bool
 
@@ -22,6 +23,7 @@ class MaterialCreate(BaseModel):
     codigo: str
     nome: str
     unidade: str
+    categoria: str = "GERAL"
     custo_unitario: float
 
 
@@ -29,6 +31,7 @@ class MaterialUpdate(BaseModel):
     codigo: str | None = None
     nome: str | None = None
     unidade: str | None = None
+    categoria: str | None = None
     custo_unitario: float | None = None
     ativo: bool | None = None
 

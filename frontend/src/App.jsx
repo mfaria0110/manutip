@@ -16,6 +16,8 @@ import Cargos from "./pages/Cargos";
 import Funcionarios from "./pages/Funcionarios";
 import OrdensServico from "./pages/OrdensServico";
 import Reclamacoes from "./pages/Reclamacoes";
+import ExecucaoReclamacao from "./pages/ExecucaoReclamacao";
+import EquipesDia from "./pages/EquipesDia";
 import Usuarios from "./pages/Usuarios";
 
 function Rotas() {
@@ -37,6 +39,8 @@ function Rotas() {
         <Route path="/cargos" element={<Cargos />} />
         <Route path="/funcionarios" element={<Funcionarios />} />
         <Route path="/reclamacoes" element={<Reclamacoes />} />
+        <Route path="/reclamacoes/:id/execucao" element={<ExecucaoReclamacao />} />
+        <Route path="/equipes" element={<EquipesDia />} />
         <Route path="/ordens-servico" element={<OrdensServico />} />
         <Route path="/usuarios" element={<Usuarios />} />
       </Route>
