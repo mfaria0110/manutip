@@ -17,6 +17,7 @@ const TIPOS_RECLAMACAO = [
 
 const STATUS_RECLAMACAO = [
   { value: "ABERTA", label: "Aberta" },
+  { value: "VALIDADA", label: "Validada" },
   { value: "EM_ANDAMENTO", label: "Em andamento" },
   { value: "CONCLUIDA", label: "Concluída" },
 ];
@@ -137,7 +138,9 @@ export default function Reclamacoes() {
           key: "status",
           label: "Status",
           render: (item) => (
-            <span className={`badge ${item.status === "CONCLUIDA" ? "badge-success" : "badge-muted"}`}>
+            <span
+              className={`badge ${["CONCLUIDA", "VALIDADA"].includes(item.status) ? "badge-success" : "badge-muted"}`}
+            >
               {labelStatus(item.status)}
             </span>
           ),

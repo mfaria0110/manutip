@@ -17,7 +17,12 @@ import {
   apiTiposLampada,
 } from "../api";
 
-const LABEL_STATUS = { ABERTA: "Aberta", EM_ANDAMENTO: "Em andamento", CONCLUIDA: "Concluída" };
+const LABEL_STATUS = {
+  ABERTA: "Aberta",
+  VALIDADA: "Validada",
+  EM_ANDAMENTO: "Em andamento",
+  CONCLUIDA: "Concluída",
+};
 
 const rotuloCampo = { fontSize: 11.5, fontWeight: 600, color: "var(--text-secondary)", whiteSpace: "nowrap" };
 
@@ -62,6 +67,7 @@ export default function ExecucaoReclamacao() {
 
   const [itemExcluindo, setItemExcluindo] = useState(null);
   const [apagandoItem, setApagandoItem] = useState(false);
+  const [validando, setValidando] = useState(false);
 
   function carregar() {
     setCarregando(true);
@@ -241,6 +247,19 @@ export default function ExecucaoReclamacao() {
     }
   }
 
+  async function validarLancamento() {
+    setValidando(true);
+    setErroLista("");
+    try {
+      const atualizado = await apiReclamacoes.atualizar(id, { status: "VALIDADA" });
+      setReclamacao(atualizado);
+    } catch (err) {
+      setErroLista(err.message);
+    } finally {
+      setValidando(false);
+    }
+  }
+
   if (carregando) {
     return (
       <>
@@ -307,9 +326,20 @@ export default function ExecucaoReclamacao() {
                 </p>
               )}
             </div>
-            <span className={`badge ${reclamacao.status === "CONCLUIDA" ? "badge-success" : "badge-muted"}`}>
-              {LABEL_STATUS[reclamacao.status] || reclamacao.status}
-            </span>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+              <span
+                className={`badge ${
+                  ["CONCLUIDA", "VALIDADA"].includes(reclamacao.status) ? "badge-success" : "badge-muted"
+                }`}
+              >
+                {LABEL_STATUS[reclamacao.status] || reclamacao.status}
+              </span>
+              {reclamacao.status === "ABERTA" && (
+                <button className="btn btn-primary" onClick={validarLancamento} disabled={validando}>
+                  {validando ? "Validando..." : "Validar lançamento"}
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
