@@ -84,35 +84,41 @@ def main():
     criados_bairro = []
     ja_existentes = 0
     duplicados_na_planilha = set()
+    falhas = []
 
     for linha in bruto:
-        cidade_raw = linha["cidade_raw"]
-        chave_raw = cidade_raw.upper()
-        if chave_raw not in MAPA_CIDADE:
-            nao_mapeados.setdefault(cidade_raw, []).append(linha["bairro"])
-            continue
-
-        nome_cidade, uf = MAPA_CIDADE[chave_raw]
-        chave_cidade = (nome_cidade.lower(), uf)
-        cidade_id = cidades_por_chave.get(chave_cidade)
-        if not cidade_id:
-            nova = req("POST", "/cidades", token=token, body={"nome": nome_cidade, "uf": uf})
-            cidade_id = nova["id"]
-            cidades_por_chave[chave_cidade] = cidade_id
-            criados_cidade.append(f"{nome_cidade} - {uf}")
-
-        nome_bairro = normalizar_nome(linha["bairro"])
-        chave_bairro = (nome_bairro.lower(), cidade_id)
-        if chave_bairro in bairros_por_chave:
-            if (nome_bairro, nome_cidade) in duplicados_na_planilha:
+        try:
+            cidade_raw = linha["cidade_raw"]
+            chave_raw = cidade_raw.upper()
+            if chave_raw not in MAPA_CIDADE:
+                nao_mapeados.setdefault(cidade_raw, []).append(linha["bairro"])
                 continue
-            duplicados_na_planilha.add((nome_bairro, nome_cidade))
-            ja_existentes += 1
-            continue
 
-        req("POST", "/bairros", token=token, body={"nome": nome_bairro, "cidade_id": cidade_id})
-        bairros_por_chave.add(chave_bairro)
-        criados_bairro.append(f"{nome_bairro} ({nome_cidade}-{uf})")
+            nome_cidade, uf = MAPA_CIDADE[chave_raw]
+            chave_cidade = (nome_cidade.lower(), uf)
+            cidade_id = cidades_por_chave.get(chave_cidade)
+            if not cidade_id:
+                nova = req("POST", "/cidades", token=token, body={"nome": nome_cidade, "uf": uf})
+                cidade_id = nova["id"]
+                cidades_por_chave[chave_cidade] = cidade_id
+                criados_cidade.append(f"{nome_cidade} - {uf}")
+
+            nome_bairro = normalizar_nome(linha["bairro"])
+            chave_bairro = (nome_bairro.lower(), cidade_id)
+            if chave_bairro in bairros_por_chave:
+                if (nome_bairro, nome_cidade) in duplicados_na_planilha:
+                    continue
+                duplicados_na_planilha.add((nome_bairro, nome_cidade))
+                ja_existentes += 1
+                continue
+
+            req("POST", "/bairros", token=token, body={"nome": nome_bairro, "cidade_id": cidade_id})
+            bairros_por_chave.add(chave_bairro)
+            criados_bairro.append(f"{nome_bairro} ({nome_cidade}-{uf})")
+        except Exception as e:
+            # Nunca para o lote inteiro por causa de uma linha ruim — registra
+            # e segue (foi isso que cortou a importação na metade antes).
+            falhas.append(f"{linha.get('bairro')!r} / {linha.get('cidade_raw')!r}: {e}")
 
     print(f"Cidades criadas ({len(criados_cidade)}): {criados_cidade}")
     print(f"Bairros criados: {len(criados_bairro)}")
@@ -121,6 +127,10 @@ def main():
         print("\nNÃO IMPORTADOS (cidade não reconhecida) — revisar manualmente:")
         for cidade, bairros_lista in nao_mapeados.items():
             print(f"  '{cidade}': {bairros_lista}")
+    if falhas:
+        print(f"\nFALHAS ({len(falhas)}) — não travaram o resto do lote:")
+        for f in falhas:
+            print(f"  {f}")
 
 
 if __name__ == "__main__":

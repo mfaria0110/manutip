@@ -416,18 +416,23 @@ table {
 th,
 td {
   text-align: left;
-  padding: 6px 12px;
+  padding: 4px 12px;
   font-size: 13.5px;
   border-bottom: 1px solid var(--border);
 }
 
 td .btn-ghost {
-  padding: 3px 6px;
+  padding: 2px 5px;
   line-height: 1;
 }
 
+thead tr {
+  background: var(--accent-soft);
+}
+
 th {
-  color: var(--text-secondary);
+  padding: 20px 12px;
+  color: var(--text-primary);
   font-weight: 600;
   font-size: 12px;
   text-transform: uppercase;
