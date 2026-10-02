@@ -10,3 +10,4 @@ backend/storage/
 .DS_Store
 frontend/vite.log
 backend/backend.log
+imagens/
