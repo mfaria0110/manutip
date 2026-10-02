@@ -573,7 +573,7 @@ export default function ExecucaoReclamacao() {
                       }}
                     >
                       <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                        <label style={rotuloCampo}>{idx === 0 ? "Material" : " "}</label>
+                        {idx === 0 && <label style={rotuloCampo}>Material</label>}
                         <div style={{ display: "flex", gap: 6, minWidth: 0, alignItems: "center" }}>
                           <select
                             required
@@ -601,7 +601,7 @@ export default function ExecucaoReclamacao() {
                       </div>
                       {ehLampada && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                          <label style={rotuloCampo}>{idx === primeiraLinhaLampada ? "Tipo" : " "}</label>
+                          {idx === primeiraLinhaLampada && <label style={rotuloCampo}>Tipo</label>}
                           <ComboCriavel
                             value={item.tipo_lampada_id}
                             onChange={(valor) => atualizarItem(idx, { tipo_lampada_id: valor })}
@@ -617,7 +617,7 @@ export default function ExecucaoReclamacao() {
                       )}
                       {ehLampada && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                          <label style={rotuloCampo}>{idx === primeiraLinhaLampada ? "Potência (W)" : " "}</label>
+                          {idx === primeiraLinhaLampada && <label style={rotuloCampo}>Potência (W)</label>}
                           <ComboCriavel
                             value={item.potencia_lampada_id}
                             onChange={(valor) => atualizarItem(idx, { potencia_lampada_id: valor })}
@@ -634,7 +634,7 @@ export default function ExecucaoReclamacao() {
                         </div>
                       )}
                       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                        <label style={rotuloCampo}>{idx === 0 ? "Qtd. Inst." : " "}</label>
+                        {idx === 0 && <label style={rotuloCampo}>Qtd. Inst.</label>}
                         <input
                           type="number"
                           min="0"
@@ -645,7 +645,7 @@ export default function ExecucaoReclamacao() {
                         />
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                        <label style={rotuloCampo}>{idx === 0 ? "Qtd. Ret." : " "}</label>
+                        {idx === 0 && <label style={rotuloCampo}>Qtd. Ret.</label>}
                         <input
                           type="number"
                           min="0"
@@ -660,7 +660,7 @@ export default function ExecucaoReclamacao() {
                         className="btn btn-ghost"
                         onClick={() => removerItem(idx)}
                         title="Remover"
-                        style={{ color: "var(--danger)", fontSize: 24, padding: "6px 10px", marginTop: 20 }}
+                        style={{ color: "var(--danger)", fontSize: 24, padding: "6px 10px", marginTop: idx === 0 ? 20 : 0 }}
                       >
                         <i className="ti ti-trash" aria-hidden="true" />
                       </button>
