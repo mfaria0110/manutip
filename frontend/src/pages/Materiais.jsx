@@ -28,11 +28,11 @@ export default function Materiais() {
       campos={[
         { name: "codigo", label: "Código", required: true, size: 3 },
         { name: "nome", label: "Nome", required: true, size: 5 },
-        { name: "unidade", label: "Unidade (UN, M, KG...)", required: true, size: 2 },
-        { name: "categoria", label: "Categoria", type: "select", size: 2, options: CATEGORIAS },
+        { name: "unidade", label: "Unidade (UN, M, KG...)", required: true, size: 4 },
+        { name: "categoria", label: "Categoria", type: "select", size: 3, options: CATEGORIAS },
         { name: "custo_unitario", label: "Custo unitário (R$)", type: "number", step: "0.01", required: true, size: 3 },
       ]}
-      valoresPadrao={{ categoria: "GERAL" }}
+      valoresPadrao={{ categoria: "GERAL", custo_unitario: 0 }}
     />
   );
 }
