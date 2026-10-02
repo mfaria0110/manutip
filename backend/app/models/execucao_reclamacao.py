@@ -1,7 +1,7 @@
 import uuid
 from datetime import date
 
-from sqlalchemy import Date, ForeignKey, Numeric, Text
+from sqlalchemy import Date, ForeignKey, Integer, Numeric, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -24,8 +24,13 @@ class ExecucaoReclamacao(TimestampMixin, Base):
     data_execucao: Mapped[date] = mapped_column(Date, nullable=False)
     equipe_dia_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("equipes_dia.id"))
     observacoes: Mapped[str | None] = mapped_column(Text)
+    # Quantidade de pontos de iluminação atendidos nessa execução — usado no
+    # Relatório de Pontos Atendidos (normalmente 1, mas pode cobrir mais de
+    # um ponto no mesmo endereço, ex.: "Nº 25 e 40" numa só visita).
+    pontos: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
 
     itens: Mapped[list["ItemExecucaoMaterial"]] = relationship(back_populates="execucao")
+    reclamacao: Mapped["object"] = relationship("Reclamacao")
 
 
 class ItemExecucaoMaterial(Base):
@@ -47,3 +52,4 @@ class ItemExecucaoMaterial(Base):
     potencia_lampada_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("potencias_lampada.id"))
 
     execucao: Mapped["ExecucaoReclamacao"] = relationship(back_populates="itens")
+    material: Mapped["object"] = relationship("Material")

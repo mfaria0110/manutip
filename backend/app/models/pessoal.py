@@ -43,6 +43,7 @@ class EquipeDia(TimestampMixin, Base):
     __tablename__ = "equipes_dia"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    nome: Mapped[str | None] = mapped_column(String(50))
     data: Mapped[date] = mapped_column(Date, nullable=False)
     veiculo_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("veiculos.id"))
 

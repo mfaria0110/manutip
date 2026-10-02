@@ -16,8 +16,9 @@ export default function Funcionarios() {
       titulo="Funcionários"
       modulo="funcionarios"
       api={apiFuncionarios}
+      alturaModal={320}
       colunas={[
-        { key: "matricula", label: "Matrícula" },
+        { key: "matricula", label: "Matrícula", width: 110 },
         { key: "nome", label: "Nome" },
         { key: "cargo_id", label: "Cargo", render: (item) => nomeCargo(item.cargo_id) },
         { key: "cpf", label: "CPF" },

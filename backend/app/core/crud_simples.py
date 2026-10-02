@@ -7,16 +7,33 @@ Entidades com uma regra própria (filtro, validação específica) não usam est
 factory — ficam com seu próprio router (ex.: bairros filtra por cidade).
 """
 
+import re
 import uuid
 from typing import Callable, Type
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.acesso import requer_acesso, requer_admin
 from app.core.database import get_db
+
+
+def _mensagem_duplicidade(erro: IntegrityError) -> str:
+    """Traduz a violação de unicidade do Postgres (ex.: "Key (cpf)=(123)
+    already exists.") numa mensagem amigável, sem expor o nome da coluna/
+    constraint cru quando não reconhecida. No psycopg3 o detalhe "Key (...)"
+    vem em diag.message_detail, não no str() da exceção."""
+    diag = getattr(erro.orig, "diag", None)
+    texto = (getattr(diag, "message_detail", None) or "") + " " + str(erro.orig)
+    # Postgres manda essa parte em inglês ("Key (...)=(...)") ou traduzida
+    # ("Chave (...)=(...)") dependendo do locale do servidor.
+    m = re.search(r"(?:Key|Chave) \((\w+)\)=\(([^)]*)\)", texto)
+    if m:
+        campo, valor = m.group(1), m.group(2)
+        return f"Já existe um registro com {campo} = \"{valor}\"."
+    return "Já existe um registro com esses dados (campo único duplicado)."
 
 
 def crud_simples(
@@ -30,12 +47,19 @@ def crud_simples(
     schema_update: Type[BaseModel],
     ordenar_por,
     ao_excluir: Callable[[object, Session], None] | None = None,
+    campo_filtro: str | None = None,
 ) -> APIRouter:
+    """`campo_filtro`: nome de uma coluna FK (ex.: "prefeitura_id") que pode
+    ser filtrada via querystring na listagem (?prefeitura_id=...), sem
+    filtro o comportamento é o de sempre (lista tudo)."""
     router = APIRouter(prefix=prefix, tags=tags)
 
     @router.get("", response_model=list[schema_out], dependencies=[Depends(requer_acesso(modulo, "use"))])
-    def listar(db: Session = Depends(get_db)):
-        return db.query(modelo).order_by(ordenar_por).all()
+    def listar(request_filtro: uuid.UUID | None = Query(default=None, alias=campo_filtro or "_sem_filtro"), db: Session = Depends(get_db)):
+        query = db.query(modelo)
+        if campo_filtro and request_filtro:
+            query = query.filter(getattr(modelo, campo_filtro) == request_filtro)
+        return query.order_by(ordenar_por).all()
 
     @router.get("/{item_id}", response_model=schema_out, dependencies=[Depends(requer_acesso(modulo, "use"))])
     def obter(item_id: uuid.UUID, db: Session = Depends(get_db)):
@@ -48,7 +72,11 @@ def crud_simples(
     def criar(req: schema_create, db: Session = Depends(get_db)):
         obj = modelo(**req.model_dump())
         db.add(obj)
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError as erro:
+            db.rollback()
+            raise HTTPException(status_code=409, detail=_mensagem_duplicidade(erro))
         db.refresh(obj)
         return obj
 
@@ -59,7 +87,11 @@ def crud_simples(
             raise HTTPException(status_code=404, detail="Não encontrado.")
         for campo, valor in req.model_dump(exclude_unset=True).items():
             setattr(obj, campo, valor)
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError as erro:
+            db.rollback()
+            raise HTTPException(status_code=409, detail=_mensagem_duplicidade(erro))
         db.refresh(obj)
         return obj
 

@@ -94,6 +94,8 @@ export default function CadastroPage({
   valoresPadrao,
   autoAbrirNovo,
   acoesExtras,
+  alturaModal,
+  classeTabela,
 }) {
   const { pode, ehAdmin } = useAcesso();
   const [itens, setItens] = useState([]);
@@ -252,11 +254,13 @@ async function confirmarExclusao() {
           ) : itensFiltrados.length === 0 ? (
             <div className="empty-state">Nenhum resultado para "{busca}".</div>
           ) : (
-            <table>
+            <table className={classeTabela}>
               <thead>
                 <tr>
                   {colunasFinal.map((c) => (
-                    <th key={c.key}>{c.label}</th>
+                    <th key={c.key} style={c.width ? { width: c.width } : undefined}>
+                      {c.label}
+                    </th>
                   ))}
                   {(podeEditar || ehAdmin || acoesExtras) && <th style={{ width: 90 }} />}
                 </tr>
@@ -299,7 +303,7 @@ async function confirmarExclusao() {
 
       {editando !== null && (
         <div className="modal-overlay">
-          <div className="modal">
+          <div className="modal" style={alturaModal ? { minHeight: alturaModal } : undefined}>
             <h2>{editando[idKey] ? "Editar" : "Novo"} registro</h2>
             <form onSubmit={salvar}>
               <div className="form-grid">

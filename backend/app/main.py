@@ -16,6 +16,7 @@ from app.api import (
     ordens_servico,
     prefeituras,
     reclamacoes,
+    relatorios,
     usuarios,
     veiculos,
 )
@@ -41,6 +42,7 @@ app.include_router(ordens_servico.router)
 app.include_router(reclamacoes.router)
 app.include_router(equipes_dia.router)
 app.include_router(execucoes_reclamacao.router)
+app.include_router(relatorios.router)
 
 
 @app.get("/health")

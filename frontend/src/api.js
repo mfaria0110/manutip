@@ -79,7 +79,13 @@ export const apiContratos = crud("/contratos");
 export const apiPrecosPonto = crud("/precos-ponto");
 export const apiOrdensServico = crud("/ordens-servico");
 export const apiReclamacoes = crud("/reclamacoes");
+export function reabrirReclamacao(id, username, senha) {
+  return req(`/reclamacoes/${id}/reabrir`, { method: "POST", body: JSON.stringify({ username, senha }) });
+}
 export const apiEquipesDia = crud("/equipes");
+export function proximoNomeEquipe() {
+  return req("/equipes/proximo-nome");
+}
 export const apiExecucoesReclamacao = crud("/execucoes-reclamacao");
 export const apiItensExecucao = {
   atualizar: (id, dados) => req(`/execucoes-reclamacao/itens/${id}`, { method: "PUT", body: JSON.stringify(dados) }),
@@ -87,6 +93,15 @@ export const apiItensExecucao = {
 };
 export const apiTiposLampada = crud("/tipos-lampada");
 export const apiPotenciasLampada = crud("/potencias-lampada");
+
+export function relatorioPontosAtendidos(prefeituraId, dataInicio, dataFim) {
+  const params = new URLSearchParams({
+    prefeitura_id: prefeituraId,
+    data_inicio: dataInicio,
+    data_fim: dataFim,
+  });
+  return req(`/relatorios/pontos-atendidos?${params}`);
+}
 
 // Mantidos para compatibilidade com código existente.
 export const listarUsuarios = apiUsuarios.listar;

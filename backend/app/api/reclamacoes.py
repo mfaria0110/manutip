@@ -1,12 +1,17 @@
 import uuid
 from datetime import date
 
+from fastapi import Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.core.acesso import requer_acesso
 from app.core.crud_simples import crud_simples
+from app.core.database import get_db
+from app.core.security import verificar_senha
 from app.models.execucao_reclamacao import ExecucaoReclamacao, ItemExecucaoMaterial
 from app.models.reclamacao import Reclamacao
+from app.models.usuario import PapelUsuario, Usuario
 
 
 class ReclamacaoOut(BaseModel):
@@ -87,4 +92,32 @@ router = crud_simples(
     schema_update=ReclamacaoUpdate,
     ordenar_por=Reclamacao.data_reclamacao.desc(),
     ao_excluir=_excluir_execucoes,
+    campo_filtro="prefeitura_id",
 )
+
+
+class ReabrirRequest(BaseModel):
+    username: str
+    senha: str
+
+
+@router.post(
+    "/{reclamacao_id}/reabrir",
+    response_model=ReclamacaoOut,
+    dependencies=[Depends(requer_acesso("reclamacoes", "use"))],
+)
+def reabrir(reclamacao_id: uuid.UUID, req: ReabrirRequest, db: Session = Depends(get_db)):
+    """Volta uma reclamação validada para ABERTA, liberando edição/exclusão
+    de novo. Exige a senha de um usuário ADMIN cadastrado (não precisa ser
+    o usuário logado) como confirmação — é uma trava de supervisor, não um
+    login."""
+    reclamacao = db.get(Reclamacao, reclamacao_id)
+    if not reclamacao:
+        raise HTTPException(status_code=404, detail="Não encontrado.")
+    admin = db.query(Usuario).filter(Usuario.username == req.username, Usuario.papel == PapelUsuario.ADMIN).first()
+    if not admin or not admin.ativo or not verificar_senha(req.senha, admin.senha_hash):
+        raise HTTPException(status_code=401, detail="Usuário ou senha de administrador inválidos.")
+    reclamacao.status = "ABERTA"
+    db.commit()
+    db.refresh(reclamacao)
+    return reclamacao

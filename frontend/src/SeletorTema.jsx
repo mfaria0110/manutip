@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { PALETAS, useTema } from "./TemaContext";
 
-export default function SeletorTema() {
+export default function SeletorTema({ claro = false }) {
   const { tema, setTema } = useTema();
   const [aberto, setAberto] = useState(false);
   const ref = useRef(null);
@@ -20,7 +20,11 @@ export default function SeletorTema() {
       <button
         type="button"
         className="btn btn-ghost"
-        style={{ width: "100%", color: "var(--text-inverse-muted)", justifyContent: "flex-start" }}
+        style={{
+          width: claro ? "auto" : "100%",
+          color: claro ? "var(--on-accent, #fff)" : "var(--text-inverse-muted)",
+          justifyContent: "flex-start",
+        }}
         onClick={() => setAberto((v) => !v)}
         title={`Paleta: ${atual.nome}`}
         aria-label="Trocar paleta de cores"
@@ -29,7 +33,7 @@ export default function SeletorTema() {
         {atual.nome}
       </button>
       {aberto && (
-        <div className="tema-pop" role="menu">
+        <div className={`tema-pop${claro ? " abaixo" : ""}`} role="menu">
           {PALETAS.map((p) => (
             <button
               type="button"

@@ -58,7 +58,6 @@ export default function Dashboard() {
 
   const contratosAtivos = dados?.contratos.filter((c) => c.ativo).length ?? 0;
   const reclamacoesAbertas = dados?.reclamacoes.filter((r) => STATUS_RECLAMACAO_ABERTA.has(r.status)).length ?? 0;
-  const valorTotalOS = (dados?.ordens || []).reduce((acc, o) => acc + Number(o.valor_total || 0), 0);
 
   const cartoes = [
     { label: "Prefeituras atendidas", valor: dados?.prefeituras.length, icon: "ti-building-bank", to: "/prefeituras" },
@@ -67,8 +66,6 @@ export default function Dashboard() {
     { label: "Veículos da frota", valor: dados?.veiculos.length, icon: "ti-truck", to: "/veiculos" },
     { label: "Funcionários", valor: dados?.funcionarios.length, icon: "ti-users", to: "/funcionarios" },
     { label: "Tipos de serviço", valor: dados?.atividades.length, icon: "ti-list-check", to: "/atividades" },
-    { label: "Materiais cadastrados", valor: dados?.materiais.length, icon: "ti-package", to: "/materiais" },
-    { label: "Cidades / Bairros", valor: dados ? `${dados.cidades.length} / ${dados.bairros.length}` : undefined, icon: "ti-map-pin", to: "/bairros" },
   ];
 
   return (
@@ -103,18 +100,6 @@ export default function Dashboard() {
                   </div>
                 </Link>
               ))}
-            </div>
-
-            <div className="card" style={{ marginTop: 16 }}>
-              <div className="table-header" style={{ marginBottom: 12 }}>
-                <h3 style={{ margin: 0, fontSize: 15 }}>Resumo financeiro das OS</h3>
-              </div>
-              <p style={{ fontSize: 14, color: "var(--text-secondary)", margin: 0 }}>
-                Valor total somado de todas as ordens de serviço lançadas:{" "}
-                <strong style={{ color: "var(--text-primary)" }}>
-                  R$ {valorTotalOS.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                </strong>
-              </p>
             </div>
           </>
         )}

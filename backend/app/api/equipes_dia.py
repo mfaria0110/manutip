@@ -27,6 +27,7 @@ class MembroOut(MembroIn):
 
 class EquipeDiaOut(BaseModel):
     id: uuid.UUID
+    nome: str | None
     data: date
     veiculo_id: uuid.UUID | None
     membros: list[MembroOut]
@@ -36,12 +37,14 @@ class EquipeDiaOut(BaseModel):
 
 
 class EquipeDiaCreate(BaseModel):
+    nome: str
     data: date
     veiculo_id: uuid.UUID | None = None
     membros: list[MembroIn] = []
 
 
 class EquipeDiaUpdate(BaseModel):
+    nome: str | None = None
     data: date | None = None
     veiculo_id: uuid.UUID | None = None
     membros: list[MembroIn] | None = None
@@ -63,9 +66,21 @@ def listar(db: Session = Depends(get_db)):
     return [_saida(i) for i in itens]
 
 
+@router.get("/proximo-nome", dependencies=[Depends(requer_acesso("equipes", "use"))])
+def proximo_nome(db: Session = Depends(get_db)):
+    """Sugere o próximo nome de equipe no padrão SELxxx, com base no maior
+    número já usado (não depende da equipe não ter sido excluída)."""
+    nomes = [n for (n,) in db.query(EquipeDia.nome).filter(EquipeDia.nome.isnot(None))]
+    maior = 0
+    for nome in nomes:
+        if nome.upper().startswith("SEL") and nome[3:].isdigit():
+            maior = max(maior, int(nome[3:]))
+    return {"nome": f"SEL{maior + 1:03d}"}
+
+
 @router.post("", response_model=EquipeDiaOut, dependencies=[Depends(requer_acesso("equipes", "edit"))])
 def criar(req: EquipeDiaCreate, db: Session = Depends(get_db)):
-    obj = EquipeDia(data=req.data, veiculo_id=req.veiculo_id)
+    obj = EquipeDia(nome=req.nome, data=req.data, veiculo_id=req.veiculo_id)
     db.add(obj)
     db.flush()
     for membro in req.membros:

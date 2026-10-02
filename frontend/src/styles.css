@@ -149,9 +149,32 @@ button {
   padding: 20px 14px;
   height: 100vh;
   overflow-y: auto;
+  overflow-x: hidden;
   position: sticky;
   top: 0;
+  transition: width 0.18s ease, padding 0.18s ease;
 }
+
+.sidebar.recolhida {
+  width: 72px;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.sidebar.recolhida .sidebar-logo span,
+.sidebar.recolhida .sidebar-group-label,
+.sidebar.recolhida .sidebar-link span {
+  display: none;
+}
+
+.sidebar.recolhida .sidebar-logo img {
+  max-width: 100%;
+}
+
+.sidebar.recolhida .sidebar-link {
+  justify-content: center;
+}
+
 
 .mobile-menu-btn {
   display: none;
@@ -260,6 +283,13 @@ button {
   z-index: 50;
 }
 
+.tema-pop.abaixo {
+  bottom: auto;
+  top: calc(100% + 6px);
+  left: auto;
+  right: 0;
+}
+
 .tema-opt {
   display: flex;
   align-items: center;
@@ -319,12 +349,6 @@ button {
   font-weight: 600;
 }
 
-.sidebar-footer {
-  margin-top: auto;
-  padding-top: 14px;
-  border-top: 1px solid var(--border-dark);
-}
-
 .sidebar-user {
   display: flex;
   align-items: center;
@@ -350,25 +374,66 @@ button {
   min-width: 0;
 }
 
-.sidebar-user-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: #fff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sidebar-user-role {
-  font-size: 11px;
-  color: var(--text-inverse-muted);
-}
-
 .main-area {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
+}
+
+.userbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  padding: 8px 24px;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+.userbar .sidebar-user {
+  padding: 0;
+}
+
+.userbar .btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.userbar-toggle {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(255, 255, 255, 0.18);
+  color: var(--on-accent, #fff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.userbar-toggle:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.userbar .sidebar-user-avatar {
+  background: rgba(255, 255, 255, 0.25);
+  color: var(--on-accent, #fff);
+}
+
+.userbar-nome {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--on-accent, #fff);
+  white-space: nowrap;
+}
+
+.userbar-papel {
+  font-size: 11px;
+  color: var(--on-accent, #fff);
+  opacity: 0.8;
 }
 
 .topbar {
@@ -674,6 +739,25 @@ tbody tr:hover {
     transform: translateX(0);
   }
 
+  .sidebar.recolhida {
+    width: 248px;
+    padding: 20px 14px;
+  }
+
+  .sidebar.recolhida .sidebar-logo span,
+  .sidebar.recolhida .sidebar-group-label,
+  .sidebar.recolhida .sidebar-link span {
+    display: initial;
+  }
+
+  .sidebar.recolhida .sidebar-link {
+    justify-content: flex-start;
+  }
+
+  .userbar-toggle {
+    display: none;
+  }
+
   .sidebar-backdrop.visivel {
     display: block;
     position: fixed;
@@ -687,6 +771,10 @@ tbody tr:hover {
   }
 
   .topbar {
+    padding-left: 64px;
+  }
+
+  .userbar {
     padding-left: 64px;
   }
 
@@ -742,14 +830,14 @@ tbody tr:hover {
 .dash-hero-conteudo {
   position: relative;
   z-index: 1;
-  padding: 28px 32px;
+  padding: 8px 32px 2px;
   color: #fff;
 }
 
 .dash-hero-logo {
-  height: 34px;
+  height: 72px;
   background: #fff;
-  padding: 5px 9px;
+  padding: 7px 13px;
   border-radius: 6px;
   margin-bottom: 14px;
 }
@@ -813,4 +901,78 @@ tbody tr:hover {
   font-size: 12.5px;
   color: var(--text-secondary);
   margin-top: 2px;
+}
+
+/* ============================================================================
+   Relatório de Pontos Atendidos — cabeçalho no modelo da planilha legada
+   (logo + cidade + período) e tabela com totais no rodapé.
+   ============================================================================ */
+.relatorio-cabecalho {
+  display: grid;
+  grid-template-columns: 160px 1fr 1fr;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 18px;
+  margin-bottom: 16px;
+}
+
+.relatorio-cabecalho img {
+  width: 100%;
+  height: auto;
+}
+
+.relatorio-cidade {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.relatorio-titulo {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: right;
+  border-left: 2px solid var(--border);
+  padding-left: 16px;
+}
+
+.tabela-compacta td {
+  font-size: 12px;
+}
+
+.tabela-relatorio th {
+  padding: 8px 12px;
+}
+
+.tabela-relatorio td {
+  font-size: 11px;
+}
+
+.tabela-relatorio tfoot td {
+  border-top: 2px solid var(--text-primary);
+  background: var(--accent-soft);
+}
+
+@media print {
+  .no-print,
+  .sidebar,
+  .userbar,
+  .mobile-menu-btn {
+    display: none !important;
+  }
+
+  .main-area,
+  .content {
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .card {
+    box-shadow: none !important;
+    border: none !important;
+  }
 }

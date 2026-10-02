@@ -33,6 +33,7 @@ class ExecucaoOut(BaseModel):
     data_execucao: date
     equipe_dia_id: uuid.UUID | None
     observacoes: str | None
+    pontos: int
     itens: list[ItemOut]
 
     class Config:
@@ -44,6 +45,7 @@ class ExecucaoCreate(BaseModel):
     data_execucao: date
     equipe_dia_id: uuid.UUID | None = None
     observacoes: str | None = None
+    pontos: int = 1
     itens: list[ItemIn] = []
 
 
@@ -51,6 +53,7 @@ class ExecucaoUpdate(BaseModel):
     data_execucao: date | None = None
     equipe_dia_id: uuid.UUID | None = None
     observacoes: str | None = None
+    pontos: int | None = None
     itens: list[ItemIn] | None = None
 
 
@@ -73,6 +76,7 @@ def criar(req: ExecucaoCreate, db: Session = Depends(get_db)):
         data_execucao=req.data_execucao,
         equipe_dia_id=req.equipe_dia_id,
         observacoes=req.observacoes,
+        pontos=req.pontos,
     )
     db.add(obj)
     db.flush()

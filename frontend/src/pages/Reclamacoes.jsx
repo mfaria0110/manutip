@@ -117,6 +117,8 @@ export default function Reclamacoes() {
       modulo="reclamacoes"
       api={apiReclamacoes}
       valoresPadrao={{ status: "ABERTA", nome_reclamante: "SELLES", prefeitura_id: prefeituraConfirmada }}
+      queryExtra={`?prefeitura_id=${prefeituraConfirmada}`}
+      classeTabela="tabela-compacta"
       acoesExtras={(item) => (
         <button
           className="btn btn-ghost"
@@ -211,17 +213,22 @@ export default function Reclamacoes() {
         { name: "observacoes", label: "Observações", type: "textarea", rows: 3, fullWidth: true },
       ]}
       filtroTopo={
-        <button
-          type="button"
-          className="btn"
-          onClick={() => {
-            setPrefeituraConfirmada(null);
-            setPrefeituraEscolhida("");
-          }}
-        >
-          <i className="ti ti-replace" aria-hidden="true" style={{ marginRight: 6 }} />
-          Trocar prefeitura
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
+              setPrefeituraConfirmada(null);
+              setPrefeituraEscolhida("");
+            }}
+          >
+            <i className="ti ti-replace" aria-hidden="true" style={{ marginRight: 6 }} />
+            Trocar prefeitura
+          </button>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>
+            {prefeituras.find((p) => p.id === prefeituraConfirmada)?.nome}
+          </span>
+        </div>
       }
     />
   );

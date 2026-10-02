@@ -39,6 +39,7 @@ MODULOS = [
     "reclamacoes",
     "pedidos",
     "execucoes",
+    "relatorios",
     "usuarios",
 ]
 

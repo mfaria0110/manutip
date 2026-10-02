@@ -4,6 +4,10 @@ import { apiMateriais } from "./api";
 const CATEGORIAS = [
   { value: "GERAL", label: "Geral" },
   { value: "LAMPADA", label: "Lâmpada" },
+  { value: "RELE", label: "Relê" },
+  { value: "BASE", label: "Base" },
+  { value: "PERFURANTE", label: "Perfurante" },
+  { value: "CONECTOR", label: "Conector" },
 ];
 
 const VAZIO = { codigo: "", nome: "", unidade: "", categoria: "GERAL", custo_unitario: "" };

@@ -18,6 +18,7 @@ import OrdensServico from "./pages/OrdensServico";
 import Reclamacoes from "./pages/Reclamacoes";
 import ExecucaoReclamacao from "./pages/ExecucaoReclamacao";
 import EquipesDia from "./pages/EquipesDia";
+import RelatorioPontos from "./pages/RelatorioPontos";
 import Usuarios from "./pages/Usuarios";
 
 function Rotas() {
@@ -42,6 +43,7 @@ function Rotas() {
         <Route path="/reclamacoes/:id/execucao" element={<ExecucaoReclamacao />} />
         <Route path="/equipes" element={<EquipesDia />} />
         <Route path="/ordens-servico" element={<OrdensServico />} />
+        <Route path="/relatorios/pontos-atendidos" element={<RelatorioPontos />} />
         <Route path="/usuarios" element={<Usuarios />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

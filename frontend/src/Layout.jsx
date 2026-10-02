@@ -35,6 +35,10 @@ const GRUPOS = [
     ],
   },
   {
+    label: "Relatórios",
+    itens: [{ to: "/relatorios/pontos-atendidos", icon: "ti-report", label: "Pontos atendidos" }],
+  },
+  {
     label: "Administração",
     itens: [{ to: "/usuarios", icon: "ti-shield-lock", label: "Usuários" }],
   },
@@ -45,11 +49,20 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuAberto, setMenuAberto] = useState(false);
+  const [recolhida, setRecolhida] = useState(() => localStorage.getItem("manutip_menu_recolhido") === "1");
 
   // Fecha a gaveta do menu (mobile/tablet) sempre que a rota muda.
   useEffect(() => {
     setMenuAberto(false);
   }, [location.pathname]);
+
+  function alternarRecolhida() {
+    setRecolhida((v) => {
+      const novo = !v;
+      localStorage.setItem("manutip_menu_recolhido", novo ? "1" : "0");
+      return novo;
+    });
+  }
 
   function sair() {
     logout();
@@ -70,15 +83,15 @@ export default function Layout() {
 
       <div className={"sidebar-backdrop" + (menuAberto ? " visivel" : "")} onClick={() => setMenuAberto(false)} />
 
-      <aside className={"sidebar" + (menuAberto ? " aberta" : "")}>
+      <aside className={"sidebar" + (menuAberto ? " aberta" : "") + (recolhida ? " recolhida" : "")}>
         <div className="sidebar-logo">
           <img src={logoSelles} alt="Selles" />
           <span>Manutip</span>
         </div>
 
-        <NavLink to="/" end className={({ isActive }) => "sidebar-link" + (isActive ? " active" : "")}>
+        <NavLink to="/" end className={({ isActive }) => "sidebar-link" + (isActive ? " active" : "")} title="Início">
           <i className="ti ti-home" aria-hidden="true" />
-          Início
+          <span>Início</span>
         </NavLink>
 
         {GRUPOS.map((grupo) => (
@@ -89,37 +102,39 @@ export default function Layout() {
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) => "sidebar-link" + (isActive ? " active" : "")}
+                title={item.label}
               >
                 <i className={`ti ${item.icon}`} aria-hidden="true" />
-                {item.label}
+                <span>{item.label}</span>
               </NavLink>
             ))}
           </div>
         ))}
+      </aside>
 
-        <div className="sidebar-footer">
-          <div className="sidebar-user">
+      <div className="main-area">
+        <div className="userbar">
+          <button
+            className="userbar-toggle"
+            onClick={alternarRecolhida}
+            title={recolhida ? "Expandir menu" : "Reduzir menu"}
+            aria-label={recolhida ? "Expandir menu" : "Reduzir menu"}
+          >
+            <i className={`ti ${recolhida ? "ti-layout-sidebar-left-expand" : "ti-layout-sidebar-left-collapse"}`} aria-hidden="true" />
+          </button>
+          <div className="sidebar-user" style={{ marginLeft: "auto" }}>
             <div className="sidebar-user-avatar">{iniciais}</div>
             <div className="sidebar-user-info">
-              <div className="sidebar-user-name">{perfil?.nome}</div>
-              <div className="sidebar-user-role">{perfil?.papel}</div>
+              <div className="userbar-nome">{perfil?.nome}</div>
+              <div className="userbar-papel">{perfil?.papel}</div>
             </div>
           </div>
-          <div style={{ marginTop: 6 }}>
-            <SeletorTema />
-          </div>
-          <button
-            className="btn btn-ghost"
-            style={{ width: "100%", marginTop: 6, color: "var(--text-inverse-muted)" }}
-            onClick={sair}
-          >
+          <SeletorTema claro />
+          <button className="btn btn-ghost" style={{ color: "var(--on-accent, #fff)" }} onClick={sair}>
             <i className="ti ti-logout" aria-hidden="true" style={{ marginRight: 6 }} />
             Sair
           </button>
         </div>
-      </aside>
-
-      <div className="main-area">
         <Outlet />
       </div>
     </div>

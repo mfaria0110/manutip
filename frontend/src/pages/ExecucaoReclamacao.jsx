@@ -15,6 +15,7 @@ import {
   apiPotenciasLampada,
   apiReclamacoes,
   apiTiposLampada,
+  reabrirReclamacao,
 } from "../api";
 
 const LABEL_STATUS = {
@@ -56,18 +57,23 @@ export default function ExecucaoReclamacao() {
   const [execucaoEditando, setExecucaoEditando] = useState(null); // null = criando nova
   const [dataExecucao, setDataExecucao] = useState("");
   const [equipeId, setEquipeId] = useState("");
+  const [pontos, setPontos] = useState(1);
   const [observacoes, setObservacoes] = useState("");
   const [itens, setItens] = useState([novoItem()]);
   const [erro, setErro] = useState("");
   const [salvando, setSalvando] = useState(false);
-  const [excluindo, setExcluindo] = useState(null);
-  const [apagando, setApagando] = useState(false);
   const [modalEquipeAberto, setModalEquipeAberto] = useState(false);
   const [modalMaterialIdx, setModalMaterialIdx] = useState(null); // índice do item que pediu o material novo
 
   const [itemExcluindo, setItemExcluindo] = useState(null);
   const [apagandoItem, setApagandoItem] = useState(false);
   const [validando, setValidando] = useState(false);
+
+  const [modalReabrirAberto, setModalReabrirAberto] = useState(false);
+  const [reabrirUsername, setReabrirUsername] = useState("");
+  const [reabrirSenha, setReabrirSenha] = useState("");
+  const [erroReabrir, setErroReabrir] = useState("");
+  const [reabrindo, setReabrindo] = useState(false);
 
   function carregar() {
     setCarregando(true);
@@ -106,13 +112,19 @@ export default function ExecucaoReclamacao() {
     const eq = equipes.find((e) => e.id === eid);
     if (!eq) return "—";
     const membros = eq.membros.map((m) => m.funcionario_nome).join(", ");
-    return `${eq.data} — ${membros || "sem membros"}`;
+    return `${eq.nome || eq.data} — ${membros || "sem membros"}`;
+  };
+  const composicaoEquipe = (eid) => {
+    const eq = equipes.find((e) => e.id === eid);
+    if (!eq || eq.membros.length === 0) return "Sem membros cadastrados.";
+    return eq.membros.map((m) => (m.papel ? `${m.papel}: ${m.funcionario_nome}` : m.funcionario_nome)).join("\n");
   };
 
   function abrirNovaExecucao() {
     setExecucaoEditando(null);
     setDataExecucao(new Date().toISOString().slice(0, 10));
     setEquipeId("");
+    setPontos(1);
     setObservacoes("");
     setItens([novoItem()]);
     setErro("");
@@ -126,6 +138,7 @@ export default function ExecucaoReclamacao() {
     setExecucaoEditando(ex);
     setDataExecucao(ex.data_execucao);
     setEquipeId(ex.equipe_dia_id || "");
+    setPontos(ex.pontos || 1);
     setObservacoes(ex.observacoes || "");
     setItens(
       ex.itens.length > 0
@@ -196,6 +209,7 @@ export default function ExecucaoReclamacao() {
         await apiExecucoesReclamacao.atualizar(execucaoEditando.id, {
           data_execucao: dataExecucao,
           equipe_dia_id: equipeId || null,
+          pontos: Number(pontos) || 1,
           observacoes: observacoes || null,
           itens: itensPayload,
         });
@@ -204,6 +218,7 @@ export default function ExecucaoReclamacao() {
           reclamacao_id: id,
           data_execucao: dataExecucao,
           equipe_dia_id: equipeId || null,
+          pontos: Number(pontos) || 1,
           observacoes: observacoes || null,
           itens: itensPayload,
         });
@@ -214,21 +229,6 @@ export default function ExecucaoReclamacao() {
       setErro(err.message);
     } finally {
       setSalvando(false);
-    }
-  }
-
-  async function confirmarExclusao() {
-    setApagando(true);
-    setErroLista("");
-    try {
-      await apiExecucoesReclamacao.excluir(excluindo.id);
-      setExcluindo(null);
-      carregar();
-    } catch (err) {
-      setErroLista(err.message);
-      setExcluindo(null);
-    } finally {
-      setApagando(false);
     }
   }
 
@@ -260,6 +260,28 @@ export default function ExecucaoReclamacao() {
     }
   }
 
+  function abrirModalReabrir() {
+    setReabrirUsername("");
+    setReabrirSenha("");
+    setErroReabrir("");
+    setModalReabrirAberto(true);
+  }
+
+  async function confirmarReabrir(e) {
+    e.preventDefault();
+    setReabrindo(true);
+    setErroReabrir("");
+    try {
+      const atualizado = await reabrirReclamacao(id, reabrirUsername, reabrirSenha);
+      setReclamacao(atualizado);
+      setModalReabrirAberto(false);
+    } catch (err) {
+      setErroReabrir(err.message);
+    } finally {
+      setReabrindo(false);
+    }
+  }
+
   if (carregando) {
     return (
       <>
@@ -285,6 +307,10 @@ export default function ExecucaoReclamacao() {
       </>
     );
   }
+
+  // Uma vez validada (ou além), a reclamação trava: Nova execução, editar e
+  // excluir ficam desabilitados até um ADMIN reabrir com a própria senha.
+  const bloqueado = reclamacao.status !== "ABERTA";
 
   // Agrupa por data + equipe — só abre um card novo quando a data ou a
   // equipe mudam; a equipe fica no cabeçalho do card, não repetida linha a
@@ -327,14 +353,25 @@ export default function ExecucaoReclamacao() {
               )}
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
-              <span
-                className={`badge ${
-                  ["CONCLUIDA", "VALIDADA"].includes(reclamacao.status) ? "badge-success" : "badge-muted"
-                }`}
-              >
-                {LABEL_STATUS[reclamacao.status] || reclamacao.status}
-              </span>
-              {reclamacao.status === "ABERTA" && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                {bloqueado && (
+                  <button
+                    className="btn btn-ghost"
+                    onClick={abrirModalReabrir}
+                    title="Reabrir (requer senha de administrador)"
+                  >
+                    <i className="ti ti-lock-open" aria-hidden="true" />
+                  </button>
+                )}
+                <span
+                  className={`badge ${
+                    ["CONCLUIDA", "VALIDADA"].includes(reclamacao.status) ? "badge-success" : "badge-muted"
+                  }`}
+                >
+                  {LABEL_STATUS[reclamacao.status] || reclamacao.status}
+                </span>
+              </div>
+              {reclamacao.status === "ABERTA" && execucoes.length > 0 && (
                 <button className="btn btn-primary" onClick={validarLancamento} disabled={validando}>
                   {validando ? "Validando..." : "Validar lançamento"}
                 </button>
@@ -350,7 +387,12 @@ export default function ExecucaoReclamacao() {
           style={{ marginTop: 20, marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}
         >
           <h3 style={{ margin: 0, fontSize: 15 }}>Execuções</h3>
-          <button className="btn btn-primary" onClick={abrirNovaExecucao}>
+          <button
+            className="btn btn-primary"
+            onClick={abrirNovaExecucao}
+            disabled={bloqueado}
+            title={bloqueado ? "Reabra a reclamação para lançar uma nova execução" : undefined}
+          >
             <i className="ti ti-plus" aria-hidden="true" style={{ marginRight: 6 }} />
             Nova execução
           </button>
@@ -366,16 +408,6 @@ export default function ExecucaoReclamacao() {
                   {grupo.data}
                   {grupo.equipeId ? ` — ${nomeEquipe(grupo.equipeId)}` : ""}
                 </strong>
-                {grupo.execucoes.length === 1 && ehAdmin && (
-                  <button
-                    className="btn btn-ghost"
-                    onClick={() => setExcluindo(grupo.execucoes[0])}
-                    title="Excluir esta execução"
-                    style={{ color: "var(--danger)" }}
-                  >
-                    <i className="ti ti-trash" aria-hidden="true" />
-                  </button>
-                )}
               </div>
               {grupo.execucoes.length === 1 && grupo.execucoes[0].observacoes && (
                 <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 6 }}>
@@ -415,6 +447,7 @@ export default function ExecucaoReclamacao() {
                                   <button
                                     className="btn btn-ghost"
                                     onClick={() => abrirEdicaoExecucao(ex)}
+                                    disabled={bloqueado}
                                     title="Editar execução"
                                   >
                                     <i className="ti ti-edit" aria-hidden="true" />
@@ -423,6 +456,7 @@ export default function ExecucaoReclamacao() {
                                     <button
                                       className="btn btn-ghost"
                                       onClick={() => setItemExcluindo(it)}
+                                      disabled={bloqueado}
                                       title="Excluir"
                                       style={{ color: "var(--danger)" }}
                                     >
@@ -456,17 +490,34 @@ export default function ExecucaoReclamacao() {
             </div>
             <form onSubmit={salvar}>
               <div className="form-grid">
-                <div className="form-field" style={{ "--span": 4 }}>
+                <div className="form-field" style={{ "--span": 2 }}>
                   <label>Data da execução</label>
                   <input type="date" required value={dataExecucao} onChange={(e) => setDataExecucao(e.target.value)} />
+                </div>
+                <div className="form-field" style={{ "--span": 2 }}>
+                  <label>Pontos</label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    required
+                    style={{ textAlign: "center" }}
+                    value={pontos}
+                    onChange={(e) => setPontos(e.target.value)}
+                  />
                 </div>
                 <div className="form-field" style={{ "--span": 8 }}>
                   <label>Equipe</label>
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    <select style={{ flex: 1 }} value={equipeId} onChange={(e) => setEquipeId(e.target.value)}>
+                    <select
+                      style={{ flex: 1 }}
+                      value={equipeId}
+                      onChange={(e) => setEquipeId(e.target.value)}
+                      title={equipeId ? composicaoEquipe(equipeId) : undefined}
+                    >
                       <option value="">Selecione...</option>
                       {equipes.map((eq) => (
-                        <option key={eq.id} value={eq.id}>
+                        <option key={eq.id} value={eq.id} title={composicaoEquipe(eq.id)}>
                           {nomeEquipe(eq.id)}
                         </option>
                       ))}
@@ -626,15 +677,6 @@ export default function ExecucaoReclamacao() {
         </div>
       )}
 
-      <ConfirmDialog
-        aberto={!!excluindo}
-        titulo="Excluir execução"
-        mensagem="Excluir esta execução e os materiais lançados nela? Essa ação não pode ser desfeita."
-        confirmando={apagando}
-        onConfirmar={confirmarExclusao}
-        onCancelar={() => setExcluindo(null)}
-      />
-
       <ModalNovaEquipe
         aberto={modalEquipeAberto}
         onFechar={() => setModalEquipeAberto(false)}
@@ -654,6 +696,48 @@ export default function ExecucaoReclamacao() {
         onConfirmar={confirmarExclusaoItem}
         onCancelar={() => setItemExcluindo(null)}
       />
+
+      {modalReabrirAberto && (
+        <div className="modal-overlay">
+          <div className="modal" style={{ width: 380 }}>
+            <h2>Reabrir reclamação</h2>
+            <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: -8 }}>
+              Volta o status para "Aberta" e libera edição/exclusão. Exige a senha de um usuário administrador.
+            </p>
+            <form onSubmit={confirmarReabrir}>
+              <div className="form-grid">
+                <div className="form-field" style={{ "--span": 12 }}>
+                  <label>Usuário administrador</label>
+                  <input
+                    required
+                    autoFocus
+                    value={reabrirUsername}
+                    onChange={(e) => setReabrirUsername(e.target.value)}
+                  />
+                </div>
+                <div className="form-field" style={{ "--span": 12 }}>
+                  <label>Senha</label>
+                  <input
+                    type="password"
+                    required
+                    value={reabrirSenha}
+                    onChange={(e) => setReabrirSenha(e.target.value)}
+                  />
+                </div>
+              </div>
+              {erroReabrir && <p className="erro-msg">{erroReabrir}</p>}
+              <div className="modal-actions">
+                <button type="button" className="btn" onClick={() => setModalReabrirAberto(false)}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={reabrindo}>
+                  {reabrindo ? "Verificando..." : "Reabrir"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 }
