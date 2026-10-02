@@ -40,11 +40,41 @@ const MASCARAS = {
   uf: (v) => v.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 2),
   renavam: (v) => v.replace(/\D/g, "").slice(0, 11),
   ano: (v) => v.replace(/\D/g, "").slice(0, 4),
+  moeda: (v) => formatarMoeda(v),
 };
 
 function aplicarMascara(mascara, valor) {
   const fn = MASCARAS[mascara];
   return fn ? fn(valor) : valor;
+}
+
+// Formata dígitos como moeda BR (1234 -> "12,34"; nunca usa o valor como
+// ponto flutuante direto, só os dígitos puros, pra evitar cursor pulando
+// de lugar enquanto digita.
+function formatarMoeda(v) {
+  const digitos = String(v).replace(/\D/g, "");
+  const numero = (parseInt(digitos || "0", 10) / 100).toFixed(2);
+  const [inteiro, centavos] = numero.split(".");
+  return inteiro.replace(/\B(?=(\d{3})+(?!\d))/g, ".") + "," + centavos;
+}
+
+// Converte "1.234,56" (ou um número já puro) de volta pra float, pra mandar
+// pro backend — que espera um número, não o texto formatado.
+function moedaParaNumero(v) {
+  if (typeof v !== "string") return v;
+  const limpo = v.replace(/\./g, "").replace(",", ".");
+  const num = Number(limpo);
+  return Number.isNaN(num) ? v : num;
+}
+
+// Diferente de formatarMoeda (que trata a entrada como dígitos puros
+// enquanto o usuário digita): aqui o valor JÁ é um número de verdade (vindo
+// do backend ou de valoresPadrao), então formata direto, sem tratar como
+// centavos.
+function numeroParaMoeda(valor) {
+  const num = Number(valor);
+  if (Number.isNaN(num)) return "0,00";
+  return num.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 // Largura padrão (em colunas de 12) por tipo/máscara de campo, usada quando
@@ -59,6 +89,7 @@ const TAMANHO_PADRAO = {
   uf: 2,
   renavam: 3,
   ano: 2,
+  moeda: 3,
 };
 
 function tamanhoDoCampo(c) {
@@ -113,6 +144,19 @@ export default function CadastroPage({
 
   const podeEditar = pode(modulo, "edit");
 
+  // Campos com mask "moeda" guardam no form o texto já formatado ("1.234,56"),
+  // não o número — então todo valor vindo de fora (registro do backend,
+  // valoresPadrao) precisa passar por aqui antes de entrar no form.
+  function formatarCamposMoeda(valores) {
+    const resultado = { ...valores };
+    campos.forEach((c) => {
+      if (c.mask === "moeda" && resultado[c.name] !== "" && resultado[c.name] != null) {
+        resultado[c.name] = numeroParaMoeda(resultado[c.name]);
+      }
+    });
+    return resultado;
+  }
+
   function carregar() {
     if (exigeFiltro && !queryExtra) {
       setItens([]);
@@ -134,7 +178,7 @@ export default function CadastroPage({
     campos.forEach((c) => {
       base[c.name] = c.type === "checkbox" ? true : "";
     });
-    setForm({ ...base, ...valoresPadrao });
+    setForm(formatarCamposMoeda({ ...base, ...valoresPadrao }));
     setEditando({});
     setErro("");
     // Sugestão calculada sob demanda (ex.: próximo código) — chega depois e
@@ -164,7 +208,7 @@ export default function CadastroPage({
         mesclado[campo] = valor;
       }
     });
-    setForm(mesclado);
+    setForm(formatarCamposMoeda(mesclado));
     setEditando(item);
     setErro("");
   }
@@ -200,11 +244,12 @@ async function confirmarExclusao() {
       const camposNumericos = new Set(
         campos.filter((c) => c.type === "number" || c.mask === "ano").map((c) => c.name)
       );
+      const camposMoeda = new Set(campos.filter((c) => c.mask === "moeda").map((c) => c.name));
       const payload = Object.fromEntries(
-        Object.entries(form).map(([k, v]) => [
-          k,
-          v === "" && (k.endsWith("_id") || camposNumericos.has(k)) ? null : v,
-        ])
+        Object.entries(form).map(([k, v]) => {
+          if (camposMoeda.has(k)) return [k, v === "" ? null : moedaParaNumero(v)];
+          return [k, v === "" && (k.endsWith("_id") || camposNumericos.has(k)) ? null : v];
+        })
       );
       if (editando && editando[idKey]) {
         await api.atualizar(editando[idKey], payload);

@@ -36,7 +36,7 @@ export default function Materiais() {
         { name: "nome", label: "Nome", required: true, size: 6 },
         { name: "unidade", label: "Unidade (UN, M, KG...)", required: true, size: 3 },
         { name: "categoria", label: "Categoria", type: "select", size: 3, options: CATEGORIAS },
-        { name: "custo_unitario", label: "Custo unitário (R$)", type: "number", step: "0.01", required: true, size: 3 },
+        { name: "custo_unitario", label: "Custo unitário (R$)", mask: "moeda", center: true, required: true, size: 3 },
       ]}
       valoresPadrao={{ categoria: "GERAL", custo_unitario: 0 }}
       obterValoresPadrao={() => proximoCodigoMaterial()}
