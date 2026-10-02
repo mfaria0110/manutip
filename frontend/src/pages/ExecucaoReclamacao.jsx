@@ -660,7 +660,16 @@ export default function ExecucaoReclamacao() {
                         className="btn btn-ghost"
                         onClick={() => removerItem(idx)}
                         title="Remover"
-                        style={{ color: "var(--danger)", fontSize: 24, padding: "6px 10px", marginTop: idx === 0 ? 20 : 0 }}
+                        style={{
+                          color: "var(--danger)",
+                          fontSize: 18,
+                          width: 30,
+                          height: 30,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          padding: 0,
+                        }}
                       >
                         <i className="ti ti-trash" aria-hidden="true" />
                       </button>
