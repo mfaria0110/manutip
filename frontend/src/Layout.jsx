@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAcesso } from "./AcessoContext";
-import { logout } from "./api";
+import { heartbeat, logout } from "./api";
 import SeletorTema from "./SeletorTema";
 import logoSelles from "./assets/logo-selles.png";
 
@@ -56,6 +56,16 @@ export default function Layout() {
     setMenuAberto(false);
   }, [location.pathname]);
 
+  // Sinal de vida da sessão — mantém o usuário marcado como "conectado" no
+  // servidor, bloqueando login com o mesmo usuário em outra máquina enquanto
+  // esta aba estiver aberta (ver JANELA_SESSAO_ATIVA no backend).
+  useEffect(() => {
+    const id = setInterval(() => {
+      heartbeat().catch(() => {});
+    }, 60000);
+    return () => clearInterval(id);
+  }, []);
+
   function alternarRecolhida() {
     setRecolhida((v) => {
       const novo = !v;
@@ -64,8 +74,8 @@ export default function Layout() {
     });
   }
 
-  function sair() {
-    logout();
+  async function sair() {
+    await logout();
     navigate("/login");
   }
 

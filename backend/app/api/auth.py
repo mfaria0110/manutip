@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -8,6 +10,13 @@ from app.core.security import gerar_token, verificar_senha
 from app.models.usuario import Usuario
 
 router = APIRouter(tags=["auth"])
+
+# Janela de "sessão ainda ativa": o frontend manda um heartbeat a cada 60s
+# enquanto a aba está aberta e logada; se o último heartbeat for mais recente
+# que isso, outra máquina não consegue logar com o mesmo usuário. Maior que o
+# intervalo do heartbeat para tolerar uma falha de rede pontual sem travar o
+# próprio usuário fora.
+JANELA_SESSAO_ATIVA = timedelta(minutes=3)
 
 
 class LoginRequest(BaseModel):
@@ -28,8 +37,37 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Usuário ou senha inválidos.")
     if not usuario.ativo:
         raise HTTPException(status_code=403, detail="Usuário inativo.")
+
+    agora = datetime.now(timezone.utc)
+    if usuario.sessao_ativa_em and usuario.sessao_ativa_em > agora - JANELA_SESSAO_ATIVA:
+        raise HTTPException(
+            status_code=409,
+            detail="Este usuário já está conectado em outra máquina. Saia de lá antes de entrar aqui.",
+        )
+
+    usuario.sessao_ativa_em = agora
+    db.commit()
     token = gerar_token(usuario.id)
     return LoginResponse(token=token, nome=usuario.nome, papel=usuario.papel.value)
+
+
+@router.post("/api/logout", status_code=204)
+def logout(usuario: Usuario = Depends(usuario_atual), db: Session = Depends(get_db)):
+    """Libera a sessão imediatamente, sem precisar esperar a janela de
+    heartbeat expirar, para o usuário poder entrar em outra máquina na hora."""
+    usuario.sessao_ativa_em = None
+    db.commit()
+    return None
+
+
+@router.post("/api/heartbeat", status_code=204)
+def heartbeat(usuario: Usuario = Depends(usuario_atual), db: Session = Depends(get_db)):
+    """Chamado periodicamente pelo frontend enquanto a sessão está aberta,
+    pra manter o usuário marcado como "conectado" e bloquear login em outra
+    máquina até fazer logout ou ficar JANELA_SESSAO_ATIVA sem dar sinal."""
+    usuario.sessao_ativa_em = datetime.now(timezone.utc)
+    db.commit()
+    return None
 
 
 @router.get("/api/me")

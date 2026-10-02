@@ -1,7 +1,8 @@
 import enum
 import uuid
+from datetime import datetime
 
-from sqlalchemy import Enum, String
+from sqlalchemy import DateTime, Enum, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -30,3 +31,9 @@ class Usuario(TimestampMixin, Base):
     # usuário específico sem criar um perfil novo ou torná-lo admin geral.
     permissoes_extra: Mapped[list[str]] = mapped_column(JSONB, default=list)
     tema: Mapped[str | None] = mapped_column(String(32))
+    # Último "sinal de vida" da sessão ativa (atualizado por heartbeat do
+    # frontend a cada ~1 min). Login novo é bloqueado enquanto esse timestamp
+    # estiver "fresco" (ver JANELA_SESSAO_ATIVA em app/api/auth.py) — impede
+    # 2 máquinas logadas com o mesmo usuário ao mesmo tempo. Logout explícito
+    # zera o campo, liberando login imediato em outra máquina.
+    sessao_ativa_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

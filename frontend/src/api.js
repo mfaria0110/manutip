@@ -42,8 +42,18 @@ export function login(username, senha) {
   });
 }
 
-export function logout() {
+export async function logout() {
+  try {
+    await req("/logout", { method: "POST" });
+  } catch {
+    // Mesmo se o servidor estiver fora, limpa o token local — não trava o
+    // usuário na tela de login por causa disso.
+  }
   localStorage.removeItem("manutip_token");
+}
+
+export function heartbeat() {
+  return req("/heartbeat", { method: "POST" });
 }
 
 export function meuPerfil() {
