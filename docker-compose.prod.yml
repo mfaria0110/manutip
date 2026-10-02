@@ -1,0 +1,35 @@
+# Compose de PRODUÇÃO — sem Postgres em container (usa o Postgres já rodando
+# direto na VPS, fora do Docker, compartilhado com os outros apps). O backend
+# acessa esse Postgres do host via `host.docker.internal`.
+#
+# Uso na VPS:
+#   cp .env.production.example .env   # preencher com os valores reais
+#   docker compose -f docker-compose.prod.yml up -d --build
+#   docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
+#
+# O Nginx do SISTEMA (fora do Docker) faz proxy_pass para 127.0.0.1:8081 (ou
+# a porta escolhida) -> container do frontend. Backend só é alcançável de
+# dentro da rede docker, pelo nginx do próprio frontend (proxy /api/).
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    env_file:
+      - .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_API_URL: ""
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:8081:80"
+    restart: unless-stopped
