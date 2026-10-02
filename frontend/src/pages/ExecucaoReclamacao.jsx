@@ -553,6 +553,12 @@ export default function ExecucaoReclamacao() {
                 {itens.map((item, idx) => {
                   const mat = materialPorId(item.material_id);
                   const ehLampada = mat?.categoria === "LAMPADA";
+                  // Rótulos só aparecem na 1ª linha de cada tipo — a 1ª linha
+                  // em geral, e a 1ª que for lâmpada (Tipo/Potência só existem
+                  // nela), senão a coluna fica sem nenhum rótulo visível.
+                  const primeiraLinhaLampada = itens.findIndex(
+                    (it) => materialPorId(it.material_id)?.categoria === "LAMPADA"
+                  );
                   return (
                     <div
                       key={idx}
@@ -563,11 +569,11 @@ export default function ExecucaoReclamacao() {
                           : "1fr 90px 90px 40px",
                         gap: 8,
                         alignItems: "flex-end",
-                        marginBottom: 30,
+                        marginBottom: 0,
                       }}
                     >
                       <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                        <label style={rotuloCampo}>Material</label>
+                        <label style={rotuloCampo}>{idx === 0 ? "Material" : " "}</label>
                         <div style={{ display: "flex", gap: 6, minWidth: 0, alignItems: "center" }}>
                           <select
                             required
@@ -595,7 +601,7 @@ export default function ExecucaoReclamacao() {
                       </div>
                       {ehLampada && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                          <label style={rotuloCampo}>Tipo</label>
+                          <label style={rotuloCampo}>{idx === primeiraLinhaLampada ? "Tipo" : " "}</label>
                           <ComboCriavel
                             value={item.tipo_lampada_id}
                             onChange={(valor) => atualizarItem(idx, { tipo_lampada_id: valor })}
@@ -611,7 +617,7 @@ export default function ExecucaoReclamacao() {
                       )}
                       {ehLampada && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                          <label style={rotuloCampo}>Potência (W)</label>
+                          <label style={rotuloCampo}>{idx === primeiraLinhaLampada ? "Potência (W)" : " "}</label>
                           <ComboCriavel
                             value={item.potencia_lampada_id}
                             onChange={(valor) => atualizarItem(idx, { potencia_lampada_id: valor })}
@@ -628,7 +634,7 @@ export default function ExecucaoReclamacao() {
                         </div>
                       )}
                       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                        <label style={rotuloCampo}>Qtd. Inst.</label>
+                        <label style={rotuloCampo}>{idx === 0 ? "Qtd. Inst." : " "}</label>
                         <input
                           type="number"
                           min="0"
@@ -639,7 +645,7 @@ export default function ExecucaoReclamacao() {
                         />
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                        <label style={rotuloCampo}>Qtd. Ret.</label>
+                        <label style={rotuloCampo}>{idx === 0 ? "Qtd. Ret." : " "}</label>
                         <input
                           type="number"
                           min="0"
