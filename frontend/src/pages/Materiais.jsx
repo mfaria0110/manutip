@@ -23,7 +23,13 @@ export default function Materiais() {
         { key: "nome", label: "Nome" },
         { key: "unidade", label: "Unidade" },
         { key: "categoria", label: "Categoria", render: (item) => labelCategoria(item.categoria) },
-        { key: "custo_unitario", label: "Custo unitário (R$)" },
+        {
+          key: "custo_unitario",
+          label: "Custo unitário (R$)",
+          render: (item) => (
+            <span style={{ display: "block", textAlign: "center", fontSize: 12 }}>{item.custo_unitario}</span>
+          ),
+        },
       ]}
       campos={[
         { name: "codigo", label: "Código", required: true, size: 3 },
