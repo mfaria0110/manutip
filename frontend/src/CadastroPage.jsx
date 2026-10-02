@@ -95,6 +95,7 @@ export default function CadastroPage({
   autoAbrirNovo,
   acoesExtras,
   alturaModal,
+  larguraModal,
   classeTabela,
 }) {
   const { pode, ehAdmin } = useAcesso();
@@ -310,7 +311,13 @@ async function confirmarExclusao() {
 
       {editando !== null && (
         <div className="modal-overlay">
-          <div className="modal" style={alturaModal ? { minHeight: alturaModal } : undefined}>
+          <div
+            className="modal"
+            style={{
+              ...(alturaModal ? { minHeight: alturaModal } : undefined),
+              ...(larguraModal ? { width: larguraModal } : undefined),
+            }}
+          >
             <h2>{editando[idKey] ? "Editar" : "Novo"} registro</h2>
             <form onSubmit={salvar}>
               <div className="form-grid">
