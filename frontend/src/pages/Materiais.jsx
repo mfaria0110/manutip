@@ -41,6 +41,7 @@ export default function Materiais() {
       valoresPadrao={{ categoria: "GERAL", custo_unitario: 0 }}
       obterValoresPadrao={() => proximoCodigoMaterial()}
       larguraModal={880}
+      classeTabela="tabela-compacta"
     />
   );
 }
