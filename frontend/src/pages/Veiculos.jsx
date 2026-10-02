@@ -23,6 +23,7 @@ export default function Veiculos() {
         { name: "renavam", label: "Renavam", mask: "renavam", center: true, size: 4 },
         { name: "acessorios", label: "Acessórios", type: "textarea", rows: 3, fullWidth: true },
       ]}
+      valoresPadrao={{ ano_fabricacao: 0, ano_modelo: 0, renavam: "0" }}
     />
   );
 }
