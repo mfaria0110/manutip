@@ -92,6 +92,7 @@ export default function CadastroPage({
   queryExtra,
   exigeFiltro,
   valoresPadrao,
+  obterValoresPadrao,
   autoAbrirNovo,
   acoesExtras,
   alturaModal,
@@ -136,6 +137,13 @@ export default function CadastroPage({
     setForm({ ...base, ...valoresPadrao });
     setEditando({});
     setErro("");
+    // Sugestão calculada sob demanda (ex.: próximo código) — chega depois e
+    // só atualiza o form, sem travar a abertura da modal.
+    if (obterValoresPadrao) {
+      obterValoresPadrao()
+        .then((extra) => setForm((f) => ({ ...f, ...extra })))
+        .catch(() => {});
+    }
   }
 
   // Abre o formulário de "Novo" automaticamente ao montar — usado quando a

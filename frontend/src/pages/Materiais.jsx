@@ -1,5 +1,5 @@
 import CadastroPage from "../CadastroPage";
-import { apiMateriais } from "../api";
+import { apiMateriais, proximoCodigoMaterial } from "../api";
 
 const CATEGORIAS = [
   { value: "GERAL", label: "Geral" },
@@ -33,6 +33,7 @@ export default function Materiais() {
         { name: "custo_unitario", label: "Custo unitário (R$)", type: "number", step: "0.01", required: true, size: 3 },
       ]}
       valoresPadrao={{ categoria: "GERAL", custo_unitario: 0 }}
+      obterValoresPadrao={() => proximoCodigoMaterial()}
       larguraModal={880}
     />
   );

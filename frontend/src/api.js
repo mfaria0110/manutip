@@ -104,6 +104,10 @@ export const apiItensExecucao = {
 export const apiTiposLampada = crud("/tipos-lampada");
 export const apiPotenciasLampada = crud("/potencias-lampada");
 
+export function proximoCodigoMaterial() {
+  return req("/materiais/proximo-codigo");
+}
+
 export function relatorioPontosAtendidos(prefeituraId, dataInicio, dataFim) {
   const params = new URLSearchParams({
     prefeitura_id: prefeituraId,
