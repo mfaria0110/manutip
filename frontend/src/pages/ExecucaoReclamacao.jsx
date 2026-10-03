@@ -394,7 +394,7 @@ export default function ExecucaoReclamacao() {
             title={bloqueado ? "Reabra a reclamação para lançar uma nova execução" : undefined}
           >
             <i className="ti ti-plus" aria-hidden="true" style={{ marginRight: 6 }} />
-            Nova execução
+            Execução
           </button>
         </div>
 
@@ -541,9 +541,20 @@ export default function ExecucaoReclamacao() {
 
               <div style={{ marginTop: 10 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                  <label style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-secondary)" }}>
-                    Materiais instalados/retirados
-                  </label>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => setModalMaterialIdx(-1)}
+                      title="Cadastrar novo material"
+                      style={{ fontWeight: 700, fontSize: 15, padding: "4px 10px" }}
+                    >
+                      <i className="ti ti-plus" aria-hidden="true" />
+                    </button>
+                    <label style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-secondary)" }}>
+                      Materiais instalados/retirados
+                    </label>
+                  </div>
                   <button type="button" className="btn btn-primary" onClick={adicionarItem}>
                     <i className="ti ti-plus" aria-hidden="true" style={{ marginRight: 4 }} />
                     Adicionar material
@@ -574,30 +585,19 @@ export default function ExecucaoReclamacao() {
                     >
                       <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
                         {idx === 0 && <label style={rotuloCampo}>Material</label>}
-                        <div style={{ display: "flex", gap: 6, minWidth: 0, alignItems: "center" }}>
-                          <select
-                            required
-                            style={{ flex: 1, minWidth: 0 }}
-                            value={item.material_id}
-                            onChange={(e) => selecionarMaterial(idx, e.target.value)}
-                          >
-                            <option value="">Material...</option>
-                            {materiais.map((m) => (
-                              <option key={m.id} value={m.id}>
-                                {m.nome}
-                              </option>
-                            ))}
-                          </select>
-                          <button
-                            type="button"
-                            className="btn btn-primary"
-                            onClick={() => setModalMaterialIdx(idx)}
-                            title="Cadastrar novo material"
-                            style={{ fontWeight: 700, fontSize: 15, padding: "4px 10px", flexShrink: 0 }}
-                          >
-                            <i className="ti ti-plus" aria-hidden="true" />
-                          </button>
-                        </div>
+                        <select
+                          required
+                          style={{ width: "100%", minWidth: 0 }}
+                          value={item.material_id}
+                          onChange={(e) => selecionarMaterial(idx, e.target.value)}
+                        >
+                          <option value="">Material...</option>
+                          {materiais.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.nome}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       {ehLampada && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>

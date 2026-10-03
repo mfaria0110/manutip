@@ -12,7 +12,6 @@ const GRUPOS = [
       { to: "/cidades", icon: "ti-map-pin", label: "Cidades" },
       { to: "/bairros", icon: "ti-map-2", label: "Bairros" },
       { to: "/prefeituras", icon: "ti-building-bank", label: "Prefeituras" },
-      { to: "/atividades", icon: "ti-list-check", label: "Atividades" },
     ],
   },
   {
@@ -20,7 +19,6 @@ const GRUPOS = [
     itens: [
       { to: "/contratos", icon: "ti-file-text", label: "Contratos" },
       { to: "/materiais", icon: "ti-package", label: "Materiais" },
-      { to: "/mao-obra", icon: "ti-user-cog", label: "Mão de obra" },
     ],
   },
   {
@@ -31,7 +29,6 @@ const GRUPOS = [
       { to: "/veiculos", icon: "ti-truck", label: "Veículos" },
       { to: "/cargos", icon: "ti-id-badge-2", label: "Cargos" },
       { to: "/funcionarios", icon: "ti-users", label: "Funcionários" },
-      { to: "/ordens-servico", icon: "ti-clipboard-list", label: "Ordens de serviço" },
     ],
   },
   {
@@ -120,6 +117,10 @@ export default function Layout() {
             ))}
           </div>
         ))}
+
+        <div className="sidebar-group sidebar-group-footer">
+          <SeletorTema />
+        </div>
       </aside>
 
       <div className="main-area">
@@ -139,7 +140,6 @@ export default function Layout() {
               <div className="userbar-papel">{perfil?.papel}</div>
             </div>
           </div>
-          <SeletorTema claro />
           <button className="btn btn-ghost" style={{ color: "var(--on-accent, #fff)" }} onClick={sair}>
             <i className="ti ti-logout" aria-hidden="true" style={{ marginRight: 6 }} />
             Sair

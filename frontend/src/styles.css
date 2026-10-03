@@ -214,6 +214,12 @@ button {
   margin-top: 18px;
 }
 
+.sidebar-group-footer {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-dark);
+}
+
 .sidebar-group-label {
   font-size: 11px;
   text-transform: uppercase;
@@ -780,6 +786,22 @@ tbody tr:hover {
 
   .content {
     padding: 16px;
+  }
+
+  /* Tabelas de cadastro: em telas estreitas, mantém as colunas legíveis e
+     rola na horizontal (ver `.card { overflow-x: auto }` abaixo) em vez de
+     espremer o conteúdo. */
+  .card table {
+    min-width: 640px;
+  }
+
+  /* Botões de ação do cabeçalho (ex.: "+ Novo", "+ Execução") ficam grandes
+     demais em telas estreitas — reduz padding/fonte em vez de herdar o
+     tamanho padrão do desktop. */
+  .topbar .btn,
+  .table-header .btn {
+    padding: 7px 12px;
+    font-size: 13px;
   }
 }
 
