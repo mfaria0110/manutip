@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  apiAtividades,
   apiBairros,
   apiCidades,
   apiContratos,
   apiFuncionarios,
   apiMateriais,
-  apiOrdensServico,
   apiPrefeituras,
   apiReclamacoes,
   apiVeiculos,
@@ -16,7 +14,6 @@ import { useAcesso } from "../AcessoContext";
 import logoSelles from "../assets/logo-selles.png";
 import heroIluminacao from "../assets/login-bg.jpg";
 
-const STATUS_ABERTA = new Set(["ABERTA", "VALIDADA"]);
 const STATUS_RECLAMACAO_ABERTA = new Set(["ABERTA", "EM_ANDAMENTO"]);
 
 export default function Dashboard() {
@@ -28,31 +25,25 @@ export default function Dashboard() {
     Promise.all([
       apiPrefeituras.listar(),
       apiContratos.listar(),
-      apiOrdensServico.listar(),
       apiVeiculos.listar(),
       apiFuncionarios.listar(),
       apiMateriais.listar(),
-      apiAtividades.listar(),
       apiCidades.listar(),
       apiBairros.listar(),
       apiReclamacoes.listar(),
     ])
-      .then(
-        ([prefeituras, contratos, ordens, veiculos, funcionarios, materiais, atividades, cidades, bairros, reclamacoes]) => {
-          setDados({
-            prefeituras,
-            contratos,
-            ordens,
-            veiculos,
-            funcionarios,
-            materiais,
-            atividades,
-            cidades,
-            bairros,
-            reclamacoes,
-          });
-        }
-      )
+      .then(([prefeituras, contratos, veiculos, funcionarios, materiais, cidades, bairros, reclamacoes]) => {
+        setDados({
+          prefeituras,
+          contratos,
+          veiculos,
+          funcionarios,
+          materiais,
+          cidades,
+          bairros,
+          reclamacoes,
+        });
+      })
       .finally(() => setCarregando(false));
   }, []);
 
@@ -65,7 +56,6 @@ export default function Dashboard() {
     { label: "Reclamações abertas", valor: reclamacoesAbertas, icon: "ti-phone-call", to: "/reclamacoes" },
     { label: "Veículos da frota", valor: dados?.veiculos.length, icon: "ti-truck", to: "/veiculos" },
     { label: "Funcionários", valor: dados?.funcionarios.length, icon: "ti-users", to: "/funcionarios" },
-    { label: "Tipos de serviço", valor: dados?.atividades.length, icon: "ti-list-check", to: "/atividades" },
   ];
 
   return (

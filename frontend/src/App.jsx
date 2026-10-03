@@ -7,14 +7,11 @@ import Dashboard from "./pages/Dashboard";
 import Cidades from "./pages/Cidades";
 import Bairros from "./pages/Bairros";
 import Prefeituras from "./pages/Prefeituras";
-import Atividades from "./pages/Atividades";
 import Contratos from "./pages/Contratos";
 import Materiais from "./pages/Materiais";
-import MaoObra from "./pages/MaoObra";
 import Veiculos from "./pages/Veiculos";
 import Cargos from "./pages/Cargos";
 import Funcionarios from "./pages/Funcionarios";
-import OrdensServico from "./pages/OrdensServico";
 import Reclamacoes from "./pages/Reclamacoes";
 import ExecucaoReclamacao from "./pages/ExecucaoReclamacao";
 import EquipesDia from "./pages/EquipesDia";
@@ -32,17 +29,14 @@ function Rotas() {
         <Route path="/cidades" element={<Cidades />} />
         <Route path="/bairros" element={<Bairros />} />
         <Route path="/prefeituras" element={<Prefeituras />} />
-        <Route path="/atividades" element={<Atividades />} />
         <Route path="/contratos" element={<Contratos />} />
         <Route path="/materiais" element={<Materiais />} />
-        <Route path="/mao-obra" element={<MaoObra />} />
         <Route path="/veiculos" element={<Veiculos />} />
         <Route path="/cargos" element={<Cargos />} />
         <Route path="/funcionarios" element={<Funcionarios />} />
         <Route path="/reclamacoes" element={<Reclamacoes />} />
         <Route path="/reclamacoes/:id/execucao" element={<ExecucaoReclamacao />} />
         <Route path="/equipes" element={<EquipesDia />} />
-        <Route path="/ordens-servico" element={<OrdensServico />} />
         <Route path="/relatorios/pontos-atendidos" element={<RelatorioPontos />} />
         <Route path="/usuarios" element={<Usuarios />} />
       </Route>

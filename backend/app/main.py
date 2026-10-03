@@ -3,7 +3,6 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.api import (
-    atividades,
     auth,
     bairros,
     cargos,
@@ -13,9 +12,7 @@ from app.api import (
     execucoes_reclamacao,
     funcionarios,
     lampadas,
-    mao_obra,
     materiais,
-    ordens_servico,
     prefeituras,
     reclamacoes,
     relatorios,
@@ -32,16 +29,13 @@ app.include_router(bairros.router)
 app.include_router(prefeituras.router)
 app.include_router(contratos.router)
 app.include_router(contratos.router_precos)
-app.include_router(atividades.router)
 app.include_router(cargos.router)
-app.include_router(mao_obra.router)
 app.include_router(materiais.router_extra)
 app.include_router(materiais.router)
 app.include_router(lampadas.router_tipos)
 app.include_router(lampadas.router_potencias)
 app.include_router(veiculos.router)
 app.include_router(funcionarios.router)
-app.include_router(ordens_servico.router)
 app.include_router(reclamacoes.router)
 app.include_router(equipes_dia.router)
 app.include_router(execucoes_reclamacao.router)

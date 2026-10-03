@@ -1,7 +1,7 @@
-"""Factory de CRUD para catálogos simples (cidade, bairro, atividade, mão de
-obra, material, veículo, funcionário, prefeitura, contrato...): mesma forma
-em todos — listar (nível 'use', qualquer usuário operacional lê pra montar
-pedidos/OS), criar/editar (nível 'edit', só admin ou quem tiver extra).
+"""Factory de CRUD para catálogos simples (cidade, bairro, material, veículo,
+funcionário, prefeitura, contrato...): mesma forma em todos — listar (nível
+'use', qualquer usuário operacional lê pra montar pedidos), criar/editar
+(nível 'edit', só admin ou quem tiver extra).
 
 Entidades com uma regra própria (filtro, validação específica) não usam esta
 factory — ficam com seu próprio router (ex.: bairros filtra por cidade).
