@@ -6,6 +6,7 @@ from app.models.cargo import Cargo
 from app.models.pessoal import Funcionario, Veiculo, EquipeDia, EquipeMembro
 from app.models.ativo import Ativo
 from app.models.material import Material
+from app.models.categoria_material import CategoriaMaterial
 from app.models.lampada import TipoLampada, PotenciaLampada
 from app.models.reclamacao import Reclamacao
 from app.models.execucao_reclamacao import ExecucaoReclamacao, ItemExecucaoMaterial
@@ -33,6 +34,7 @@ __all__ = [
     "EquipeMembro",
     "Ativo",
     "Material",
+    "CategoriaMaterial",
     "TipoLampada",
     "PotenciaLampada",
     "Reclamacao",

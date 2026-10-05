@@ -1,18 +1,19 @@
+import { useEffect, useState } from "react";
 import CadastroPage from "../CadastroPage";
-import { apiMateriais, proximoCodigoMaterial } from "../api";
-
-const CATEGORIAS = [
-  { value: "GERAL", label: "Geral" },
-  { value: "LAMPADA", label: "Lâmpada" },
-  { value: "RELE", label: "Relê" },
-  { value: "BASE", label: "Base" },
-  { value: "PERFURANTE", label: "Perfurante" },
-  { value: "CONECTOR", label: "Conector" },
-];
-
-const labelCategoria = (v) => CATEGORIAS.find((c) => c.value === v)?.label || v;
+import { apiCategoriasMaterial, apiMateriais, proximoCodigoMaterial } from "../api";
 
 export default function Materiais() {
+  const [categorias, setCategorias] = useState([]);
+
+  useEffect(() => {
+    apiCategoriasMaterial
+      .listar()
+      .then((lista) => setCategorias(lista.map((c) => ({ value: c.codigo, label: c.nome }))))
+      .catch(() => {});
+  }, []);
+
+  const labelCategoria = (v) => categorias.find((c) => c.value === v)?.label || v;
+
   return (
     <CadastroPage
       titulo="Materiais"
@@ -30,15 +31,45 @@ export default function Materiais() {
             <span style={{ display: "block", textAlign: "center", fontSize: 12 }}>{item.custo_unitario}</span>
           ),
         },
+        {
+          key: "qde_pontos_inst",
+          label: "Pts Inst.",
+          render: (item) => <span style={{ display: "block", textAlign: "center", fontSize: 12 }}>{item.qde_pontos_inst}</span>,
+        },
+        {
+          key: "qde_pontos_ret",
+          label: "Pts Ret.",
+          render: (item) => <span style={{ display: "block", textAlign: "center", fontSize: 12 }}>{item.qde_pontos_ret}</span>,
+        },
+        {
+          key: "qde_pontos_subst",
+          label: "Pts Subst.",
+          render: (item) => <span style={{ display: "block", textAlign: "center", fontSize: 12 }}>{item.qde_pontos_subst}</span>,
+        },
       ]}
       campos={[
         { name: "codigo", label: "Código", required: true, size: 3 },
         { name: "nome", label: "Nome", required: true, size: 6 },
         { name: "unidade", label: "Unidade (UN, M, KG...)", required: true, size: 3 },
-        { name: "categoria", label: "Categoria", type: "select", size: 3, options: CATEGORIAS },
+        {
+          name: "categoria",
+          label: "Categoria",
+          type: "combo",
+          size: 3,
+          placeholder: "Digite para buscar ou criar...",
+          options: categorias,
+          onCriar: async (texto) => {
+            const novo = await apiCategoriasMaterial.criar({ codigo: texto, nome: texto });
+            setCategorias((prev) => [...prev, { value: novo.codigo, label: novo.nome }]);
+            return { value: novo.codigo, label: novo.nome };
+          },
+        },
         { name: "custo_unitario", label: "Custo unitário (R$)", mask: "moeda", center: true, required: true, size: 3 },
+        { name: "qde_pontos_inst", label: "Pts Instalação", type: "number", step: "0.01", center: true, size: 2 },
+        { name: "qde_pontos_ret", label: "Pts Retirada", type: "number", step: "0.01", center: true, size: 2 },
+        { name: "qde_pontos_subst", label: "Pts Substituição", type: "number", step: "0.01", center: true, size: 2 },
       ]}
-      valoresPadrao={{ categoria: "GERAL", custo_unitario: 0 }}
+      valoresPadrao={{ categoria: "OUTROS", custo_unitario: 0, qde_pontos_inst: 0, qde_pontos_ret: 0, qde_pontos_subst: 0 }}
       obterValoresPadrao={() => proximoCodigoMaterial()}
       larguraModal={880}
       classeTabela="tabela-compacta"

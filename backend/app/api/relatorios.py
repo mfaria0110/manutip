@@ -22,9 +22,8 @@ class LinhaPontosAtendidos(BaseModel):
     luminarias_w: str
     rele: float
     base: float
-    perfurante: float
     conx: float
-    pontos: int
+    pontos: float
 
 
 def _com_dados(query):
@@ -46,8 +45,8 @@ def pontos_atendidos(
     db: Session = Depends(get_db),
 ):
     """Uma linha por execução de reclamação da prefeitura no período,
-    agregando os materiais lançados por categoria (Relê/Base/Perfurante/
-    Conector) e as lâmpadas instaladas (quantidade-potência)."""
+    agregando os materiais lançados por categoria (Relê/Base/Conector) e as
+    lâmpadas instaladas (quantidade-potência)."""
     execucoes = (
         _com_dados(
             db.query(ExecucaoReclamacao)
@@ -66,7 +65,7 @@ def pontos_atendidos(
 
     linhas = []
     for ex in execucoes:
-        somas = {"RELE": 0.0, "BASE": 0.0, "PERFURANTE": 0.0, "CONECTOR": 0.0}
+        somas = {"RELE": 0.0, "BASE": 0.0, "CONECTOR": 0.0}
         lampadas = []
         for item in ex.itens:
             categoria = item.material.categoria if item.material else None
@@ -90,7 +89,6 @@ def pontos_atendidos(
                 luminarias_w=", ".join(lampadas),
                 rele=somas["RELE"],
                 base=somas["BASE"],
-                perfurante=somas["PERFURANTE"],
                 conx=somas["CONECTOR"],
                 pontos=ex.pontos,
             )

@@ -6,6 +6,7 @@ from app.api import (
     auth,
     bairros,
     cargos,
+    categorias_material,
     cidades,
     contratos,
     equipes_dia,
@@ -30,6 +31,7 @@ app.include_router(prefeituras.router)
 app.include_router(contratos.router)
 app.include_router(contratos.router_precos)
 app.include_router(cargos.router)
+app.include_router(categorias_material.router)
 app.include_router(materiais.router_extra)
 app.include_router(materiais.router)
 app.include_router(lampadas.router_tipos)

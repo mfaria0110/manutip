@@ -1,7 +1,7 @@
 import uuid
 from datetime import date
 
-from sqlalchemy import Date, ForeignKey, Integer, Numeric, Text
+from sqlalchemy import Date, ForeignKey, Numeric, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -24,10 +24,10 @@ class ExecucaoReclamacao(TimestampMixin, Base):
     data_execucao: Mapped[date] = mapped_column(Date, nullable=False)
     equipe_dia_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("equipes_dia.id"))
     observacoes: Mapped[str | None] = mapped_column(Text)
-    # Quantidade de pontos de iluminação atendidos nessa execução — usado no
-    # Relatório de Pontos Atendidos (normalmente 1, mas pode cobrir mais de
-    # um ponto no mesmo endereço, ex.: "Nº 25 e 40" numa só visita).
-    pontos: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    # Total de pontos da execução — calculado automaticamente como a soma de
+    # total_pontos de cada item lançado (instalação/retirada/substituição x
+    # peso em pontos do material), recalculado a cada alteração dos itens.
+    pontos: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0, server_default="0")
 
     itens: Mapped[list["ItemExecucaoMaterial"]] = relationship(back_populates="execucao")
     reclamacao: Mapped["object"] = relationship("Reclamacao")
@@ -48,6 +48,14 @@ class ItemExecucaoMaterial(Base):
     material_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("materiais.id"), nullable=False)
     quantidade_instalada: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0)
     quantidade_retirada: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0)
+    quantidade_substituida: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0, server_default="0")
+    # Peso em pontos por unidade, copiado do material no momento do
+    # lançamento (snapshot — não muda se o cadastro do material mudar
+    # depois) — junto com as quantidades acima, dá o total_pontos do item.
+    qde_pontos_inst: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0, server_default="0")
+    qde_pontos_ret: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0, server_default="0")
+    qde_pontos_subst: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0, server_default="0")
+    total_pontos: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0, server_default="0")
     tipo_lampada_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("tipos_lampada.id"))
     potencia_lampada_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("potencias_lampada.id"))
 

@@ -81,6 +81,7 @@ export const apiBairros = crud("/bairros");
 export const apiPrefeituras = crud("/prefeituras");
 export const apiCargos = crud("/cargos");
 export const apiMateriais = crud("/materiais");
+export const apiCategoriasMaterial = crud("/categorias-material");
 export const apiVeiculos = crud("/veiculos");
 export const apiFuncionarios = crud("/funcionarios");
 export const apiContratos = crud("/contratos");

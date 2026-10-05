@@ -32,9 +32,23 @@ function novoItem() {
     material_id: "",
     quantidade_instalada: 0,
     quantidade_retirada: 0,
+    quantidade_substituida: 0,
     tipo_lampada_id: "",
     potencia_lampada_id: "",
   };
+}
+
+// total_pontos do item: cada quantidade (instalada/retirada/substituída)
+// vezes o peso em pontos do material naquele tipo de movimento, somadas.
+function totalPontosItem(item, mat) {
+  const qi = Number(mat?.qde_pontos_inst) || 0;
+  const qr = Number(mat?.qde_pontos_ret) || 0;
+  const qs = Number(mat?.qde_pontos_subst) || 0;
+  return (
+    (Number(item.quantidade_instalada) || 0) * qi +
+    (Number(item.quantidade_retirada) || 0) * qr +
+    (Number(item.quantidade_substituida) || 0) * qs
+  );
 }
 
 export default function ExecucaoReclamacao() {
@@ -57,7 +71,6 @@ export default function ExecucaoReclamacao() {
   const [execucaoEditando, setExecucaoEditando] = useState(null); // null = criando nova
   const [dataExecucao, setDataExecucao] = useState("");
   const [equipeId, setEquipeId] = useState("");
-  const [pontos, setPontos] = useState(1);
   const [observacoes, setObservacoes] = useState("");
   const [itens, setItens] = useState([novoItem()]);
   const [erro, setErro] = useState("");
@@ -124,7 +137,6 @@ export default function ExecucaoReclamacao() {
     setExecucaoEditando(null);
     setDataExecucao(new Date().toISOString().slice(0, 10));
     setEquipeId("");
-    setPontos(1);
     setObservacoes("");
     setItens([novoItem()]);
     setErro("");
@@ -138,7 +150,6 @@ export default function ExecucaoReclamacao() {
     setExecucaoEditando(ex);
     setDataExecucao(ex.data_execucao);
     setEquipeId(ex.equipe_dia_id || "");
-    setPontos(ex.pontos || 1);
     setObservacoes(ex.observacoes || "");
     setItens(
       ex.itens.length > 0
@@ -146,6 +157,7 @@ export default function ExecucaoReclamacao() {
             material_id: it.material_id,
             quantidade_instalada: it.quantidade_instalada,
             quantidade_retirada: it.quantidade_retirada,
+            quantidade_substituida: it.quantidade_substituida,
             tipo_lampada_id: it.tipo_lampada_id || "",
             potencia_lampada_id: it.potencia_lampada_id || "",
           }))
@@ -202,14 +214,17 @@ export default function ExecucaoReclamacao() {
           material_id: it.material_id,
           quantidade_instalada: Number(it.quantidade_instalada) || 0,
           quantidade_retirada: Number(it.quantidade_retirada) || 0,
+          quantidade_substituida: Number(it.quantidade_substituida) || 0,
           tipo_lampada_id: it.tipo_lampada_id || null,
           potencia_lampada_id: it.potencia_lampada_id || null,
         }));
+      // pontos da execução não é mais digitado — o backend recalcula como a
+      // soma do total_pontos de cada item (quantidade x peso em pontos do
+      // material) sempre que os itens são salvos.
       if (execucaoEditando) {
         await apiExecucoesReclamacao.atualizar(execucaoEditando.id, {
           data_execucao: dataExecucao,
           equipe_dia_id: equipeId || null,
-          pontos: Number(pontos) || 1,
           observacoes: observacoes || null,
           itens: itensPayload,
         });
@@ -218,7 +233,6 @@ export default function ExecucaoReclamacao() {
           reclamacao_id: id,
           data_execucao: dataExecucao,
           equipe_dia_id: equipeId || null,
-          pontos: Number(pontos) || 1,
           observacoes: observacoes || null,
           itens: itensPayload,
         });
@@ -325,6 +339,13 @@ export default function ExecucaoReclamacao() {
     grupo.execucoes.push(ex);
   });
 
+  // Total de pontos do formulário aberto — não é mais digitado, é a soma do
+  // total_pontos de cada linha (recalculado pelo backend ao salvar).
+  const totalPontosFormulario = itens.reduce(
+    (acc, it) => acc + totalPontosItem(it, materialPorId(it.material_id)),
+    0
+  );
+
   return (
     <>
       <header className="topbar">
@@ -421,6 +442,8 @@ export default function ExecucaoReclamacao() {
                       <th>Material</th>
                       <th style={{ textAlign: "center" }}>Qtd. Inst.</th>
                       <th style={{ textAlign: "center" }}>Qtd. Ret.</th>
+                      <th style={{ textAlign: "center" }}>Qtd. Subst.</th>
+                      <th style={{ textAlign: "center" }}>Pontos</th>
                       <th>Lâmpada</th>
                       <th style={{ width: 80 }} />
                     </tr>
@@ -435,6 +458,8 @@ export default function ExecucaoReclamacao() {
                               <td>{mat?.nome || "—"}</td>
                               <td style={{ textAlign: "center" }}>{it.quantidade_instalada || "—"}</td>
                               <td style={{ textAlign: "center" }}>{it.quantidade_retirada || "—"}</td>
+                              <td style={{ textAlign: "center" }}>{it.quantidade_substituida || "—"}</td>
+                              <td style={{ textAlign: "center" }}>{it.total_pontos || "—"}</td>
                               <td>
                                 {it.tipo_lampada_id
                                   ? `${nomeTipoLampada(it.tipo_lampada_id)}${
@@ -497,13 +522,11 @@ export default function ExecucaoReclamacao() {
                 <div className="form-field" style={{ "--span": 2 }}>
                   <label>Pontos</label>
                   <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    required
-                    style={{ textAlign: "center" }}
-                    value={pontos}
-                    onChange={(e) => setPontos(e.target.value)}
+                    type="text"
+                    disabled
+                    title="Calculado automaticamente a partir dos materiais lançados"
+                    style={{ textAlign: "center", background: "var(--bg-page)" }}
+                    value={totalPontosFormulario}
                   />
                 </div>
                 <div className="form-field" style={{ "--span": 8 }}>
@@ -540,25 +563,19 @@ export default function ExecucaoReclamacao() {
               </div>
 
               <div style={{ marginTop: 10 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={() => setModalMaterialIdx(-1)}
-                      title="Cadastrar novo material"
-                      style={{ fontWeight: 700, fontSize: 15, padding: "4px 10px" }}
-                    >
-                      <i className="ti ti-plus" aria-hidden="true" />
-                    </button>
-                    <label style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-secondary)" }}>
-                      Materiais instalados/retirados
-                    </label>
-                  </div>
-                  <button type="button" className="btn btn-primary" onClick={adicionarItem}>
-                    <i className="ti ti-plus" aria-hidden="true" style={{ marginRight: 4 }} />
-                    Adicionar material
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => setModalMaterialIdx(-1)}
+                    title="Cadastrar novo material"
+                    style={{ fontWeight: 700, fontSize: 15, padding: "4px 10px" }}
+                  >
+                    <i className="ti ti-plus" aria-hidden="true" />
                   </button>
+                  <label style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-secondary)" }}>
+                    Materiais instalados/retirados
+                  </label>
                 </div>
 
                 {itens.map((item, idx) => {
@@ -573,11 +590,12 @@ export default function ExecucaoReclamacao() {
                   return (
                     <div
                       key={idx}
+                      className="linha-item-material"
                       style={{
                         display: "grid",
                         gridTemplateColumns: ehLampada
-                          ? "1fr 90px 100px 90px 90px 40px"
-                          : "1fr 90px 90px 40px",
+                          ? "1fr 110px 80px 180px 165px 70px 68px"
+                          : "1fr 180px 165px 70px 68px",
                         gap: 8,
                         alignItems: "flex-end",
                         marginBottom: 0,
@@ -633,46 +651,122 @@ export default function ExecucaoReclamacao() {
                           />
                         </div>
                       )}
-                      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                        {idx === 0 && <label style={rotuloCampo}>Qtd. Inst.</label>}
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          style={{ width: "100%", minWidth: 0, textAlign: "center" }}
-                          value={item.quantidade_instalada}
-                          onChange={(e) => atualizarItem(idx, { quantidade_instalada: e.target.value })}
-                        />
+                      <div style={{ display: "flex", gap: 0 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                          {idx === 0 && <label style={rotuloCampo}>Qtd. Inst.</label>}
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            style={{ width: 60, minWidth: 0, textAlign: "center" }}
+                            value={item.quantidade_instalada}
+                            onChange={(e) => atualizarItem(idx, { quantidade_instalada: e.target.value })}
+                          />
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                          {idx === 0 && <label style={rotuloCampo}>Qtd. Ret.</label>}
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            style={{ width: 60, minWidth: 0, textAlign: "center" }}
+                            value={item.quantidade_retirada}
+                            onChange={(e) => atualizarItem(idx, { quantidade_retirada: e.target.value })}
+                          />
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                          {idx === 0 && <label style={rotuloCampo}>Qtd. Subst.</label>}
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            style={{ width: 60, minWidth: 0, textAlign: "center" }}
+                            value={item.quantidade_substituida}
+                            onChange={(e) => atualizarItem(idx, { quantidade_substituida: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 0 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                          {idx === 0 && <label style={rotuloCampo}>Pts Inst.</label>}
+                          <input
+                            type="text"
+                            disabled
+                            title="Peso em pontos do material (cadastro de Materiais)"
+                            style={{ width: 55, minWidth: 0, textAlign: "center" }}
+                            value={mat?.qde_pontos_inst ?? 0}
+                          />
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                          {idx === 0 && <label style={rotuloCampo}>Pts Ret.</label>}
+                          <input
+                            type="text"
+                            disabled
+                            title="Peso em pontos do material (cadastro de Materiais)"
+                            style={{ width: 55, minWidth: 0, textAlign: "center" }}
+                            value={mat?.qde_pontos_ret ?? 0}
+                          />
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                          {idx === 0 && <label style={rotuloCampo}>Pts Subst.</label>}
+                          <input
+                            type="text"
+                            disabled
+                            title="Peso em pontos do material (cadastro de Materiais)"
+                            style={{ width: 55, minWidth: 0, textAlign: "center" }}
+                            value={mat?.qde_pontos_subst ?? 0}
+                          />
+                        </div>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                        {idx === 0 && <label style={rotuloCampo}>Qtd. Ret.</label>}
+                        {idx === 0 && <label style={rotuloCampo}>Total</label>}
                         <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          style={{ width: "100%", minWidth: 0, textAlign: "center" }}
-                          value={item.quantidade_retirada}
-                          onChange={(e) => atualizarItem(idx, { quantidade_retirada: e.target.value })}
+                          type="text"
+                          disabled
+                          style={{ width: "100%", minWidth: 0, textAlign: "center", fontWeight: 600 }}
+                          value={totalPontosItem(item, mat)}
                         />
                       </div>
-                      <button
-                        type="button"
-                        className="btn btn-ghost"
-                        onClick={() => removerItem(idx)}
-                        title="Remover"
-                        style={{
-                          color: "var(--danger)",
-                          fontSize: 18,
-                          width: 30,
-                          height: 30,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          padding: 0,
-                        }}
-                      >
-                        <i className="ti ti-trash" aria-hidden="true" />
-                      </button>
+                      <div style={{ display: "flex", gap: 4 }}>
+                        {idx === itens.length - 1 && (
+                          <button
+                            type="button"
+                            className="btn btn-ghost"
+                            onClick={adicionarItem}
+                            title="Adicionar material"
+                            style={{
+                              color: "var(--primary)",
+                              fontSize: 16,
+                              width: 28,
+                              height: 28,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              padding: 0,
+                            }}
+                          >
+                            <i className="ti ti-plus" aria-hidden="true" />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          onClick={() => removerItem(idx)}
+                          title="Remover"
+                          style={{
+                            color: "var(--danger)",
+                            fontSize: 16,
+                            width: 28,
+                            height: 28,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: 0,
+                          }}
+                        >
+                          <i className="ti ti-trash" aria-hidden="true" />
+                        </button>
+                      </div>
                     </div>
                   );
                 })}

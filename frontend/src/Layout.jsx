@@ -19,6 +19,7 @@ const GRUPOS = [
     itens: [
       { to: "/contratos", icon: "ti-file-text", label: "Contratos" },
       { to: "/materiais", icon: "ti-package", label: "Materiais" },
+      { to: "/categorias-material", icon: "ti-category", label: "Categorias de Material" },
     ],
   },
   {

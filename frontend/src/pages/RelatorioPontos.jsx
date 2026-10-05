@@ -49,11 +49,10 @@ export default function RelatorioPontos() {
     (acc, l) => ({
       rele: acc.rele + Number(l.rele || 0),
       base: acc.base + Number(l.base || 0),
-      perfurante: acc.perfurante + Number(l.perfurante || 0),
       conx: acc.conx + Number(l.conx || 0),
       pontos: acc.pontos + Number(l.pontos || 0),
     }),
-    { rele: 0, base: 0, perfurante: 0, conx: 0, pontos: 0 }
+    { rele: 0, base: 0, conx: 0, pontos: 0 }
   );
 
   return (
@@ -134,7 +133,6 @@ export default function RelatorioPontos() {
                     <th>Luminárias (W)</th>
                     <th>Relê</th>
                     <th>Base</th>
-                    <th>Perfurante</th>
                     <th>Conx</th>
                     <th>Pontos</th>
                   </tr>
@@ -148,7 +146,6 @@ export default function RelatorioPontos() {
                       <td>{l.luminarias_w || "—"}</td>
                       <td style={{ textAlign: "center" }}>{numeroOuTraco(l.rele)}</td>
                       <td style={{ textAlign: "center" }}>{numeroOuTraco(l.base)}</td>
-                      <td style={{ textAlign: "center" }}>{numeroOuTraco(l.perfurante)}</td>
                       <td style={{ textAlign: "center" }}>{numeroOuTraco(l.conx)}</td>
                       <td style={{ textAlign: "center" }}>{numeroOuTraco(l.pontos)}</td>
                     </tr>
@@ -164,9 +161,6 @@ export default function RelatorioPontos() {
                     </td>
                     <td style={{ textAlign: "center" }}>
                       <strong>{numeroOuTraco(totais.base)}</strong>
-                    </td>
-                    <td style={{ textAlign: "center" }}>
-                      <strong>{numeroOuTraco(totais.perfurante)}</strong>
                     </td>
                     <td style={{ textAlign: "center" }}>
                       <strong>{numeroOuTraco(totais.conx)}</strong>

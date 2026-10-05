@@ -1,16 +1,8 @@
 import { useEffect, useState } from "react";
-import { apiMateriais } from "./api";
+import ComboCriavel from "./ComboCriavel";
+import { apiCategoriasMaterial, apiMateriais } from "./api";
 
-const CATEGORIAS = [
-  { value: "GERAL", label: "Geral" },
-  { value: "LAMPADA", label: "Lâmpada" },
-  { value: "RELE", label: "Relê" },
-  { value: "BASE", label: "Base" },
-  { value: "PERFURANTE", label: "Perfurante" },
-  { value: "CONECTOR", label: "Conector" },
-];
-
-const VAZIO = { codigo: "", nome: "", unidade: "", categoria: "GERAL", custo_unitario: "" };
+const VAZIO = { codigo: "", nome: "", unidade: "", categoria: "OUTROS", custo_unitario: "" };
 
 /** Modal de cadastro rápido de material, usado a partir de outras telas
  * (ex.: execução de reclamação) sem sair do fluxo atual. */
@@ -18,11 +10,16 @@ export default function ModalNovoMaterial({ aberto, onFechar, onCriado }) {
   const [form, setForm] = useState(VAZIO);
   const [erro, setErro] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [categorias, setCategorias] = useState([]);
 
   useEffect(() => {
     if (aberto) {
       setForm(VAZIO);
       setErro("");
+      apiCategoriasMaterial
+        .listar()
+        .then((lista) => setCategorias(lista.map((c) => ({ value: c.codigo, label: c.nome }))))
+        .catch(() => {});
     }
   }, [aberto]);
 
@@ -62,13 +59,17 @@ export default function ModalNovoMaterial({ aberto, onFechar, onCriado }) {
             </div>
             <div className="form-field" style={{ "--span": 4 }}>
               <label>Categoria</label>
-              <select value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })}>
-                {CATEGORIAS.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
+              <ComboCriavel
+                value={form.categoria}
+                onChange={(valor) => setForm((f) => ({ ...f, categoria: valor }))}
+                options={categorias}
+                placeholder="Digite para buscar ou criar..."
+                onCriar={async (texto) => {
+                  const novo = await apiCategoriasMaterial.criar({ codigo: texto, nome: texto });
+                  setCategorias((prev) => [...prev, { value: novo.codigo, label: novo.nome }]);
+                  return { value: novo.codigo, label: novo.nome };
+                }}
+              />
             </div>
             <div className="form-field" style={{ "--span": 4 }}>
               <label>Custo unitário (R$)</label>

@@ -9,6 +9,7 @@ import Bairros from "./pages/Bairros";
 import Prefeituras from "./pages/Prefeituras";
 import Contratos from "./pages/Contratos";
 import Materiais from "./pages/Materiais";
+import CategoriasMaterial from "./pages/CategoriasMaterial";
 import Veiculos from "./pages/Veiculos";
 import Cargos from "./pages/Cargos";
 import Funcionarios from "./pages/Funcionarios";
@@ -31,6 +32,7 @@ function Rotas() {
         <Route path="/prefeituras" element={<Prefeituras />} />
         <Route path="/contratos" element={<Contratos />} />
         <Route path="/materiais" element={<Materiais />} />
+        <Route path="/categorias-material" element={<CategoriasMaterial />} />
         <Route path="/veiculos" element={<Veiculos />} />
         <Route path="/cargos" element={<Cargos />} />
         <Route path="/funcionarios" element={<Funcionarios />} />
