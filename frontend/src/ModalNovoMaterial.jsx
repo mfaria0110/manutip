@@ -98,6 +98,7 @@ export default function ModalNovoMaterial({ aberto, onFechar, onCriado }) {
                 type="number"
                 step="0.01"
                 required
+                style={{ textAlign: "center" }}
                 value={form.custo_unitario}
                 onChange={(e) => setForm({ ...form, custo_unitario: e.target.value })}
               />
