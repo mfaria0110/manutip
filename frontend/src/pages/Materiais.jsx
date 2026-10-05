@@ -55,6 +55,7 @@ export default function Materiais() {
           name: "categoria",
           label: "Categoria",
           type: "combo",
+          required: true,
           size: 3,
           placeholder: "Digite para buscar ou criar...",
           options: categorias,
@@ -69,7 +70,7 @@ export default function Materiais() {
         { name: "qde_pontos_ret", label: "Pts Retirada", type: "number", step: "0.01", center: true, size: 2 },
         { name: "qde_pontos_subst", label: "Pts Substituição", type: "number", step: "0.01", center: true, size: 2 },
       ]}
-      valoresPadrao={{ categoria: "OUTROS", custo_unitario: 0, qde_pontos_inst: 0, qde_pontos_ret: 0, qde_pontos_subst: 0 }}
+      valoresPadrao={{ custo_unitario: 0, qde_pontos_inst: 0, qde_pontos_ret: 0, qde_pontos_subst: 0 }}
       obterValoresPadrao={() => proximoCodigoMaterial()}
       larguraModal={880}
       classeTabela="tabela-compacta"

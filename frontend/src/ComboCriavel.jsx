@@ -6,9 +6,9 @@ import { useEffect, useRef, useState } from "react";
  * precisar estender na hora (ex.: Bairro, dentro do cadastro de Prefeitura).
  *
  * props: value (id atual), onChange(id), options: [{value,label}],
- *        onCriar: (texto) => Promise<{value,label}>, placeholder?
+ *        onCriar: (texto) => Promise<{value,label}>, placeholder?, required?
  */
-export default function ComboCriavel({ value, onChange, options, onCriar, placeholder }) {
+export default function ComboCriavel({ value, onChange, options, onCriar, placeholder, required }) {
   const [texto, setTexto] = useState("");
   const [aberto, setAberto] = useState(false);
   const [criando, setCriando] = useState(false);
@@ -72,6 +72,7 @@ export default function ComboCriavel({ value, onChange, options, onCriar, placeh
         style={{ width: "100%", minWidth: 0 }}
         value={texto}
         placeholder={placeholder}
+        required={required}
         disabled={criando}
         onChange={(e) => {
           setTexto(e.target.value);

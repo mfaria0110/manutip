@@ -6,8 +6,8 @@ const VAZIO = {
   codigo: "",
   nome: "",
   unidade: "",
-  categoria: "OUTROS",
-  custo_unitario: "",
+  categoria: "",
+  custo_unitario: "0",
   qde_pontos_inst: "0",
   qde_pontos_ret: "0",
   qde_pontos_subst: "0",
@@ -80,6 +80,7 @@ export default function ModalNovoMaterial({ aberto, onFechar, onCriado }) {
             <div className="form-field" style={{ "--span": 3 }}>
               <label>Categoria</label>
               <ComboCriavel
+                required
                 value={form.categoria}
                 onChange={(valor) => setForm((f) => ({ ...f, categoria: valor }))}
                 options={categorias}
