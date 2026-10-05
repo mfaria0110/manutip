@@ -533,6 +533,7 @@ export default function ExecucaoReclamacao() {
                   <label>Equipe</label>
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                     <select
+                      required
                       style={{ flex: 1 }}
                       value={equipeId}
                       onChange={(e) => setEquipeId(e.target.value)}
