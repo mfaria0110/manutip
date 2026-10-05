@@ -637,6 +637,12 @@ tbody tr:hover {
   background: var(--bg-page);
 }
 
+.tabela-execucoes th,
+.tabela-execucoes td {
+  font-size: 12px;
+  padding: 3px 8px;
+}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;

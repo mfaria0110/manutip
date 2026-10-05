@@ -69,6 +69,9 @@ export default function ExecucaoReclamacao() {
 
   const [formAberto, setFormAberto] = useState(false);
   const [execucaoEditando, setExecucaoEditando] = useState(null); // null = criando nova
+  // ids de outras execuções da mesma equipe+data, mescladas no formulário —
+  // ao salvar, tudo vira uma execução só e essas são excluídas.
+  const [idsParaMesclar, setIdsParaMesclar] = useState([]);
   const [dataExecucao, setDataExecucao] = useState("");
   const [equipeId, setEquipeId] = useState("");
   const [observacoes, setObservacoes] = useState("");
@@ -135,6 +138,7 @@ export default function ExecucaoReclamacao() {
 
   function abrirNovaExecucao() {
     setExecucaoEditando(null);
+    setIdsParaMesclar([]);
     setDataExecucao(new Date().toISOString().slice(0, 10));
     setEquipeId("");
     setObservacoes("");
@@ -143,17 +147,31 @@ export default function ExecucaoReclamacao() {
     setFormAberto(true);
   }
 
+  // Todas as execuções da reclamação com a mesma data + equipe de `ex` —
+  // mesma noção usada para agrupar visualmente a lista (gruposPorData).
+  function execucoesDoMesmoGrupo(ex) {
+    return execucoes.filter(
+      (e) => e.data_execucao === ex.data_execucao && (e.equipe_dia_id || "") === (ex.equipe_dia_id || "")
+    );
+  }
+
   // Edita a execução inteira (data/equipe/observações + todos os itens) —
-  // aberta a partir do lápis de qualquer material daquela execução, já que
-  // às vezes o que precisa corrigir é a data ou a equipe, não só o item.
+  // aberta a partir do lápis de qualquer material. Traz junto os itens de
+  // TODAS as execuções da mesma equipe+data (normalmente deveria haver só
+  // uma, mas registros antigos podem estar espalhados em várias) — editar
+  // e salvar consolida tudo numa execução só.
   function abrirEdicaoExecucao(ex) {
-    setExecucaoEditando(ex);
-    setDataExecucao(ex.data_execucao);
-    setEquipeId(ex.equipe_dia_id || "");
-    setObservacoes(ex.observacoes || "");
+    const grupo = execucoesDoMesmoGrupo(ex);
+    const [principal, ...outras] = grupo;
+    setExecucaoEditando(principal);
+    setIdsParaMesclar(outras.map((o) => o.id));
+    setDataExecucao(principal.data_execucao);
+    setEquipeId(principal.equipe_dia_id || "");
+    setObservacoes(grupo.map((g) => g.observacoes).filter(Boolean).join(" / "));
+    const todosItens = grupo.flatMap((g) => g.itens);
     setItens(
-      ex.itens.length > 0
-        ? ex.itens.map((it) => ({
+      todosItens.length > 0
+        ? todosItens.map((it) => ({
             material_id: it.material_id,
             quantidade_instalada: it.quantidade_instalada,
             quantidade_retirada: it.quantidade_retirada,
@@ -228,14 +246,44 @@ export default function ExecucaoReclamacao() {
           observacoes: observacoes || null,
           itens: itensPayload,
         });
+        for (const extraId of idsParaMesclar) {
+          await apiExecucoesReclamacao.excluir(extraId);
+        }
       } else {
-        await apiExecucoesReclamacao.criar({
-          reclamacao_id: id,
-          data_execucao: dataExecucao,
-          equipe_dia_id: equipeId || null,
-          observacoes: observacoes || null,
-          itens: itensPayload,
-        });
+        // Já existe execução(ões) para essa mesma equipe+data? Mescla os
+        // itens nela em vez de criar outra execução separada — equipe só
+        // trabalha numa reclamação por dia, não faz sentido fragmentar.
+        const grupoExistente = execucoes.filter(
+          (e) => e.data_execucao === dataExecucao && (e.equipe_dia_id || "") === (equipeId || "")
+        );
+        if (grupoExistente.length > 0) {
+          const [alvo, ...extras] = grupoExistente;
+          const itensExistentes = grupoExistente.flatMap((g) => g.itens).map((it) => ({
+            material_id: it.material_id,
+            quantidade_instalada: it.quantidade_instalada,
+            quantidade_retirada: it.quantidade_retirada,
+            quantidade_substituida: it.quantidade_substituida,
+            tipo_lampada_id: it.tipo_lampada_id || null,
+            potencia_lampada_id: it.potencia_lampada_id || null,
+          }));
+          await apiExecucoesReclamacao.atualizar(alvo.id, {
+            data_execucao: dataExecucao,
+            equipe_dia_id: equipeId || null,
+            observacoes: [alvo.observacoes, observacoes].filter(Boolean).join(" / ") || null,
+            itens: [...itensExistentes, ...itensPayload],
+          });
+          for (const extra of extras) {
+            await apiExecucoesReclamacao.excluir(extra.id);
+          }
+        } else {
+          await apiExecucoesReclamacao.criar({
+            reclamacao_id: id,
+            data_execucao: dataExecucao,
+            equipe_dia_id: equipeId || null,
+            observacoes: observacoes || null,
+            itens: itensPayload,
+          });
+        }
       }
       setFormAberto(false);
       carregar();
@@ -429,6 +477,23 @@ export default function ExecucaoReclamacao() {
                   {grupo.data}
                   {grupo.equipeId ? ` — ${nomeEquipe(grupo.equipeId)}` : ""}
                 </strong>
+                <button
+                  className="btn btn-ghost"
+                  onClick={() => abrirEdicaoExecucao(grupo.execucoes[0])}
+                  disabled={bloqueado}
+                  title="Editar execução"
+                  style={{
+                    fontSize: 22,
+                    width: 38,
+                    height: 38,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0,
+                  }}
+                >
+                  <i className="ti ti-edit" aria-hidden="true" />
+                </button>
               </div>
               {grupo.execucoes.length === 1 && grupo.execucoes[0].observacoes && (
                 <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 6 }}>
@@ -436,15 +501,18 @@ export default function ExecucaoReclamacao() {
                 </p>
               )}
               {grupo.execucoes.some((ex) => ex.itens.length > 0) && (
-                <table style={{ marginTop: 10 }}>
+                <table className="tabela-execucoes" style={{ marginTop: 10 }}>
                   <thead>
                     <tr>
                       <th>Material</th>
-                      <th style={{ textAlign: "center" }}>Qtd. Inst.</th>
-                      <th style={{ textAlign: "center" }}>Qtd. Ret.</th>
-                      <th style={{ textAlign: "center" }}>Qtd. Subst.</th>
-                      <th style={{ textAlign: "center" }}>Pontos</th>
                       <th>Lâmpada</th>
+                      <th style={{ textAlign: "center", width: 60 }}>Qtd. Inst.</th>
+                      <th style={{ textAlign: "center", width: 60 }}>Qtd. Ret.</th>
+                      <th style={{ textAlign: "center", width: 60 }}>Qtd. Subst.</th>
+                      <th style={{ textAlign: "center", width: 55 }}>Pts Inst.</th>
+                      <th style={{ textAlign: "center", width: 55 }}>Pts Ret.</th>
+                      <th style={{ textAlign: "center", width: 55 }}>Pts Subst.</th>
+                      <th style={{ textAlign: "center", width: 55 }}>Total</th>
                       <th style={{ width: 80 }} />
                     </tr>
                   </thead>
@@ -456,10 +524,6 @@ export default function ExecucaoReclamacao() {
                           return (
                             <tr key={it.id}>
                               <td>{mat?.nome || "—"}</td>
-                              <td style={{ textAlign: "center" }}>{it.quantidade_instalada || "—"}</td>
-                              <td style={{ textAlign: "center" }}>{it.quantidade_retirada || "—"}</td>
-                              <td style={{ textAlign: "center" }}>{it.quantidade_substituida || "—"}</td>
-                              <td style={{ textAlign: "center" }}>{it.total_pontos || "—"}</td>
                               <td>
                                 {it.tipo_lampada_id
                                   ? `${nomeTipoLampada(it.tipo_lampada_id)}${
@@ -467,28 +531,25 @@ export default function ExecucaoReclamacao() {
                                     }`
                                   : "—"}
                               </td>
+                              <td style={{ textAlign: "center" }}>{it.quantidade_instalada || "—"}</td>
+                              <td style={{ textAlign: "center" }}>{it.quantidade_retirada || "—"}</td>
+                              <td style={{ textAlign: "center" }}>{it.quantidade_substituida || "—"}</td>
+                              <td style={{ textAlign: "center" }}>{it.qde_pontos_inst || "—"}</td>
+                              <td style={{ textAlign: "center" }}>{it.qde_pontos_ret || "—"}</td>
+                              <td style={{ textAlign: "center" }}>{it.qde_pontos_subst || "—"}</td>
+                              <td style={{ textAlign: "center" }}>{it.total_pontos || "—"}</td>
                               <td>
-                                <div style={{ display: "flex", gap: 4 }}>
+                                {ehAdmin && (
                                   <button
                                     className="btn btn-ghost"
-                                    onClick={() => abrirEdicaoExecucao(ex)}
+                                    onClick={() => setItemExcluindo(it)}
                                     disabled={bloqueado}
-                                    title="Editar execução"
+                                    title="Excluir"
+                                    style={{ color: "var(--danger)" }}
                                   >
-                                    <i className="ti ti-edit" aria-hidden="true" />
+                                    <i className="ti ti-trash" aria-hidden="true" />
                                   </button>
-                                  {ehAdmin && (
-                                    <button
-                                      className="btn btn-ghost"
-                                      onClick={() => setItemExcluindo(it)}
-                                      disabled={bloqueado}
-                                      title="Excluir"
-                                      style={{ color: "var(--danger)" }}
-                                    >
-                                      <i className="ti ti-trash" aria-hidden="true" />
-                                    </button>
-                                  )}
-                                </div>
+                                )}
                               </td>
                             </tr>
                           );
@@ -565,6 +626,9 @@ export default function ExecucaoReclamacao() {
 
               <div style={{ marginTop: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <label style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-secondary)" }}>
+                    Materiais instalados/retirados
+                  </label>
                   <button
                     type="button"
                     className="btn btn-primary"
@@ -574,9 +638,6 @@ export default function ExecucaoReclamacao() {
                   >
                     <i className="ti ti-plus" aria-hidden="true" />
                   </button>
-                  <label style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-secondary)" }}>
-                    Materiais instalados/retirados
-                  </label>
                 </div>
 
                 {itens.map((item, idx) => {
