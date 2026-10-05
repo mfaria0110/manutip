@@ -630,7 +630,7 @@ tbody tr:hover {
 .linha-item-material input,
 .linha-item-material select {
   height: 28px;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .linha-item-material input:disabled {

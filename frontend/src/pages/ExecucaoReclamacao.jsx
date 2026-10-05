@@ -505,7 +505,7 @@ export default function ExecucaoReclamacao() {
 
       {formAberto && (
         <div className="modal-overlay">
-          <div className="modal" style={{ width: 980, maxWidth: "95vw" }}>
+          <div className="modal" style={{ width: 1150, maxWidth: "95vw" }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
               <h2 style={{ margin: 0 }}>{execucaoEditando ? "Editar execução" : "Nova execução"}</h2>
               <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
