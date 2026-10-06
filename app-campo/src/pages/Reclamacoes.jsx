@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiReclamacoes } from "../api";
 import { useFluxo } from "../FluxoContext";
+import { comCache } from "../offline/cache";
 import Topo from "../Topo";
 
 function formatarData(iso) {
@@ -22,9 +23,10 @@ export default function Reclamacoes() {
       navigate("/prefeitura", { replace: true });
       return;
     }
-    apiReclamacoes
-      .listar(`?prefeitura_id=${prefeituraId}&status=ABERTA`)
-      .then(setLista)
+    comCache(`reclamacoesAbertas:${prefeituraId}`, () =>
+      apiReclamacoes.listar(`?prefeitura_id=${prefeituraId}&status=ABERTA`)
+    )
+      .then((r) => setLista(r.dados))
       .catch((e) => setErro(e.message))
       .finally(() => setCarregando(false));
   }, [prefeituraId, navigate]);

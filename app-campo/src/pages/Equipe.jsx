@@ -11,6 +11,9 @@ import {
 } from "../api";
 import { useAcesso } from "../AcessoContext";
 import { useFluxo } from "../FluxoContext";
+import { useOffline } from "../offline/OfflineContext";
+import { comCache, salvarCache } from "../offline/cache";
+import { enfileirar } from "../offline/fila";
 import Topo from "../Topo";
 
 const hoje = () => new Date().toISOString().slice(0, 10);
@@ -19,6 +22,7 @@ export default function Equipe() {
   const navigate = useNavigate();
   const { recarregar } = useAcesso();
   const { definirEquipe, limpar } = useFluxo();
+  const { online, atualizarContagem } = useOffline();
 
   async function sair() {
     await logout();
@@ -40,12 +44,17 @@ export default function Equipe() {
   const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
-    Promise.all([apiEquipesDia.listar(), apiFuncionarios.listar(), apiVeiculos.listar(), apiCargos.listar()])
+    Promise.all([
+      comCache("equipesDia", () => apiEquipesDia.listar()),
+      comCache("funcionarios", () => apiFuncionarios.listar()),
+      comCache("veiculos", () => apiVeiculos.listar()),
+      comCache("cargos", () => apiCargos.listar()),
+    ])
       .then(([eq, func, vei, carg]) => {
-        setEquipes(eq.filter((e) => e.data === hoje()));
-        setFuncionarios(func);
-        setVeiculos(vei);
-        setCargos(carg);
+        setEquipes(eq.dados.filter((e) => e.data === hoje()));
+        setFuncionarios(func.dados);
+        setVeiculos(vei.dados);
+        setCargos(carg.dados);
       })
       .catch((e) => setErro(e.message))
       .finally(() => setCarregando(false));
@@ -58,11 +67,17 @@ export default function Equipe() {
   }
 
   async function criarNova() {
+    if (!online) {
+      setErro("Não é possível criar uma equipe nova sem internet. Conecte-se e tente de novo.");
+      return;
+    }
     setErro("");
     try {
       const { nome } = await proximoNomeEquipe();
       const nova = await apiEquipesDia.criar({ nome, data: hoje(), veiculo_id: null, membros: [] });
-      setEquipes((prev) => [nova, ...prev]);
+      const todas = [nova, ...equipes];
+      setEquipes(todas);
+      salvarCache("equipesDia", todas);
       abrirEquipe(nova);
     } catch (e) {
       setErro(e.message);
@@ -84,16 +99,38 @@ export default function Equipe() {
     setMembros((prev) => prev.filter((m) => m.funcionario_id !== id));
   }
 
+  // Monta localmente o que a equipe ficaria depois da composição salva —
+  // usado tanto pro caminho online (até a resposta do servidor chegar)
+  // quanto pro offline (onde a resposta do servidor não existe ainda).
+  function equipeComComposicaoLocal() {
+    return {
+      ...equipeAtual,
+      veiculo_id: veiculoId || null,
+      membros: membros.map((m, i) => ({ id: `local-${i}`, funcionario_id: m.funcionario_id, papel: m.papel || null })),
+    };
+  }
+
   async function salvarComposicao() {
     setSalvando(true);
     setErro("");
+    const dados = {
+      veiculo_id: veiculoId || null,
+      membros: membros.map((m) => ({ funcionario_id: m.funcionario_id, papel: m.papel || null })),
+    };
     try {
-      const atualizada = await apiEquipesDia.atualizar(equipeAtual.id, {
-        veiculo_id: veiculoId || null,
-        membros: membros.map((m) => ({ funcionario_id: m.funcionario_id, papel: m.papel || null })),
-      });
-      setEquipeAtual(atualizada);
-      setEquipes((prev) => prev.map((e) => (e.id === atualizada.id ? atualizada : e)));
+      if (online) {
+        const atualizada = await apiEquipesDia.atualizar(equipeAtual.id, dados);
+        setEquipeAtual(atualizada);
+        const todas = equipes.map((e) => (e.id === atualizada.id ? atualizada : e));
+        setEquipes(todas);
+        salvarCache("equipesDia", todas);
+      } else {
+        await enfileirar("composicaoEquipe", { equipeId: equipeAtual.id, dados });
+        atualizarContagem();
+        const local = equipeComComposicaoLocal();
+        setEquipeAtual(local);
+        setEquipes((prev) => prev.map((e) => (e.id === local.id ? local : e)));
+      }
     } catch (e) {
       setErro(e.message);
     } finally {
@@ -105,11 +142,27 @@ export default function Equipe() {
     setSalvando(true);
     setErro("");
     try {
-      await salvarComposicao();
-      const validada = await validarEquipe(equipeAtual.id);
-      setEquipeAtual(validada);
-      setEquipes((prev) => prev.map((e) => (e.id === validada.id ? validada : e)));
-      definirEquipe(validada.id);
+      if (online) {
+        await apiEquipesDia.atualizar(equipeAtual.id, {
+          veiculo_id: veiculoId || null,
+          membros: membros.map((m) => ({ funcionario_id: m.funcionario_id, papel: m.papel || null })),
+        });
+        const validada = await validarEquipe(equipeAtual.id);
+        setEquipeAtual(validada);
+        setEquipes((prev) => prev.map((e) => (e.id === validada.id ? validada : e)));
+      } else {
+        const dados = {
+          veiculo_id: veiculoId || null,
+          membros: membros.map((m) => ({ funcionario_id: m.funcionario_id, papel: m.papel || null })),
+        };
+        await enfileirar("composicaoEquipe", { equipeId: equipeAtual.id, dados });
+        await enfileirar("validarEquipe", { equipeId: equipeAtual.id });
+        atualizarContagem();
+        const local = { ...equipeComComposicaoLocal(), validada_em: new Date().toISOString() };
+        setEquipeAtual(local);
+        setEquipes((prev) => prev.map((e) => (e.id === local.id ? local : e)));
+      }
+      definirEquipe(equipeAtual.id);
       navigate("/prefeitura");
     } catch (e) {
       setErro(e.message);

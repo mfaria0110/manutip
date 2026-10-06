@@ -1,6 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AcessoProvider, useAcesso } from "./AcessoContext";
 import { FluxoProvider } from "./FluxoContext";
+import { OfflineProvider } from "./offline/OfflineContext";
+import FaixaOffline from "./FaixaOffline";
 import Login from "./pages/Login";
 import Equipe from "./pages/Equipe";
 import Prefeitura from "./pages/Prefeitura";
@@ -25,14 +27,17 @@ function Rotas() {
 export default function App() {
   return (
     <BrowserRouter basename="/campo">
-      <AcessoProvider>
-        <FluxoProvider>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/*" element={<Rotas />} />
-          </Routes>
-        </FluxoProvider>
-      </AcessoProvider>
+      <OfflineProvider>
+        <AcessoProvider>
+          <FluxoProvider>
+            <FaixaOffline />
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/*" element={<Rotas />} />
+            </Routes>
+          </FluxoProvider>
+        </AcessoProvider>
+      </OfflineProvider>
     </BrowserRouter>
   );
 }
