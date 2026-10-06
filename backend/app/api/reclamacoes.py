@@ -33,6 +33,10 @@ class ReclamacaoOut(BaseModel):
     prefeitura_id: uuid.UUID | None
     observacoes: str | None
     status: str
+    # True se já existe ao menos uma execução lançada (tipicamente pelo app
+    # de campo) — a reclamação pode ter sido atendida sem alguém lembrar de
+    # marcar como Concluída, daí o aviso + atalho na lista (ver listar()).
+    tem_execucao: bool = False
 
     class Config:
         from_attributes = True
@@ -122,7 +126,20 @@ def listar(
         query = query.filter(Reclamacao.prefeitura_id == prefeitura_id)
     if status:
         query = query.filter(Reclamacao.status == status)
-    return query.order_by(Reclamacao.data_reclamacao.desc()).all()
+    reclamacoes = query.order_by(Reclamacao.data_reclamacao.desc()).all()
+
+    ids_com_execucao = {
+        rid
+        for (rid,) in db.query(ExecucaoReclamacao.reclamacao_id)
+        .filter(ExecucaoReclamacao.reclamacao_id.in_([r.id for r in reclamacoes]))
+        .distinct()
+    }
+    saida = []
+    for r in reclamacoes:
+        item = ReclamacaoOut.model_validate(r)
+        item.tem_execucao = r.id in ids_com_execucao
+        saida.append(item)
+    return saida
 
 
 @router.get("/{item_id}", response_model=ReclamacaoOut, dependencies=[Depends(requer_acesso("reclamacoes", "use"))])

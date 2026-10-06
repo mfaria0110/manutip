@@ -5,11 +5,9 @@ import {
   apiEquipesDia,
   apiFuncionarios,
   apiVeiculos,
-  logout,
   proximoNomeEquipe,
   validarEquipe,
 } from "../api";
-import { useAcesso } from "../AcessoContext";
 import { useFluxo } from "../FluxoContext";
 import { useOffline } from "../offline/OfflineContext";
 import { comCache, salvarCache } from "../offline/cache";
@@ -20,15 +18,8 @@ const hoje = () => new Date().toISOString().slice(0, 10);
 
 export default function Equipe() {
   const navigate = useNavigate();
-  const { recarregar } = useAcesso();
-  const { definirEquipe, limpar } = useFluxo();
+  const { definirEquipe } = useFluxo();
   const { online, atualizarContagem } = useOffline();
-
-  async function sair() {
-    await logout();
-    limpar();
-    await recarregar();
-  }
 
   const [equipes, setEquipes] = useState([]);
   const [funcionarios, setFuncionarios] = useState([]);
@@ -246,15 +237,7 @@ export default function Equipe() {
 
   return (
     <div className="tela">
-      <Topo
-        titulo="Equipe do dia"
-        subtitulo={hoje().split("-").reverse().join("/")}
-        acao={
-          <button type="button" onClick={sair} style={{ background: "none", border: "none", color: "#fff" }}>
-            <i className="ti ti-logout" style={{ fontSize: 20 }} aria-hidden="true" />
-          </button>
-        }
-      />
+      <Topo titulo="Equipe do dia" subtitulo={hoje().split("-").reverse().join("/")} />
       <div className="conteudo">
         {erro && <p className="erro-msg">{erro}</p>}
         {equipes.length === 0 && <p className="vazio">Nenhuma equipe cadastrada hoje ainda.</p>}

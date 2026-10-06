@@ -25,6 +25,7 @@ const STATUS_RECLAMACAO = [
 export default function Reclamacoes() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [concluindoId, setConcluindoId] = useState(null);
   const [cidades, setCidades] = useState([]);
   const [bairros, setBairros] = useState([]);
   const [prefeituras, setPrefeituras] = useState([]);
@@ -44,6 +45,17 @@ export default function Reclamacoes() {
   const nomeBairro = (id) => bairros.find((b) => b.id === id)?.nome || "—";
   const siglaPrefeitura = (id) => prefeituras.find((p) => p.id === id)?.sigla || "—";
   const labelStatus = (v) => STATUS_RECLAMACAO.find((s) => s.value === v)?.label || v;
+
+  async function marcarConcluida(item) {
+    setConcluindoId(item.id);
+    try {
+      await apiReclamacoes.atualizar(item.id, { status: "CONCLUIDA" });
+      window.location.reload();
+    } catch (e) {
+      alert(e.message);
+      setConcluindoId(null);
+    }
+  }
 
   async function aoSairDoCep(valor, atualizarCampos) {
     const digitos = (valor || "").replace(/\D/g, "");
@@ -137,6 +149,17 @@ export default function Reclamacoes() {
           >
             <i className="ti ti-tool" aria-hidden="true" />
           </button>
+          {item.tem_execucao && item.status !== "CONCLUIDA" && (
+            <button
+              className="btn btn-ghost"
+              onClick={() => marcarConcluida(item)}
+              disabled={concluindoId === item.id}
+              title="Já tem execução lançada — marcar como concluída sem precisar abrir"
+              style={{ color: "var(--success, #15803d)" }}
+            >
+              <i className="ti ti-check" aria-hidden="true" />
+            </button>
+          )}
           {["VALIDADA", "CONCLUIDA"].includes(item.status) && (
             <button
               className="btn btn-ghost"
@@ -160,11 +183,22 @@ export default function Reclamacoes() {
           key: "status",
           label: "Status",
           render: (item) => (
-            <span
-              className={`badge ${["CONCLUIDA", "VALIDADA"].includes(item.status) ? "badge-success" : "badge-muted"}`}
-            >
-              {labelStatus(item.status)}
-            </span>
+            <>
+              <span
+                className={`badge ${["CONCLUIDA", "VALIDADA"].includes(item.status) ? "badge-success" : "badge-muted"}`}
+              >
+                {labelStatus(item.status)}
+              </span>
+              {item.tem_execucao && !["CONCLUIDA"].includes(item.status) && (
+                <span
+                  className="badge"
+                  style={{ marginLeft: 6, background: "#fef3c7", color: "#92400e" }}
+                  title="Já tem execução lançada — falta só marcar como concluída"
+                >
+                  Já atendida
+                </span>
+              )}
+            </>
           ),
         },
       ]}

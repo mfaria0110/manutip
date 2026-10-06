@@ -1,4 +1,20 @@
+import { useNavigate } from "react-router-dom";
+import { logout } from "./api";
+import { useAcesso } from "./AcessoContext";
+import { useFluxo } from "./FluxoContext";
+
 export default function Topo({ titulo, subtitulo, voltar, acao }) {
+  const navigate = useNavigate();
+  const { recarregar } = useAcesso();
+  const { limpar } = useFluxo();
+
+  async function sair() {
+    await logout();
+    limpar();
+    await recarregar();
+    navigate("/login", { replace: true });
+  }
+
   return (
     <div className="topo">
       <div className="linha">
@@ -16,7 +32,17 @@ export default function Topo({ titulo, subtitulo, voltar, acao }) {
           {subtitulo && <div className="topo-sub">{subtitulo}</div>}
         </div>
       </div>
-      {acao}
+      <div className="linha" style={{ gap: 14 }}>
+        {acao}
+        <button
+          type="button"
+          onClick={sair}
+          title="Sair"
+          style={{ background: "none", border: "none", color: "#fff", padding: 0 }}
+        >
+          <i className="ti ti-logout" style={{ fontSize: 20 }} aria-hidden="true" />
+        </button>
+      </div>
     </div>
   );
 }
