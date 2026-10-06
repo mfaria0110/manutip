@@ -52,14 +52,19 @@ export default function Reclamacoes() {
         {carregando && <div className="vazio">Carregando...</div>}
         {!carregando && lista.length === 0 && <div className="vazio">Nenhuma reclamação aberta nessa prefeitura.</div>}
         {lista.map((r) => (
-          <div key={r.id} className="cartao cartao-toque" onClick={() => navigate(`/execucao/${r.id}`)}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="cartao-titulo">{r.codigo}</div>
-              <div className="cartao-sub">
-                {r.logradouro || "—"}
-                {r.numero ? `, ${r.numero}` : ""}
-              </div>
-              <div className="cartao-sub">{formatarData(r.data_reclamacao)}</div>
+          <div
+            key={r.id}
+            className="cartao cartao-toque"
+            style={{ flexDirection: "column", alignItems: "stretch" }}
+            onClick={() => navigate(`/execucao/${r.id}`)}
+          >
+            <div className="cartao-titulo">{r.codigo}</div>
+            <div className="cartao-sub">
+              {r.logradouro || "—"}
+              {r.numero ? `, ${r.numero}` : ""}
+            </div>
+            <div className="cartao-sub">{formatarData(r.data_reclamacao)}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 16px", marginTop: 4 }}>
               <div className="cartao-sub">
                 <strong>Reclamante:</strong> {r.nome_reclamante || "—"}
               </div>
@@ -75,11 +80,11 @@ export default function Reclamacoes() {
               <div className="cartao-sub">
                 <strong>Ponto de referência:</strong> {r.ponto_referencia || "—"}
               </div>
-              <div className="cartao-sub">
+              <div className="cartao-sub" style={{ gridColumn: "1 / -1", minHeight: "2.6em" }}>
                 <strong>Observações:</strong> {r.observacoes || "—"}
               </div>
             </div>
-            <button type="button" className="btn btn-secundario" style={{ width: "auto", whiteSpace: "nowrap" }}>
+            <button type="button" className="btn btn-secundario" style={{ marginTop: 10 }}>
               Ir para execução
             </button>
           </div>
