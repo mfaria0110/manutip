@@ -15,8 +15,11 @@ RUN pip install -r requirements.txt
 
 COPY backend/ ./
 
-# Usuário sem privilégios (defense-in-depth).
-RUN useradd --create-home --uid 1000 app && chown -R app:app /app
+# Usuário sem privilégios (defense-in-depth). Pasta de storage criada aqui
+# (mesmo vazia) pra já existir com dono certo antes do volume nomeado do
+# docker-compose ser montado em cima dela — senão o volume novo nasce
+# root:root e o processo (uid 1000) não consegue gravar foto nenhuma.
+RUN useradd --create-home --uid 1000 app && mkdir -p /app/storage && chown -R app:app /app
 USER app
 
 EXPOSE 8000

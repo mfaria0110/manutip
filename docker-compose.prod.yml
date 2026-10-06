@@ -10,6 +10,10 @@
 # O Nginx do SISTEMA (fora do Docker) faz proxy_pass para 127.0.0.1:8081 (ou
 # a porta escolhida) -> container do frontend. Backend só é alcançável de
 # dentro da rede docker, pelo nginx do próprio frontend (proxy /api/).
+#
+# App de campo (PWA, perfil OPERACIONAL) é um 2º frontend à parte, servido
+# sob /campo/ no mesmo domínio — nginx do sistema tem um location /campo/
+# apontando pra 127.0.0.1:8082 (ver docs/deploy-vps.md).
 
 services:
   backend:
@@ -20,6 +24,10 @@ services:
       - .env
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      # Fotos anexadas às execuções (app de campo) — sem isso, somem a cada
+      # rebuild da imagem.
+      - manutip_storage:/app/storage
     restart: unless-stopped
 
   frontend:
@@ -33,3 +41,14 @@ services:
     ports:
       - "127.0.0.1:8081:80"
     restart: unless-stopped
+
+  app-campo:
+    build:
+      context: .
+      dockerfile: Dockerfile.app-campo
+    ports:
+      - "127.0.0.1:8082:80"
+    restart: unless-stopped
+
+volumes:
+  manutip_storage:

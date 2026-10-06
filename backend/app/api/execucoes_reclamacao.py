@@ -158,6 +158,14 @@ def listar(reclamacao_id: uuid.UUID | None = None, db: Session = Depends(get_db)
     return [_para_saida(e) for e in query.order_by(ExecucaoReclamacao.data_execucao.desc()).all()]
 
 
+@router.get("/{execucao_id}", response_model=ExecucaoOut, dependencies=[Depends(requer_acesso("execucoes", "use"))])
+def obter(execucao_id: uuid.UUID, db: Session = Depends(get_db)):
+    obj = _com_itens(db.query(ExecucaoReclamacao)).filter(ExecucaoReclamacao.id == execucao_id).first()
+    if not obj:
+        raise HTTPException(status_code=404, detail="Execução não encontrada.")
+    return _para_saida(obj)
+
+
 @router.post("", response_model=ExecucaoOut, dependencies=[Depends(requer_acesso("execucoes", "edit"))])
 def criar(req: ExecucaoCreate, db: Session = Depends(get_db)):
     # Reenvio depois de uma sincronização offline que falhou no meio: se já
