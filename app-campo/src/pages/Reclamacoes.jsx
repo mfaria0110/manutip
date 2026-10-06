@@ -51,6 +51,9 @@ export default function Reclamacoes() {
             <i className="ti ti-chevron-right" aria-hidden="true" />
           </div>
         ))}
+        <button type="button" className="btn btn-secundario" style={{ marginTop: 10 }} onClick={() => navigate("/reclamacoes/nova")}>
+          <i className="ti ti-plus" aria-hidden="true" /> Nova reclamação (atendimento no local)
+        </button>
       </div>
     </div>
   );

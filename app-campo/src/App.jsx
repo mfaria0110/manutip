@@ -7,6 +7,7 @@ import Login from "./pages/Login";
 import Equipe from "./pages/Equipe";
 import Prefeitura from "./pages/Prefeitura";
 import Reclamacoes from "./pages/Reclamacoes";
+import NovaReclamacao from "./pages/NovaReclamacao";
 import Execucao from "./pages/Execucao";
 
 function Rotas() {
@@ -18,6 +19,7 @@ function Rotas() {
       <Route path="/equipe" element={<Equipe />} />
       <Route path="/prefeitura" element={<Prefeitura />} />
       <Route path="/reclamacoes" element={<Reclamacoes />} />
+      <Route path="/reclamacoes/nova" element={<NovaReclamacao />} />
       <Route path="/execucao/:id" element={<Execucao />} />
       <Route path="*" element={<Navigate to="/equipe" replace />} />
     </Routes>

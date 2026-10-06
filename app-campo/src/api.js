@@ -71,6 +71,8 @@ function crud(path) {
 }
 
 export const apiPrefeituras = crud("/prefeituras");
+export const apiCidades = crud("/cidades");
+export const apiBairros = crud("/bairros");
 export const apiFuncionarios = crud("/funcionarios");
 export const apiVeiculos = crud("/veiculos");
 export const apiCargos = crud("/cargos");
