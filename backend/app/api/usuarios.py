@@ -34,6 +34,7 @@ class UsuarioCreate(BaseModel):
 
 class UsuarioUpdate(BaseModel):
     nome: str | None = None
+    username: str | None = None
     papel: PapelUsuario | None = None
     ativo: bool | None = None
     permissoes_extra: list[str] | None = None
@@ -87,6 +88,10 @@ def atualizar(
         raise HTTPException(status_code=403, detail="Só um SUPERADMIN pode editar um usuário SUPERADMIN.")
     if req.nome is not None:
         usuario.nome = req.nome
+    if req.username is not None and req.username != usuario.username:
+        if db.query(Usuario).filter(Usuario.username == req.username, Usuario.id != usuario_id).first():
+            raise HTTPException(status_code=400, detail="Já existe um usuário com esse login.")
+        usuario.username = req.username
     if req.papel is not None:
         usuario.papel = req.papel
     if req.ativo is not None:
