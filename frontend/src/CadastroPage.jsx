@@ -129,6 +129,7 @@ export default function CadastroPage({
   alturaModal,
   larguraModal,
   classeTabela,
+  notaModal,
 }) {
   const { pode, ehAdmin } = useAcesso();
   const [itens, setItens] = useState([]);
@@ -372,6 +373,7 @@ async function confirmarExclusao() {
             }}
           >
             <h2>{editando[idKey] ? "Editar" : "Novo"} registro</h2>
+            {notaModal && <p className="aviso-msg">{notaModal}</p>}
             <form onSubmit={salvar}>
               <div className="form-grid">
               {campos.map((c) => (
