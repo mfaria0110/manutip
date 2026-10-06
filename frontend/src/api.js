@@ -95,6 +95,15 @@ export function proximoNomeEquipe() {
   return req("/equipes/proximo-nome");
 }
 export const apiExecucoesReclamacao = crud("/execucoes-reclamacao");
+// <img src> não manda o header Authorization — baixa com fetch autenticado
+// e devolve uma URL de blob local pra usar no <img>.
+export async function obterFotoURL(fotoUrl) {
+  const t = token();
+  const resp = await fetch(fotoUrl, { headers: t ? { Authorization: `Bearer ${t}` } : {} });
+  if (!resp.ok) throw new Error("Não foi possível carregar a foto.");
+  const blob = await resp.blob();
+  return URL.createObjectURL(blob);
+}
 export const apiItensExecucao = {
   atualizar: (id, dados) => req(`/execucoes-reclamacao/itens/${id}`, { method: "PUT", body: JSON.stringify(dados) }),
   excluir: (id) => req(`/execucoes-reclamacao/itens/${id}`, { method: "DELETE" }),

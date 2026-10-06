@@ -120,13 +120,24 @@ export default function Reclamacoes() {
       queryExtra={`?prefeitura_id=${prefeituraConfirmada}`}
       classeTabela="tabela-compacta"
       acoesExtras={(item) => (
-        <button
-          className="btn btn-ghost"
-          onClick={() => navigate(`/reclamacoes/${item.id}/execucao`)}
-          title="Registrar execução"
-        >
-          <i className="ti ti-tool" aria-hidden="true" />
-        </button>
+        <>
+          <button
+            className="btn btn-ghost"
+            onClick={() => navigate(`/reclamacoes/${item.id}/execucao`)}
+            title="Registrar execução"
+          >
+            <i className="ti ti-tool" aria-hidden="true" />
+          </button>
+          {["VALIDADA", "CONCLUIDA"].includes(item.status) && (
+            <button
+              className="btn btn-ghost"
+              onClick={() => navigate(`/reclamacoes/${item.id}/ocorrencia`)}
+              title="Fotos e localização"
+            >
+              <i className="ti ti-photo" aria-hidden="true" />
+            </button>
+          )}
+        </>
       )}
       colunas={[
         { key: "codigo", label: "Código", width: 130 },
