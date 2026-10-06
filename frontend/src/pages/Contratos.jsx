@@ -47,6 +47,7 @@ export default function Contratos() {
         { name: "data_fim", label: "Data de fim", type: "date", size: 2 },
         { name: "observacoes", label: "Observações", type: "textarea", rows: 4, fullWidth: true },
       ]}
+      larguraModal={900}
       acoesExtras={(item) => (
         <button
           className="btn btn-ghost"
