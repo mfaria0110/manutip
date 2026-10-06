@@ -83,45 +83,45 @@ export default function PontosContrato() {
           <table className="tabela-compacta">
             <thead>
               <tr>
-                <th>Material</th>
-                <th>Pts Instalação</th>
-                <th>Pts Retirada</th>
-                <th>Pts Substituição</th>
-                <th>Situação</th>
+                <th style={{ padding: "6px 12px" }}>Material</th>
+                <th style={{ padding: "6px 12px" }}>Pts Instalação</th>
+                <th style={{ padding: "6px 12px" }}>Pts Retirada</th>
+                <th style={{ padding: "6px 12px" }}>Pts Substituição</th>
+                <th style={{ padding: "6px 12px" }}>Situação</th>
               </tr>
             </thead>
             <tbody>
               {linhas.map((linha, idx) => (
                 <tr key={linha.material_id}>
-                  <td>{linha.material_nome}</td>
-                  <td style={{ textAlign: "center" }}>
+                  <td style={{ padding: "2px 12px" }}>{linha.material_nome}</td>
+                  <td style={{ padding: "2px 12px", textAlign: "center" }}>
                     <input
                       type="number"
                       step="0.01"
-                      style={{ width: 90, textAlign: "center" }}
+                      style={{ width: 90, height: 24, textAlign: "center" }}
                       value={linha.qde_pontos_inst}
                       onChange={(e) => atualizarLinha(idx, { qde_pontos_inst: Number(e.target.value) || 0 })}
                     />
                   </td>
-                  <td style={{ textAlign: "center" }}>
+                  <td style={{ padding: "2px 12px", textAlign: "center" }}>
                     <input
                       type="number"
                       step="0.01"
-                      style={{ width: 90, textAlign: "center" }}
+                      style={{ width: 90, height: 24, textAlign: "center" }}
                       value={linha.qde_pontos_ret}
                       onChange={(e) => atualizarLinha(idx, { qde_pontos_ret: Number(e.target.value) || 0 })}
                     />
                   </td>
-                  <td style={{ textAlign: "center" }}>
+                  <td style={{ padding: "2px 12px", textAlign: "center" }}>
                     <input
                       type="number"
                       step="0.01"
-                      style={{ width: 90, textAlign: "center" }}
+                      style={{ width: 90, height: 24, textAlign: "center" }}
                       value={linha.qde_pontos_subst}
                       onChange={(e) => atualizarLinha(idx, { qde_pontos_subst: Number(e.target.value) || 0 })}
                     />
                   </td>
-                  <td style={{ textAlign: "center" }}>
+                  <td style={{ padding: "2px 12px", textAlign: "center" }}>
                     {linha.cadastrado ? (
                       <span className="badge badge-success">Cadastrado</span>
                     ) : (
