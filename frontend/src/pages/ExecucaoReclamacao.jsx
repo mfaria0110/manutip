@@ -501,7 +501,7 @@ export default function ExecucaoReclamacao() {
                   {LABEL_STATUS[reclamacao.status] || reclamacao.status}
                 </span>
               </div>
-              {reclamacao.status === "ABERTA" && execucoes.length > 0 && (
+              {["ABERTA", "CONCLUIDA"].includes(reclamacao.status) && execucoes.length > 0 && (
                 <button className="btn btn-primary" onClick={validarLancamento} disabled={validando}>
                   {validando ? "Validando..." : "Validar lançamento"}
                 </button>
