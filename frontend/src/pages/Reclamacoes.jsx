@@ -120,7 +120,12 @@ export default function Reclamacoes() {
       titulo="Reclamações"
       modulo="reclamacoes"
       api={apiReclamacoes}
-      valoresPadrao={{ status: "ABERTA", nome_reclamante: "SELLES", prefeitura_id: prefeituraConfirmada }}
+      valoresPadrao={{
+        status: "ABERTA",
+        nome_reclamante: "SELLES",
+        prefeitura_id: prefeituraConfirmada,
+        cidade_id: prefeituras.find((p) => p.id === prefeituraConfirmada)?.cidade_id || "",
+      }}
       queryExtra={`?prefeitura_id=${prefeituraConfirmada}`}
       classeTabela="tabela-compacta"
       acoesExtras={(item) => (
