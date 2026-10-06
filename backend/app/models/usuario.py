@@ -11,6 +11,8 @@ from app.models.mixins import TimestampMixin
 
 
 class PapelUsuario(str, enum.Enum):
+    SUPERADMIN = "SUPERADMIN"  # acima do ADMIN — único que gerencia categorias
+    # de material e os próprios cadastros de outros SUPERADMIN
     ADMIN = "ADMIN"  # acesso total, sem precisar de permissão extra
     USUARIO = "USUARIO"  # acesso operacional (nível "use"); edição de cadastros
     # administrativos (contratos, preços, usuários...) só com permissão extra

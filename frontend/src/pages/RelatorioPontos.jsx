@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiCidades, apiPrefeituras, relatorioPontosAtendidos } from "../api";
+import { apiCategoriasMaterial, apiCidades, apiPrefeituras, relatorioPontosAtendidos } from "../api";
 import logoSelles from "../assets/logo-selles.png";
 
 function formatarData(iso) {
@@ -12,9 +12,26 @@ function numeroOuTraco(v) {
   return v ? v.toString().replace(/\.0$/, "") : "—";
 }
 
+// Abreviações pra caber mais colunas na largura impressa — só muda o
+// rótulo exibido, o código da categoria continua o mesmo.
+const ABREVIACOES = {
+  CONECTOR: "Conx",
+  ISOLADOR: "Isol",
+  CONDUTOR: "Cond",
+  LAMPADA: "Lamp",
+};
+
+// Essas categorias entram somadas em Outros — viram colunas "visíveis" a
+// menos na tabela, sem perder o valor lançado.
+const CATEGORIAS_MESCLADAS_EM_OUTROS = ["ISOLANTES", "BRACO", "FERRAGENS", "ISOLADOR", "POSTE"];
+
+// Lâmpada vira coluna própria (antes de Pot.(W)); as demais seguem esta ordem fixa.
+const ORDEM_CATEGORIAS = ["RELE", "BASE", "CONDUTOR", "CONECTOR", "LUMINARIA", "OUTROS", "REFLETOR"];
+
 export default function RelatorioPontos() {
   const [prefeituras, setPrefeituras] = useState([]);
   const [cidades, setCidades] = useState([]);
+  const [categorias, setCategorias] = useState([]);
   const [prefeituraId, setPrefeituraId] = useState("");
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
@@ -25,6 +42,7 @@ export default function RelatorioPontos() {
   useEffect(() => {
     apiPrefeituras.listar().then(setPrefeituras);
     apiCidades.listar().then(setCidades);
+    apiCategoriasMaterial.listar().then(setCategorias);
   }, []);
 
   const prefeitura = prefeituras.find((p) => p.id === prefeituraId);
@@ -45,15 +63,35 @@ export default function RelatorioPontos() {
     }
   }
 
-  const totais = (linhas || []).reduce(
-    (acc, l) => ({
-      rele: acc.rele + Number(l.rele || 0),
-      base: acc.base + Number(l.base || 0),
-      conx: acc.conx + Number(l.conx || 0),
-      pontos: acc.pontos + Number(l.pontos || 0),
-    }),
-    { rele: 0, base: 0, conx: 0, pontos: 0 }
-  );
+  const categoriaLampada = categorias.find((c) => c.codigo === "LAMPADA");
+  const categoriasVisiveis = categorias
+    .filter((c) => !CATEGORIAS_MESCLADAS_EM_OUTROS.includes(c.codigo) && c.codigo !== "LAMPADA")
+    .sort((a, b) => ORDEM_CATEGORIAS.indexOf(a.codigo) - ORDEM_CATEGORIAS.indexOf(b.codigo));
+
+  // Outros soma com as categorias mescladas; as demais usam o próprio valor.
+  function valorCategoria(linha, codigo) {
+    const base = Number(linha.por_categoria?.[codigo] || 0);
+    if (codigo === "OUTROS") {
+      return CATEGORIAS_MESCLADAS_EM_OUTROS.reduce(
+        (acc, mesclada) => acc + Number(linha.por_categoria?.[mesclada] || 0),
+        base
+      );
+    }
+    return base;
+  }
+
+  // Cond mostra quantidade-descrição em vez de só a soma numérica.
+  const TEXTO_POR_CATEGORIA = {
+    CONDUTOR: (l) => l.condutores || "—",
+  };
+
+  const totalPontos = (linhas || []).reduce((acc, l) => acc + Number(l.pontos || 0), 0);
+  const totalPorCategoria = (linhas || []).reduce((acc, l) => {
+    categoriasVisiveis.forEach((c) => {
+      acc[c.codigo] = (acc[c.codigo] || 0) + valorCategoria(l, c.codigo);
+    });
+    return acc;
+  }, {});
 
   return (
     <>
@@ -127,46 +165,65 @@ export default function RelatorioPontos() {
               <table className="tabela-relatorio">
                 <thead>
                   <tr>
+                    <th>Código</th>
                     <th>Data</th>
                     <th>Bairro</th>
                     <th>Logradouro</th>
-                    <th>Luminárias (W)</th>
-                    <th>Relê</th>
-                    <th>Base</th>
-                    <th>Conx</th>
+                    {categoriaLampada && <th style={{ textAlign: "center" }}>Lamp</th>}
+                    <th>Pot.(W)</th>
+                    {categoriasVisiveis.map((c) => (
+                      <th key={c.codigo} style={{ textAlign: "center" }}>
+                        {ABREVIACOES[c.codigo] || c.nome}
+                      </th>
+                    ))}
                     <th>Pontos</th>
                   </tr>
                 </thead>
                 <tbody>
                   {linhas.map((l, i) => (
                     <tr key={i}>
+                      <td>{l.codigo_reclamacao}</td>
                       <td>{formatarData(l.data)}</td>
                       <td>{l.bairro}</td>
                       <td>{l.logradouro}</td>
-                      <td>{l.luminarias_w || "—"}</td>
-                      <td style={{ textAlign: "center" }}>{numeroOuTraco(l.rele)}</td>
-                      <td style={{ textAlign: "center" }}>{numeroOuTraco(l.base)}</td>
-                      <td style={{ textAlign: "center" }}>{numeroOuTraco(l.conx)}</td>
+                      {categoriaLampada && (
+                        <td style={{ textAlign: "center", whiteSpace: "normal", wordBreak: "break-word", maxWidth: 90 }}>
+                          {l.lampadas_tipo || "—"}
+                        </td>
+                      )}
+                      <td style={{ whiteSpace: "normal", wordBreak: "break-word", maxWidth: 90 }}>
+                        {l.luminarias_w || "—"}
+                      </td>
+                      {categoriasVisiveis.map((c) => (
+                        <td
+                          key={c.codigo}
+                          style={
+                            TEXTO_POR_CATEGORIA[c.codigo]
+                              ? { textAlign: "center", whiteSpace: "normal", wordBreak: "break-word", maxWidth: 90 }
+                              : { textAlign: "center" }
+                          }
+                        >
+                          {TEXTO_POR_CATEGORIA[c.codigo]
+                            ? TEXTO_POR_CATEGORIA[c.codigo](l)
+                            : numeroOuTraco(valorCategoria(l, c.codigo))}
+                        </td>
+                      ))}
                       <td style={{ textAlign: "center" }}>{numeroOuTraco(l.pontos)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colSpan={4}>
+                    <td colSpan={categoriaLampada ? 6 : 5}>
                       <strong>Totais</strong>
                     </td>
+                    {categoriasVisiveis.map((c) => (
+                      <td key={c.codigo} style={{ textAlign: "center" }}>
+                        <strong>{TEXTO_POR_CATEGORIA[c.codigo] ? "—" : numeroOuTraco(totalPorCategoria[c.codigo])}</strong>
+                      </td>
+                    ))}
                     <td style={{ textAlign: "center" }}>
-                      <strong>{numeroOuTraco(totais.rele)}</strong>
-                    </td>
-                    <td style={{ textAlign: "center" }}>
-                      <strong>{numeroOuTraco(totais.base)}</strong>
-                    </td>
-                    <td style={{ textAlign: "center" }}>
-                      <strong>{numeroOuTraco(totais.conx)}</strong>
-                    </td>
-                    <td style={{ textAlign: "center" }}>
-                      <strong>{numeroOuTraco(totais.pontos)}</strong>
+                      <strong>{numeroOuTraco(totalPontos)}</strong>
                     </td>
                   </tr>
                 </tfoot>

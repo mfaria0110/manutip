@@ -22,6 +22,10 @@ class Reclamacao(TimestampMixin, Base):
     __tablename__ = "reclamacoes"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # Identificador único "REC_<sigla da prefeitura>_<sequencial de 7
+    # dígitos>" — a sequência é por prefeitura, começando em 0000001 a cada
+    # vez que muda de prefeitura. Gerado no backend ao criar, nunca editado.
+    codigo: Mapped[str] = mapped_column(String(30), unique=True, nullable=False)
     nome_reclamante: Mapped[str] = mapped_column(String(200), nullable=False)
     telefone: Mapped[str | None] = mapped_column(String(20))
     tipo_reclamacao: Mapped[str] = mapped_column(String(30), nullable=False)  # canal: whatsapp, telefone, email...

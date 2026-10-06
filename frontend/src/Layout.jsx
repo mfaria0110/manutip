@@ -19,7 +19,7 @@ const GRUPOS = [
     itens: [
       { to: "/contratos", icon: "ti-file-text", label: "Contratos" },
       { to: "/materiais", icon: "ti-package", label: "Materiais" },
-      { to: "/categorias-material", icon: "ti-category", label: "Categorias de Material" },
+      { to: "/categorias-material", icon: "ti-category", label: "Categorias de Material", modulo: "categorias_material" },
     ],
   },
   {
@@ -43,7 +43,7 @@ const GRUPOS = [
 ];
 
 export default function Layout() {
-  const { perfil } = useAcesso();
+  const { perfil, pode } = useAcesso();
   const navigate = useNavigate();
   const location = useLocation();
   const [menuAberto, setMenuAberto] = useState(false);
@@ -102,22 +102,26 @@ export default function Layout() {
           <span>Início</span>
         </NavLink>
 
-        {GRUPOS.map((grupo) => (
-          <div className="sidebar-group" key={grupo.label}>
-            <div className="sidebar-group-label">{grupo.label}</div>
-            {grupo.itens.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) => "sidebar-link" + (isActive ? " active" : "")}
-                title={item.label}
-              >
-                <i className={`ti ${item.icon}`} aria-hidden="true" />
-                <span>{item.label}</span>
-              </NavLink>
-            ))}
-          </div>
-        ))}
+        {GRUPOS.map((grupo) => {
+          const itensVisiveis = grupo.itens.filter((item) => !item.modulo || pode(item.modulo));
+          if (itensVisiveis.length === 0) return null;
+          return (
+            <div className="sidebar-group" key={grupo.label}>
+              <div className="sidebar-group-label">{grupo.label}</div>
+              {itensVisiveis.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) => "sidebar-link" + (isActive ? " active" : "")}
+                  title={item.label}
+                >
+                  <i className={`ti ${item.icon}`} aria-hidden="true" />
+                  <span>{item.label}</span>
+                </NavLink>
+              ))}
+            </div>
+          );
+        })}
 
         <div className="sidebar-group sidebar-group-footer">
           <SeletorTema />

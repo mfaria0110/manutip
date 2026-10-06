@@ -570,7 +570,8 @@ export default function ExecucaoReclamacao() {
             <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
               <h2 style={{ margin: 0 }}>{execucaoEditando ? "Editar execução" : "Nova execução"}</h2>
               <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-                {nomeCidade(reclamacao.cidade_id)} — {nomeBairro(reclamacao.bairro_id)} — {reclamacao.logradouro || "—"}
+                {reclamacao.codigo} — {nomeCidade(reclamacao.cidade_id)} — {nomeBairro(reclamacao.bairro_id)} —{" "}
+                {reclamacao.logradouro || "—"}
                 {reclamacao.numero ? ` — ${reclamacao.numero}` : ""}
               </span>
             </div>

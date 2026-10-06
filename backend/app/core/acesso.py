@@ -1,10 +1,14 @@
 """Controle de acesso do Manutip: perfil + nível de ação por módulo.
 
 Mesma lógica usada no EcoWatt (perfil x nível hierárquico x concessões extra
-por usuário), simplificada para 2 perfis porque aqui não há "planos vendidos"
-— é uso interno de uma única empresa:
+por usuário), com 3 perfis porque aqui não há "planos vendidos" — é uso
+interno de uma única empresa:
 
-- ADMIN: acesso "admin" (o máximo) em qualquer módulo, sempre.
+- SUPERADMIN: acima do ADMIN. Único que acessa o cadastro de categorias de
+  material (`categorias_material`, ver MODULOS_SOMENTE_SUPERADMIN) e o único
+  que pode criar/editar/ver outro usuário SUPERADMIN (ver app/api/usuarios.py).
+  Fora isso, mesmo nível do ADMIN.
+- ADMIN: acesso "admin" (o máximo) em qualquer módulo normal, sempre.
 - USUARIO: acesso "use" por padrão (opera o dia a dia: abre/fecha pedido,
   registra execução, lança OS) — mas NÃO edita cadastros administrativos
   (contratos, preços, usuários, materiais, veículos, funcionários) a menos
@@ -43,9 +47,15 @@ MODULOS = [
 NIVEIS_ORDEM = ["read", "use", "edit", "admin"]
 
 NIVEL_MAX_POR_PERFIL = {
+    PapelUsuario.SUPERADMIN: "admin",
     PapelUsuario.ADMIN: "admin",
     PapelUsuario.USUARIO: "use",
 }
+
+# Módulos que só o SUPERADMIN acessa, mesmo o ADMIN ficando de fora e mesmo
+# com permissão extra concedida — hoje só o cadastro de categorias de
+# material (a listagem para popular combos continua em "materiais").
+MODULOS_SOMENTE_SUPERADMIN = {"categorias_material"}
 
 
 def nivel_ok(papel: PapelUsuario, nivel_requerido: str) -> bool:
@@ -82,6 +92,8 @@ def _nivel_override(usuario: Usuario, modulo: str) -> str | None:
 def usuario_pode(usuario: Usuario, modulo: str, nivel: str = "use") -> bool:
     if not usuario.ativo:
         return False
+    if modulo in MODULOS_SOMENTE_SUPERADMIN:
+        return usuario.papel == PapelUsuario.SUPERADMIN
     if nivel_ok(usuario.papel, nivel):
         return True
     override = _nivel_override(usuario, modulo)
@@ -119,6 +131,12 @@ def requer_acesso(modulo: str, nivel: str = "use"):
 
 
 def requer_admin(usuario: Usuario = Depends(usuario_atual)) -> Usuario:
-    if usuario.papel != PapelUsuario.ADMIN:
+    if usuario.papel not in (PapelUsuario.ADMIN, PapelUsuario.SUPERADMIN):
         raise HTTPException(status_code=403, detail="Requer perfil ADMIN.")
+    return usuario
+
+
+def requer_superadmin(usuario: Usuario = Depends(usuario_atual)) -> Usuario:
+    if usuario.papel != PapelUsuario.SUPERADMIN:
+        raise HTTPException(status_code=403, detail="Requer perfil SUPERADMIN.")
     return usuario

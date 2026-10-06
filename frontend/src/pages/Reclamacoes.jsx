@@ -129,13 +129,13 @@ export default function Reclamacoes() {
         </button>
       )}
       colunas={[
+        { key: "codigo", label: "Código", width: 130 },
         { key: "data_reclamacao", label: "Data" },
         { key: "nome_reclamante", label: "Reclamante" },
-        { key: "prefeitura_id", label: "Sigla", render: (item) => siglaPrefeitura(item.prefeitura_id) },
-        { key: "logradouro", label: "Logradouro", render: (item) => item.logradouro || "—" },
+        { key: "logradouro", label: "Logradouro", width: 260, render: (item) => item.logradouro || "—" },
         { key: "numero", label: "Número", render: (item) => item.numero || "—" },
         { key: "bairro_id", label: "Bairro", render: (item) => nomeBairro(item.bairro_id) },
-        { key: "cidade_id", label: "Cidade", render: (item) => nomeCidade(item.cidade_id) },
+        { key: "cidade_id", label: "Cidade", width: 160, render: (item) => nomeCidade(item.cidade_id) },
         {
           key: "status",
           label: "Status",
@@ -149,6 +149,7 @@ export default function Reclamacoes() {
         },
       ]}
       campos={[
+        { name: "codigo", label: "Código", size: 4, disabled: true, placeholder: "Gerado ao salvar" },
         { name: "nome_reclamante", label: "Nome do reclamante", required: true, size: 8 },
         { name: "telefone", label: "Telefone", mask: "telefone", center: true },
         {

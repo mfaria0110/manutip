@@ -6,7 +6,11 @@ const AcessoContext = createContext(null);
 // Nível de ação por perfil — MESMA matriz do backend (app/core/acesso.py).
 // ADMIN alcança tudo; USUARIO só "use" por padrão, salvo permissão extra.
 const NIVEIS_ORDEM = ["read", "use", "edit", "admin"];
-const NIVEL_MAX_POR_PERFIL = { ADMIN: "admin", USUARIO: "use" };
+const NIVEL_MAX_POR_PERFIL = { SUPERADMIN: "admin", ADMIN: "admin", USUARIO: "use" };
+
+// Módulos só do SUPERADMIN — mesma lista de app/core/acesso.py
+// (MODULOS_SOMENTE_SUPERADMIN), nem ADMIN nem permissão extra libera.
+const MODULOS_SOMENTE_SUPERADMIN = ["categorias_material"];
 
 function nivelOk(papel, nivelRequerido) {
   const max = NIVEL_MAX_POR_PERFIL[papel];
@@ -57,12 +61,14 @@ export function AcessoProvider({ children }) {
       perfil,
       carregando,
       recarregar: carregarPerfil,
-      ehAdmin: papel === "ADMIN",
+      ehAdmin: papel === "ADMIN" || papel === "SUPERADMIN",
+      ehSuperadmin: papel === "SUPERADMIN",
       // Autorização de AÇÃO num módulo: perfil alcança o nível, ou há extra
       // concedido pelo admin para este usuário específico. Enquanto carrega
       // (papel=null), nega — melhor esconder um botão um instante do que
       // mostrar indevido.
       pode: (modulo, nivel = "use") => {
+        if (MODULOS_SOMENTE_SUPERADMIN.includes(modulo)) return papel === "SUPERADMIN";
         if (nivelOk(papel, nivel)) return true;
         const ov = nivelOverride(extras, modulo);
         return !!ov && NIVEIS_ORDEM.indexOf(ov) >= NIVEIS_ORDEM.indexOf(nivel);

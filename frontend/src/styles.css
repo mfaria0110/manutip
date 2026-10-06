@@ -988,11 +988,13 @@ tbody tr:hover {
 }
 
 .tabela-relatorio th {
-  padding: 8px 12px;
+  padding: 6px 6px;
+  font-size: 10px;
 }
 
 .tabela-relatorio td {
-  font-size: 11px;
+  padding: 4px 6px;
+  font-size: 10.5px;
 }
 
 .tabela-relatorio tfoot td {

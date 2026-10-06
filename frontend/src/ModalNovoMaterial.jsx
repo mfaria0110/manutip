@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import ComboCriavel from "./ComboCriavel";
 import { apiCategoriasMaterial, apiMateriais, proximoCodigoMaterial } from "./api";
 
 const VAZIO = {
@@ -79,18 +78,18 @@ export default function ModalNovoMaterial({ aberto, onFechar, onCriado }) {
             </div>
             <div className="form-field" style={{ "--span": 3 }}>
               <label>Categoria</label>
-              <ComboCriavel
+              <select
                 required
                 value={form.categoria}
-                onChange={(valor) => setForm((f) => ({ ...f, categoria: valor }))}
-                options={categorias}
-                placeholder="Digite para buscar ou criar..."
-                onCriar={async (texto) => {
-                  const novo = await apiCategoriasMaterial.criar({ codigo: texto, nome: texto });
-                  setCategorias((prev) => [...prev, { value: novo.codigo, label: novo.nome }]);
-                  return { value: novo.codigo, label: novo.nome };
-                }}
-              />
+                onChange={(e) => setForm({ ...form, categoria: e.target.value })}
+              >
+                <option value="">Selecione...</option>
+                {categorias.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="form-field" style={{ "--span": 3 }}>
               <label>Custo unitário (R$)</label>

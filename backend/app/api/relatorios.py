@@ -7,9 +7,9 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.core.acesso import requer_acesso
 from app.core.database import get_db
+from app.models.categoria_material import CategoriaMaterial
 from app.models.execucao_reclamacao import ExecucaoReclamacao, ItemExecucaoMaterial
-from app.models.lampada import PotenciaLampada
-from app.models.material import Material
+from app.models.lampada import PotenciaLampada, TipoLampada
 from app.models.reclamacao import Reclamacao
 
 router = APIRouter(prefix="/api/relatorios", tags=["relatorios"])
@@ -17,12 +17,13 @@ router = APIRouter(prefix="/api/relatorios", tags=["relatorios"])
 
 class LinhaPontosAtendidos(BaseModel):
     data: date
+    codigo_reclamacao: str
     bairro: str
     logradouro: str
     luminarias_w: str
-    rele: float
-    base: float
-    conx: float
+    lampadas_tipo: str
+    condutores: str
+    por_categoria: dict[str, float]
     pontos: float
 
 
@@ -45,8 +46,10 @@ def pontos_atendidos(
     db: Session = Depends(get_db),
 ):
     """Uma linha por execução de reclamação da prefeitura no período,
-    agregando os materiais lançados por categoria (Relê/Base/Conector) e as
-    lâmpadas instaladas (quantidade-potência)."""
+    agregando a quantidade instalada de materiais por categoria (uma coluna
+    por categoria do catálogo) e as lâmpadas instaladas (quantidade-potência)."""
+    categorias_codigos = [c for (c,) in db.query(CategoriaMaterial.codigo).all()]
+
     execucoes = (
         _com_dados(
             db.query(ExecucaoReclamacao)
@@ -62,19 +65,37 @@ def pontos_atendidos(
     )
 
     potencias = {p.id: p.valor_w for p in db.query(PotenciaLampada).all()}
+    tipos_lampada = {t.id: t.nome for t in db.query(TipoLampada).all()}
 
     linhas = []
     for ex in execucoes:
-        somas = {"RELE": 0.0, "BASE": 0.0, "CONECTOR": 0.0}
-        lampadas = []
+        somas = {codigo: 0.0 for codigo in categorias_codigos}
+        qde_por_potencia_lampada = {}
+        qde_por_tipo_lampada = {}
+        qde_por_descricao_condutor = {}
         for item in ex.itens:
             categoria = item.material.categoria if item.material else None
             if categoria in somas:
                 somas[categoria] += float(item.quantidade_instalada or 0)
-            elif categoria == "LAMPADA" and item.quantidade_instalada:
+            if categoria == "LAMPADA" and item.quantidade_instalada:
                 potencia = potencias.get(item.potencia_lampada_id)
-                sufixo = f"-{float(potencia):g}W" if potencia else ""
-                lampadas.append(f"{float(item.quantidade_instalada):g}{sufixo}")
+                sufixo = f"{float(potencia):g}W" if potencia else "—"
+                qde_por_potencia_lampada[sufixo] = (
+                    qde_por_potencia_lampada.get(sufixo, 0.0) + float(item.quantidade_instalada)
+                )
+                tipo = tipos_lampada.get(item.tipo_lampada_id) or "—"
+                qde_por_tipo_lampada[tipo] = qde_por_tipo_lampada.get(tipo, 0.0) + float(item.quantidade_instalada)
+            if categoria == "CONDUTOR" and item.quantidade_instalada:
+                descricao = item.material.nome if item.material else "—"
+                qde_por_descricao_condutor[descricao] = (
+                    qde_por_descricao_condutor.get(descricao, 0.0) + float(item.quantidade_instalada)
+                )
+
+        # Mesma potência, mesmo tipo de lâmpada ou mesma descrição (condutor)
+        # soma a quantidade em vez de listar um item por linha lançada.
+        lampadas_potencia = [f"{qde:g}-{pot}" for pot, qde in qde_por_potencia_lampada.items()]
+        lampadas_tipo = [f"{qde:g}-{tipo}" for tipo, qde in qde_por_tipo_lampada.items()]
+        condutores = [f"{qde:g}-{descricao}" for descricao, qde in qde_por_descricao_condutor.items()]
 
         reclamacao = ex.reclamacao
         logradouro = reclamacao.logradouro or "—"
@@ -84,12 +105,13 @@ def pontos_atendidos(
         linhas.append(
             LinhaPontosAtendidos(
                 data=ex.data_execucao,
+                codigo_reclamacao=reclamacao.codigo,
                 bairro=reclamacao.bairro.nome if reclamacao.bairro else "—",
                 logradouro=logradouro,
-                luminarias_w=", ".join(lampadas),
-                rele=somas["RELE"],
-                base=somas["BASE"],
-                conx=somas["CONECTOR"],
+                luminarias_w=", ".join(lampadas_potencia),
+                lampadas_tipo=", ".join(lampadas_tipo),
+                condutores=", ".join(condutores),
+                por_categoria=somas,
                 pontos=ex.pontos,
             )
         )

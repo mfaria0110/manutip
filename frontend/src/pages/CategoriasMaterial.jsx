@@ -5,7 +5,7 @@ export default function CategoriasMaterial() {
   return (
     <CadastroPage
       titulo="Categorias de Material"
-      modulo="materiais"
+      modulo="categorias_material"
       api={apiCategoriasMaterial}
       colunas={[
         { key: "codigo", label: "Código" },

@@ -1,21 +1,25 @@
+import re
 import uuid
 from datetime import date
 
-from fastapi import Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.acesso import requer_acesso
-from app.core.crud_simples import crud_simples
+from app.core.acesso import requer_acesso, requer_admin
+from app.core.crud_simples import _mensagem_duplicidade
 from app.core.database import get_db
 from app.core.security import verificar_senha
 from app.models.execucao_reclamacao import ExecucaoReclamacao, ItemExecucaoMaterial
+from app.models.prefeitura import Prefeitura
 from app.models.reclamacao import Reclamacao
 from app.models.usuario import PapelUsuario, Usuario
 
 
 class ReclamacaoOut(BaseModel):
     id: uuid.UUID
+    codigo: str
     nome_reclamante: str
     telefone: str | None
     tipo_reclamacao: str
@@ -66,6 +70,28 @@ class ReclamacaoUpdate(BaseModel):
     status: str | None = None
 
 
+def _proximo_codigo(prefeitura_id: uuid.UUID | None, db: Session) -> str:
+    """REC_<sigla da prefeitura>_<sequencial de 7 dígitos> — a sequência é
+    por prefeitura (sem sigla cadastrada, usa "GERAL"), começando em
+    0000001 a cada prefeitura nova, igual ao próximo-código de materiais."""
+    prefeitura = db.get(Prefeitura, prefeitura_id) if prefeitura_id else None
+    sigla = (prefeitura.sigla if prefeitura else None) or "GERAL"
+    sigla = re.sub(r"[^A-Z0-9]", "", sigla.strip().upper()) or "GERAL"
+    prefixo = f"REC_{sigla}_"
+    codigos = [
+        c
+        for (c,) in db.query(Reclamacao.codigo)
+        .filter(Reclamacao.prefeitura_id == prefeitura_id, Reclamacao.codigo.like(f"{prefixo}%"))
+        .all()
+    ]
+    maior = 0
+    for codigo in codigos:
+        m = re.fullmatch(re.escape(prefixo) + r"(\d+)", codigo)
+        if m:
+            maior = max(maior, int(m.group(1)))
+    return f"{prefixo}{maior + 1:07d}"
+
+
 def _excluir_execucoes(reclamacao: Reclamacao, db: Session) -> None:
     """Exclui em cascata as execuções (e seus itens de material) da
     reclamação — sem isso, apagar uma reclamação já executada falharia
@@ -82,18 +108,63 @@ def _excluir_execucoes(reclamacao: Reclamacao, db: Session) -> None:
         )
 
 
-router = crud_simples(
-    prefix="/api/reclamacoes",
-    tags=["reclamacoes"],
-    modulo="reclamacoes",
-    modelo=Reclamacao,
-    schema_out=ReclamacaoOut,
-    schema_create=ReclamacaoCreate,
-    schema_update=ReclamacaoUpdate,
-    ordenar_por=Reclamacao.data_reclamacao.desc(),
-    ao_excluir=_excluir_execucoes,
-    campo_filtro="prefeitura_id",
-)
+router = APIRouter(prefix="/api/reclamacoes", tags=["reclamacoes"])
+
+
+@router.get("", response_model=list[ReclamacaoOut], dependencies=[Depends(requer_acesso("reclamacoes", "use"))])
+def listar(prefeitura_id: uuid.UUID | None = Query(default=None), db: Session = Depends(get_db)):
+    query = db.query(Reclamacao)
+    if prefeitura_id:
+        query = query.filter(Reclamacao.prefeitura_id == prefeitura_id)
+    return query.order_by(Reclamacao.data_reclamacao.desc()).all()
+
+
+@router.get("/{item_id}", response_model=ReclamacaoOut, dependencies=[Depends(requer_acesso("reclamacoes", "use"))])
+def obter(item_id: uuid.UUID, db: Session = Depends(get_db)):
+    obj = db.get(Reclamacao, item_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Não encontrado.")
+    return obj
+
+
+@router.post("", response_model=ReclamacaoOut, dependencies=[Depends(requer_acesso("reclamacoes", "edit"))])
+def criar(req: ReclamacaoCreate, db: Session = Depends(get_db)):
+    codigo = _proximo_codigo(req.prefeitura_id, db)
+    obj = Reclamacao(codigo=codigo, **req.model_dump())
+    db.add(obj)
+    try:
+        db.commit()
+    except IntegrityError as erro:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=_mensagem_duplicidade(erro))
+    db.refresh(obj)
+    return obj
+
+
+@router.put("/{item_id}", response_model=ReclamacaoOut, dependencies=[Depends(requer_acesso("reclamacoes", "edit"))])
+def atualizar(item_id: uuid.UUID, req: ReclamacaoUpdate, db: Session = Depends(get_db)):
+    obj = db.get(Reclamacao, item_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Não encontrado.")
+    for campo, valor in req.model_dump(exclude_unset=True).items():
+        setattr(obj, campo, valor)
+    try:
+        db.commit()
+    except IntegrityError as erro:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=_mensagem_duplicidade(erro))
+    db.refresh(obj)
+    return obj
+
+
+@router.delete("/{item_id}", status_code=204, dependencies=[Depends(requer_admin)])
+def excluir(item_id: uuid.UUID, db: Session = Depends(get_db)):
+    obj = db.get(Reclamacao, item_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Não encontrado.")
+    _excluir_execucoes(obj, db)
+    db.delete(obj)
+    db.commit()
 
 
 class ReabrirRequest(BaseModel):

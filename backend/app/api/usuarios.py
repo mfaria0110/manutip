@@ -40,15 +40,22 @@ class UsuarioUpdate(BaseModel):
     senha: str | None = None
 
 
-# Toda a gestão de usuários é restrita a ADMIN — só quem já tem acesso total
-# pode criar outro usuário ou conceder permissão extra a alguém.
+# Toda a gestão de usuários é restrita a ADMIN (ou SUPERADMIN) — só quem já
+# tem acesso total pode criar outro usuário ou conceder permissão extra a
+# alguém. Mas um ADMIN comum não enxerga nem mexe em cadastro de SUPERADMIN —
+# isso é exclusivo de quem já é SUPERADMIN.
 @router.get("", response_model=list[UsuarioOut], dependencies=[Depends(requer_admin)])
-def listar(db: Session = Depends(get_db)):
-    return db.query(Usuario).order_by(Usuario.nome).all()
+def listar(db: Session = Depends(get_db), usuario_logado: Usuario = Depends(requer_admin)):
+    query = db.query(Usuario)
+    if usuario_logado.papel != PapelUsuario.SUPERADMIN:
+        query = query.filter(Usuario.papel != PapelUsuario.SUPERADMIN)
+    return query.order_by(Usuario.nome).all()
 
 
-@router.post("", response_model=UsuarioOut, dependencies=[Depends(requer_admin)])
-def criar(req: UsuarioCreate, db: Session = Depends(get_db)):
+@router.post("", response_model=UsuarioOut)
+def criar(req: UsuarioCreate, db: Session = Depends(get_db), usuario_logado: Usuario = Depends(requer_admin)):
+    if req.papel == PapelUsuario.SUPERADMIN and usuario_logado.papel != PapelUsuario.SUPERADMIN:
+        raise HTTPException(status_code=403, detail="Só um SUPERADMIN pode criar outro usuário SUPERADMIN.")
     if db.query(Usuario).filter(Usuario.username == req.username).first():
         raise HTTPException(status_code=400, detail="Usuário já existe.")
     usuario = Usuario(
@@ -64,11 +71,20 @@ def criar(req: UsuarioCreate, db: Session = Depends(get_db)):
     return usuario
 
 
-@router.put("/{usuario_id}", response_model=UsuarioOut, dependencies=[Depends(requer_admin)])
-def atualizar(usuario_id: uuid.UUID, req: UsuarioUpdate, db: Session = Depends(get_db)):
+@router.put("/{usuario_id}", response_model=UsuarioOut)
+def atualizar(
+    usuario_id: uuid.UUID,
+    req: UsuarioUpdate,
+    db: Session = Depends(get_db),
+    usuario_logado: Usuario = Depends(requer_admin),
+):
     usuario = db.get(Usuario, usuario_id)
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+    if usuario_logado.papel != PapelUsuario.SUPERADMIN and (
+        usuario.papel == PapelUsuario.SUPERADMIN or req.papel == PapelUsuario.SUPERADMIN
+    ):
+        raise HTTPException(status_code=403, detail="Só um SUPERADMIN pode editar um usuário SUPERADMIN.")
     if req.nome is not None:
         usuario.nome = req.nome
     if req.papel is not None:

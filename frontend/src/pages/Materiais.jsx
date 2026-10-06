@@ -54,16 +54,10 @@ export default function Materiais() {
         {
           name: "categoria",
           label: "Categoria",
-          type: "combo",
+          type: "select",
           required: true,
           size: 3,
-          placeholder: "Digite para buscar ou criar...",
           options: categorias,
-          onCriar: async (texto) => {
-            const novo = await apiCategoriasMaterial.criar({ codigo: texto, nome: texto });
-            setCategorias((prev) => [...prev, { value: novo.codigo, label: novo.nome }]);
-            return { value: novo.codigo, label: novo.nome };
-          },
         },
         { name: "custo_unitario", label: "Custo unitário (R$)", mask: "moeda", center: true, required: true, size: 3 },
         { name: "qde_pontos_inst", label: "Pts Instalação", type: "number", step: "0.01", center: true, size: 2 },

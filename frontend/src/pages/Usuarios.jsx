@@ -1,7 +1,11 @@
 import CadastroPage from "../CadastroPage";
 import { apiUsuarios } from "../api";
+import { useAcesso } from "../AcessoContext";
 
 export default function Usuarios() {
+  const { perfil } = useAcesso();
+  const ehSuperadmin = perfil?.papel === "SUPERADMIN";
+
   return (
     <CadastroPage
       titulo="Usuários"
@@ -31,6 +35,7 @@ export default function Usuarios() {
           type: "select",
           required: true,
           options: [
+            ...(ehSuperadmin ? [{ value: "SUPERADMIN", label: "Superadmin (acima do admin)" }] : []),
             { value: "ADMIN", label: "Admin (acesso total)" },
             { value: "USUARIO", label: "Usuário (acesso operacional)" },
           ],
