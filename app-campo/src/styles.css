@@ -127,6 +127,19 @@ textarea {
   font-family: inherit;
 }
 
+/* Quantidades (instalado/retirado/substituído) centralizadas. */
+input[type="number"] {
+  text-align: center;
+}
+
+/* Select de material/tipo/potência — fonte menor e menos espaço nas
+   laterais, pra sobrar mais largura pro texto (nomes de material longos). */
+select {
+  font-size: 14px;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
 .campo {
   margin-bottom: 14px;
 }
