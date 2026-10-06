@@ -14,6 +14,7 @@ from app.api import (
     funcionarios,
     lampadas,
     materiais,
+    pontos_material_contrato,
     prefeituras,
     reclamacoes,
     relatorios,
@@ -30,6 +31,7 @@ app.include_router(bairros.router)
 app.include_router(prefeituras.router)
 app.include_router(contratos.router)
 app.include_router(contratos.router_precos)
+app.include_router(pontos_material_contrato.router)
 app.include_router(cargos.router)
 app.include_router(categorias_material.router)
 app.include_router(materiais.router_extra)

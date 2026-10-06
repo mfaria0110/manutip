@@ -2,6 +2,7 @@ from app.core.database import Base
 from app.models.localidade import Cidade, Bairro
 from app.models.prefeitura import Prefeitura
 from app.models.contrato import Contrato, PrecoPonto, CategoriaPreco
+from app.models.ponto_material_contrato import PontoMaterialContrato
 from app.models.cargo import Cargo
 from app.models.pessoal import Funcionario, Veiculo, EquipeDia, EquipeMembro
 from app.models.ativo import Ativo

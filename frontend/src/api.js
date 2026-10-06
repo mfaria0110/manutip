@@ -86,6 +86,15 @@ export const apiVeiculos = crud("/veiculos");
 export const apiFuncionarios = crud("/funcionarios");
 export const apiContratos = crud("/contratos");
 export const apiPrecosPonto = crud("/precos-ponto");
+export const apiPontosMaterialContrato = {
+  matriz: (contratoId) => req(`/pontos-material-contrato/matriz?contrato_id=${contratoId}`),
+  salvarMatriz: (contratoId, itens) =>
+    req(`/pontos-material-contrato/matriz?contrato_id=${contratoId}`, {
+      method: "PUT",
+      body: JSON.stringify({ itens }),
+    }),
+  vigente: (prefeituraId, data) => req(`/pontos-material-contrato/vigente?prefeitura_id=${prefeituraId}&data=${data}`),
+};
 export const apiReclamacoes = crud("/reclamacoes");
 export function reabrirReclamacao(id, username, senha) {
   return req(`/reclamacoes/${id}/reabrir`, { method: "POST", body: JSON.stringify({ username, senha }) });

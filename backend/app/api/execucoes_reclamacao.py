@@ -11,8 +11,9 @@ from sqlalchemy.orm import Session, selectinload
 from app.core.acesso import requer_acesso, requer_admin
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.pontos_material import contrato_vigente, pontos_do_material
 from app.models.execucao_reclamacao import ExecucaoReclamacao, FotoExecucao, ItemExecucaoMaterial
-from app.models.material import Material
+from app.models.reclamacao import Reclamacao
 
 router = APIRouter(prefix="/api/execucoes-reclamacao", tags=["execucoes_reclamacao"])
 
@@ -110,14 +111,26 @@ def _para_saida(obj: ExecucaoReclamacao) -> ExecucaoOut:
     )
 
 
-def _montar_item(execucao_id: uuid.UUID, dados: ItemIn, db: Session) -> ItemExecucaoMaterial:
-    """Copia o peso em pontos do material (snapshot) e calcula o
-    total_pontos do item: cada quantidade (instalada/retirada/substituída)
-    vezes o peso em pontos correspondente do material, somadas."""
-    mat = db.get(Material, dados.material_id)
-    qi = float(mat.qde_pontos_inst) if mat else 0.0
-    qr = float(mat.qde_pontos_ret) if mat else 0.0
-    qs = float(mat.qde_pontos_subst) if mat else 0.0
+def _contrato_da_execucao(reclamacao_id: uuid.UUID, data_execucao: date, db: Session):
+    """Acha o contrato vigente (na data da execução) da prefeitura da
+    reclamação — é dele que vem o peso em pontos de cada material."""
+    reclamacao = db.get(Reclamacao, reclamacao_id)
+    if not reclamacao or not reclamacao.prefeitura_id:
+        raise HTTPException(
+            status_code=400,
+            detail="A reclamação não tem prefeitura definida; não é possível calcular os pontos dos materiais.",
+        )
+    return contrato_vigente(reclamacao.prefeitura_id, data_execucao, db)
+
+
+def _montar_item(execucao_id: uuid.UUID, dados: ItemIn, contrato_id: uuid.UUID, db: Session) -> ItemExecucaoMaterial:
+    """Copia o peso em pontos do material naquele contrato (snapshot) e
+    calcula o total_pontos do item: cada quantidade (instalada/retirada/
+    substituída) vezes o peso em pontos correspondente, somadas."""
+    pm = pontos_do_material(contrato_id, dados.material_id, db)
+    qi = float(pm.qde_pontos_inst)
+    qr = float(pm.qde_pontos_ret)
+    qs = float(pm.qde_pontos_subst)
     total = (
         float(dados.quantidade_instalada or 0) * qi
         + float(dados.quantidade_retirada or 0) * qr
@@ -193,8 +206,10 @@ def criar(req: ExecucaoCreate, db: Session = Depends(get_db)):
         )
         db.add(obj)
     db.flush()
-    for item in req.itens:
-        db.add(_montar_item(obj.id, item, db))
+    if req.itens:
+        contrato = _contrato_da_execucao(obj.reclamacao_id, obj.data_execucao, db)
+        for item in req.itens:
+            db.add(_montar_item(obj.id, item, contrato.id, db))
     db.flush()
     _recalcular_pontos_execucao(obj.id, db)
     db.commit()
@@ -212,8 +227,10 @@ def atualizar(execucao_id: uuid.UUID, req: ExecucaoUpdate, db: Session = Depends
         setattr(obj, campo, valor)
     if itens is not None:
         db.query(ItemExecucaoMaterial).filter(ItemExecucaoMaterial.execucao_id == execucao_id).delete()
-        for item in itens:
-            db.add(_montar_item(execucao_id, ItemIn(**item), db))
+        if itens:
+            contrato = _contrato_da_execucao(obj.reclamacao_id, obj.data_execucao, db)
+            for item in itens:
+                db.add(_montar_item(execucao_id, ItemIn(**item), contrato.id, db))
         db.flush()
         _recalcular_pontos_execucao(execucao_id, db)
     db.commit()
@@ -239,7 +256,9 @@ def atualizar_item(item_id: uuid.UUID, req: ItemIn, db: Session = Depends(get_db
     item = db.get(ItemExecucaoMaterial, item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Item não encontrado.")
-    novo = _montar_item(item.execucao_id, req, db)
+    execucao = db.get(ExecucaoReclamacao, item.execucao_id)
+    contrato = _contrato_da_execucao(execucao.reclamacao_id, execucao.data_execucao, db)
+    novo = _montar_item(item.execucao_id, req, contrato.id, db)
     for campo in (
         "material_id",
         "quantidade_instalada",

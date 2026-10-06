@@ -7,9 +7,6 @@ const VAZIO = {
   unidade: "",
   categoria: "",
   custo_unitario: "0",
-  qde_pontos_inst: "0",
-  qde_pontos_ret: "0",
-  qde_pontos_subst: "0",
 };
 
 /** Modal de cadastro rápido de material, usado a partir de outras telas
@@ -46,9 +43,6 @@ export default function ModalNovoMaterial({ aberto, onFechar, onCriado }) {
       const novo = await apiMateriais.criar({
         ...form,
         custo_unitario: Number(form.custo_unitario) || 0,
-        qde_pontos_inst: Number(form.qde_pontos_inst) || 0,
-        qde_pontos_ret: Number(form.qde_pontos_ret) || 0,
-        qde_pontos_subst: Number(form.qde_pontos_subst) || 0,
       });
       onCriado(novo);
     } catch (err) {
@@ -100,36 +94,6 @@ export default function ModalNovoMaterial({ aberto, onFechar, onCriado }) {
                 style={{ textAlign: "center" }}
                 value={form.custo_unitario}
                 onChange={(e) => setForm({ ...form, custo_unitario: e.target.value })}
-              />
-            </div>
-            <div className="form-field" style={{ "--span": 2 }}>
-              <label>Pts Instalação</label>
-              <input
-                type="number"
-                step="0.01"
-                style={{ textAlign: "center" }}
-                value={form.qde_pontos_inst}
-                onChange={(e) => setForm({ ...form, qde_pontos_inst: e.target.value })}
-              />
-            </div>
-            <div className="form-field" style={{ "--span": 2 }}>
-              <label>Pts Retirada</label>
-              <input
-                type="number"
-                step="0.01"
-                style={{ textAlign: "center" }}
-                value={form.qde_pontos_ret}
-                onChange={(e) => setForm({ ...form, qde_pontos_ret: e.target.value })}
-              />
-            </div>
-            <div className="form-field" style={{ "--span": 2 }}>
-              <label>Pts Substituição</label>
-              <input
-                type="number"
-                step="0.01"
-                style={{ textAlign: "center" }}
-                value={form.qde_pontos_subst}
-                onChange={(e) => setForm({ ...form, qde_pontos_subst: e.target.value })}
               />
             </div>
           </div>

@@ -18,9 +18,6 @@ class MaterialOut(BaseModel):
     unidade: str
     categoria: str
     custo_unitario: float
-    qde_pontos_inst: float
-    qde_pontos_ret: float
-    qde_pontos_subst: float
     ativo: bool
 
     class Config:
@@ -33,9 +30,6 @@ class MaterialCreate(BaseModel):
     unidade: str
     categoria: str = "OUTROS"
     custo_unitario: float
-    qde_pontos_inst: float = 0
-    qde_pontos_ret: float = 0
-    qde_pontos_subst: float = 0
 
 
 class MaterialUpdate(BaseModel):
@@ -44,9 +38,6 @@ class MaterialUpdate(BaseModel):
     unidade: str | None = None
     categoria: str | None = None
     custo_unitario: float | None = None
-    qde_pontos_inst: float | None = None
-    qde_pontos_ret: float | None = None
-    qde_pontos_subst: float | None = None
     ativo: bool | None = None
 
 

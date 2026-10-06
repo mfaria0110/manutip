@@ -12,6 +12,7 @@ import {
   apiExecucoesReclamacao,
   apiItensExecucao,
   apiMateriais,
+  apiPontosMaterialContrato,
   apiPotenciasLampada,
   apiReclamacoes,
   apiTiposLampada,
@@ -39,11 +40,12 @@ function novoItem() {
 }
 
 // total_pontos do item: cada quantidade (instalada/retirada/substituída)
-// vezes o peso em pontos do material naquele tipo de movimento, somadas.
-function totalPontosItem(item, mat) {
-  const qi = Number(mat?.qde_pontos_inst) || 0;
-  const qr = Number(mat?.qde_pontos_ret) || 0;
-  const qs = Number(mat?.qde_pontos_subst) || 0;
+// vezes o peso em pontos vigente pro material (vem do contrato da
+// prefeitura, não mais de um valor fixo no cadastro de Material), somadas.
+function totalPontosItem(item, pontos) {
+  const qi = Number(pontos?.qde_pontos_inst) || 0;
+  const qr = Number(pontos?.qde_pontos_ret) || 0;
+  const qs = Number(pontos?.qde_pontos_subst) || 0;
   return (
     (Number(item.quantidade_instalada) || 0) * qi +
     (Number(item.quantidade_retirada) || 0) * qr +
@@ -67,6 +69,12 @@ export default function ExecucaoReclamacao() {
   const [cidades, setCidades] = useState([]);
   const [tiposLampada, setTiposLampada] = useState([]);
   const [potenciasLampada, setPotenciasLampada] = useState([]);
+  // Pontos vigentes dos materiais no contrato da prefeitura desta
+  // reclamação, pra data de execução escolhida — vem do contrato, não mais
+  // de um valor fixo no cadastro de Material. Ausência de um material_id
+  // aqui significa "sem pontos cadastrados", o que bloqueia o lançamento.
+  const [pontosVigentes, setPontosVigentes] = useState({});
+  const [erroPontosVigentes, setErroPontosVigentes] = useState("");
   const [carregando, setCarregando] = useState(true);
   const [erroLista, setErroLista] = useState("");
 
@@ -116,6 +124,25 @@ export default function ExecucaoReclamacao() {
     apiPotenciasLampada.listar().then(setPotenciasLampada);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // Pontos vigentes vêm do contrato da prefeitura desta reclamação, pra
+  // data de execução escolhida no formulário — não do cadastro de Material
+  // (que não tem mais peso fixo). Sem prefeitura/data ainda escolhidas, ou
+  // sem contrato vigente para elas, o mapa fica vazio (bloqueia ao salvar).
+  useEffect(() => {
+    if (!reclamacao?.prefeitura_id || !dataExecucao) {
+      setPontosVigentes({});
+      return;
+    }
+    setErroPontosVigentes("");
+    apiPontosMaterialContrato
+      .vigente(reclamacao.prefeitura_id, dataExecucao)
+      .then(setPontosVigentes)
+      .catch((e) => {
+        setPontosVigentes({});
+        setErroPontosVigentes(e.message);
+      });
+  }, [reclamacao?.prefeitura_id, dataExecucao]);
 
   const nomeBairro = (bid) => bairros.find((b) => b.id === bid)?.nome || "—";
   const nomeCidade = (cid) => cidades.find((c) => c.id === cid)?.nome || "—";
@@ -240,6 +267,9 @@ export default function ExecucaoReclamacao() {
       }
       if (mat?.categoria === "LAMPADA" && (!item.tipo_lampada_id || !item.potencia_lampada_id)) {
         return `O material "${nome}" é uma lâmpada e precisa de Tipo e Potência preenchidos.`;
+      }
+      if (!pontosVigentes[item.material_id]) {
+        return `O material "${nome}" não tem pontos cadastrados no contrato vigente desta prefeitura. Cadastre em Contratos > Pontos por material.`;
       }
     }
     return null;
@@ -421,7 +451,7 @@ export default function ExecucaoReclamacao() {
   // Total de pontos do formulário aberto — não é mais digitado, é a soma do
   // total_pontos de cada linha (recalculado pelo backend ao salvar).
   const totalPontosFormulario = itens.reduce(
-    (acc, it) => acc + totalPontosItem(it, materialPorId(it.material_id)),
+    (acc, it) => acc + totalPontosItem(it, pontosVigentes[it.material_id]),
     0
   );
 
@@ -675,6 +705,7 @@ export default function ExecucaoReclamacao() {
                 {itens.map((item, idx) => {
                   const mat = materialPorId(item.material_id);
                   const ehLampada = mat?.categoria === "LAMPADA";
+                  const pontosItem = pontosVigentes[item.material_id];
                   // Rótulos só aparecem na 1ª linha de cada tipo — a 1ª linha
                   // em geral, e a 1ª que for lâmpada (Tipo/Potência só existem
                   // nela), senão a coluna fica sem nenhum rótulo visível.
@@ -786,9 +817,9 @@ export default function ExecucaoReclamacao() {
                           <input
                             type="text"
                             disabled
-                            title="Peso em pontos do material (cadastro de Materiais)"
+                            title="Peso em pontos vigente no contrato desta prefeitura"
                             style={{ width: 55, minWidth: 0, textAlign: "center" }}
-                            value={mat?.qde_pontos_inst ?? 0}
+                            value={pontosItem ? pontosItem.qde_pontos_inst : "—"}
                           />
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -796,9 +827,9 @@ export default function ExecucaoReclamacao() {
                           <input
                             type="text"
                             disabled
-                            title="Peso em pontos do material (cadastro de Materiais)"
+                            title="Peso em pontos vigente no contrato desta prefeitura"
                             style={{ width: 55, minWidth: 0, textAlign: "center" }}
-                            value={mat?.qde_pontos_ret ?? 0}
+                            value={pontosItem ? pontosItem.qde_pontos_ret : "—"}
                           />
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -806,9 +837,9 @@ export default function ExecucaoReclamacao() {
                           <input
                             type="text"
                             disabled
-                            title="Peso em pontos do material (cadastro de Materiais)"
+                            title="Peso em pontos vigente no contrato desta prefeitura"
                             style={{ width: 55, minWidth: 0, textAlign: "center" }}
-                            value={mat?.qde_pontos_subst ?? 0}
+                            value={pontosItem ? pontosItem.qde_pontos_subst : "—"}
                           />
                         </div>
                       </div>
@@ -818,7 +849,7 @@ export default function ExecucaoReclamacao() {
                           type="text"
                           disabled
                           style={{ width: "100%", minWidth: 0, textAlign: "center", fontWeight: 600 }}
-                          value={totalPontosItem(item, mat)}
+                          value={totalPontosItem(item, pontosItem)}
                         />
                       </div>
                       <div style={{ display: "flex", gap: 4 }}>
@@ -866,6 +897,7 @@ export default function ExecucaoReclamacao() {
                 })}
               </div>
 
+              {erroPontosVigentes && <p className="erro-msg">{erroPontosVigentes}</p>}
               {erro && <p className="erro-msg">{erro}</p>}
               <div className="modal-actions">
                 <button type="button" className="btn" onClick={() => setFormAberto(false)}>

@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import CadastroPage from "../CadastroPage";
 import { apiContratos, apiPrefeituras } from "../api";
 
 export default function Contratos() {
+  const navigate = useNavigate();
   const [prefeituras, setPrefeituras] = useState([]);
 
   useEffect(() => {
@@ -44,6 +46,15 @@ export default function Contratos() {
         { name: "data_fim", label: "Data de fim", type: "date" },
         { name: "observacoes", label: "Observações" },
       ]}
+      acoesExtras={(item) => (
+        <button
+          className="btn btn-ghost"
+          onClick={() => navigate(`/contratos/${item.id}/pontos`)}
+          title="Pontos de materiais deste contrato"
+        >
+          <i className="ti ti-list-numbers" aria-hidden="true" />
+        </button>
+      )}
     />
   );
 }

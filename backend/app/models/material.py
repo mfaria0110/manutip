@@ -24,10 +24,4 @@ class Material(TimestampMixin, Base):
         String(20), ForeignKey("categorias_material.codigo"), nullable=False, default="OUTROS"
     )
     custo_unitario: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
-    # Peso em "pontos" de cada quantidade desse material lançada numa
-    # execução (ex.: cada lâmpada instalada vale 1 ponto) — usado para somar
-    # o total de pontos da execução a partir dos materiais lançados nela.
-    qde_pontos_inst: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0, server_default="0")
-    qde_pontos_ret: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0, server_default="0")
-    qde_pontos_subst: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0, server_default="0")
     ativo: Mapped[bool] = mapped_column(default=True)
