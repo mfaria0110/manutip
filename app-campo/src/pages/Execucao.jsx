@@ -211,6 +211,7 @@ export default function Execucao() {
   }
 
   function validarItens() {
+    let temItemValido = false;
     for (const item of itens) {
       if (!item.material_id) continue;
       const total =
@@ -221,6 +222,10 @@ export default function Execucao() {
         const nome = materialPorId(item.material_id)?.nome || "selecionado";
         return `O material "${nome}" está selecionado mas sem nenhuma quantidade informada. Preencha instalado/retirado/substituído ou remova a linha.`;
       }
+      temItemValido = true;
+    }
+    if (!temItemValido) {
+      return "Selecione ao menos um material e informe a quantidade antes de salvar.";
     }
     return null;
   }
