@@ -20,6 +20,7 @@ class MembroIn(BaseModel):
 class MembroOut(MembroIn):
     id: uuid.UUID
     funcionario_nome: str | None = None
+    funcionario_cpf: str | None = None
 
     class Config:
         from_attributes = True
@@ -58,6 +59,7 @@ def _com_membros(query):
 def _saida(obj: EquipeDia) -> EquipeDia:
     for m in obj.membros:
         m.funcionario_nome = m.funcionario.nome if m.funcionario else None
+        m.funcionario_cpf = m.funcionario.cpf if m.funcionario else None
     return obj
 
 

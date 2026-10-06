@@ -28,6 +28,7 @@ class LoginResponse(BaseModel):
     token: str
     nome: str
     papel: str
+    cpf: str | None = None
 
 
 @router.post("/api/login", response_model=LoginResponse)
@@ -48,7 +49,7 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
     usuario.sessao_ativa_em = agora
     db.commit()
     token = gerar_token(usuario.id)
-    return LoginResponse(token=token, nome=usuario.nome, papel=usuario.papel.value)
+    return LoginResponse(token=token, nome=usuario.nome, papel=usuario.papel.value, cpf=usuario.cpf)
 
 
 @router.post("/api/logout", status_code=204)
@@ -76,6 +77,7 @@ def me(usuario: Usuario = Depends(usuario_atual)):
         "id": str(usuario.id),
         "nome": usuario.nome,
         "username": usuario.username,
+        "cpf": usuario.cpf,
         "papel": usuario.papel.value,
         "permissoes_extra": usuario.permissoes_extra or [],
         "tema": usuario.tema,

@@ -16,6 +16,7 @@ class UsuarioOut(BaseModel):
     id: uuid.UUID
     nome: str
     username: str
+    cpf: str | None = None
     papel: PapelUsuario
     ativo: bool
     permissoes_extra: list[str]
@@ -27,6 +28,7 @@ class UsuarioOut(BaseModel):
 class UsuarioCreate(BaseModel):
     nome: str
     username: str
+    cpf: str | None = None
     senha: str
     papel: PapelUsuario = PapelUsuario.USUARIO
     permissoes_extra: list[str] = []
@@ -35,6 +37,7 @@ class UsuarioCreate(BaseModel):
 class UsuarioUpdate(BaseModel):
     nome: str | None = None
     username: str | None = None
+    cpf: str | None = None
     papel: PapelUsuario | None = None
     ativo: bool | None = None
     permissoes_extra: list[str] | None = None
@@ -59,9 +62,12 @@ def criar(req: UsuarioCreate, db: Session = Depends(get_db), usuario_logado: Usu
         raise HTTPException(status_code=403, detail="Só um SUPERADMIN pode criar outro usuário SUPERADMIN.")
     if db.query(Usuario).filter(Usuario.username == req.username).first():
         raise HTTPException(status_code=400, detail="Usuário já existe.")
+    if req.cpf and db.query(Usuario).filter(Usuario.cpf == req.cpf).first():
+        raise HTTPException(status_code=400, detail="Já existe um usuário com esse CPF.")
     usuario = Usuario(
         nome=req.nome,
         username=req.username,
+        cpf=req.cpf,
         senha_hash=hash_senha(req.senha),
         papel=req.papel,
         permissoes_extra=req.permissoes_extra,
@@ -92,6 +98,10 @@ def atualizar(
         if db.query(Usuario).filter(Usuario.username == req.username, Usuario.id != usuario_id).first():
             raise HTTPException(status_code=400, detail="Já existe um usuário com esse login.")
         usuario.username = req.username
+    if req.cpf is not None and req.cpf != usuario.cpf:
+        if db.query(Usuario).filter(Usuario.cpf == req.cpf, Usuario.id != usuario_id).first():
+            raise HTTPException(status_code=400, detail="Já existe um usuário com esse CPF.")
+        usuario.cpf = req.cpf
     if req.papel is not None:
         usuario.papel = req.papel
     if req.ativo is not None:

@@ -8,6 +8,7 @@ import {
   proximoNomeEquipe,
   validarEquipe,
 } from "../api";
+import { useAcesso } from "../AcessoContext";
 import { useFluxo } from "../FluxoContext";
 import { useOffline } from "../offline/OfflineContext";
 import { comCache, salvarCache } from "../offline/cache";
@@ -18,6 +19,7 @@ const hoje = () => new Date().toISOString().slice(0, 10);
 
 export default function Equipe() {
   const navigate = useNavigate();
+  const { perfil } = useAcesso();
   const { definirEquipe } = useFluxo();
   const { online, atualizarContagem } = useOffline();
 
@@ -78,6 +80,11 @@ export default function Equipe() {
   const nomeCargo = (id) => cargos.find((c) => c.id === id)?.nome;
   const nomeFuncionario = (id) => funcionarios.find((f) => f.id === id)?.nome || "—";
   const funcionariosDisponiveis = funcionarios.filter((f) => !membros.some((m) => m.funcionario_id === f.id));
+  // Identifica o próprio usuário logado entre os membros (pelo CPF, elo
+  // entre o login e o cadastro de Funcionário) pra nunca deixar ele se
+  // remover da equipe — os demais membros continuam livres pra trocar.
+  const souEu = (funcionarioId) =>
+    !!perfil?.cpf && funcionarios.find((f) => f.id === funcionarioId)?.cpf === perfil.cpf;
 
   function adicionarMembro() {
     if (!novoMembroId) return;
@@ -182,7 +189,7 @@ export default function Equipe() {
 
           <div className="campo">
             <label>Veículo</label>
-            <select value={veiculoId} onChange={(e) => setVeiculoId(e.target.value)} disabled={jaValidada}>
+            <select value={veiculoId} onChange={(e) => setVeiculoId(e.target.value)}>
               <option value="">Selecione...</option>
               {veiculos.map((v) => (
                 <option key={v.id} value={v.id}>
@@ -193,26 +200,24 @@ export default function Equipe() {
           </div>
 
           <label>Membros</label>
-          {!jaValidada && (
-            <div className="linha" style={{ marginBottom: 10 }}>
-              <select value={novoMembroId} onChange={(e) => setNovoMembroId(e.target.value)}>
-                <option value="">Adicionar funcionário...</option>
-                {funcionariosDisponiveis.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.nome}
-                  </option>
-                ))}
-              </select>
-              <button type="button" className="btn btn-primario btn-pequeno" onClick={adicionarMembro} disabled={!novoMembroId}>
-                <i className="ti ti-plus" aria-hidden="true" />
-              </button>
-            </div>
-          )}
+          <div className="linha" style={{ marginBottom: 10 }}>
+            <select value={novoMembroId} onChange={(e) => setNovoMembroId(e.target.value)}>
+              <option value="">Adicionar funcionário...</option>
+              {funcionariosDisponiveis.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.nome}
+                </option>
+              ))}
+            </select>
+            <button type="button" className="btn btn-primario btn-pequeno" onClick={adicionarMembro} disabled={!novoMembroId}>
+              <i className="ti ti-plus" aria-hidden="true" />
+            </button>
+          </div>
           {membros.length === 0 && <p className="cartao-sub">Nenhum membro adicionado.</p>}
           {membros.map((m) => (
             <div key={m.funcionario_id} className="cartao linha-entre" style={{ marginBottom: 8, padding: 12 }}>
               <span>{nomeFuncionario(m.funcionario_id)}</span>
-              {!jaValidada && (
+              {!souEu(m.funcionario_id) && (
                 <button type="button" className="btn-perigo" style={{ border: "none", background: "none" }} onClick={() => removerMembro(m.funcionario_id)}>
                   <i className="ti ti-trash" aria-hidden="true" />
                 </button>
@@ -221,11 +226,9 @@ export default function Equipe() {
           ))}
 
           <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
-            {!jaValidada && (
-              <button type="button" className="btn btn-secundario" onClick={salvarComposicao} disabled={salvando}>
-                Salvar composição
-              </button>
-            )}
+            <button type="button" className="btn btn-secundario" onClick={salvarComposicao} disabled={salvando}>
+              Salvar composição
+            </button>
             <button type="button" className="btn btn-primario" onClick={jaValidada ? () => { definirEquipe(equipeAtual.id); navigate("/prefeitura"); } : validar} disabled={salvando}>
               {jaValidada ? "Continuar" : salvando ? "Validando..." : "Validar equipe do dia"}
             </button>

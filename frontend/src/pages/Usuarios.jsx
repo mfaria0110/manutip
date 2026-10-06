@@ -1,10 +1,16 @@
+import { useEffect, useState } from "react";
 import CadastroPage from "../CadastroPage";
-import { apiUsuarios } from "../api";
+import { apiFuncionarios, apiUsuarios } from "../api";
 import { useAcesso } from "../AcessoContext";
 
 export default function Usuarios() {
   const { perfil } = useAcesso();
   const ehSuperadmin = perfil?.papel === "SUPERADMIN";
+  const [funcionarios, setFuncionarios] = useState([]);
+
+  useEffect(() => {
+    apiFuncionarios.listar().then(setFuncionarios).catch(() => {});
+  }, []);
 
   return (
     <CadastroPage
@@ -26,7 +32,25 @@ export default function Usuarios() {
         },
       ]}
       campos={[
-        { name: "nome", label: "Nome", required: true, size: 4 },
+        {
+          name: "cpf",
+          label: "Funcionário (busque por nome ou CPF)",
+          type: "combo",
+          size: 5,
+          options: funcionarios
+            .filter((f) => f.cpf)
+            .map((f) => ({ value: f.cpf, label: `${f.nome} — ${f.cpf}` })),
+          onCriar: () =>
+            Promise.reject(
+              new Error("Funcionário não encontrado no cadastro. Cadastre-o em Funcionários primeiro.")
+            ),
+          aoSelecionar: (cpf, formAtual) => ({
+            ...formAtual,
+            cpf,
+            nome: funcionarios.find((f) => f.cpf === cpf)?.nome || formAtual.nome,
+          }),
+        },
+        { name: "nome", label: "Nome", disabled: true, size: 4 },
         { name: "username", label: "Usuário (login)", required: true, size: 3 },
         { name: "senha", label: "Senha (deixe em branco para manter)", size: 5 },
         {

@@ -28,6 +28,10 @@ class Usuario(TimestampMixin, Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     nome: Mapped[str] = mapped_column(String(200), nullable=False)
     username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    # Mesmo CPF do cadastro de Funcionário (não um dado livre) — é o elo
+    # entre o login e o funcionário na equipe, usado pra saber "quem sou eu"
+    # na composição da equipe do dia (ver app-campo/src/pages/Equipe.jsx).
+    cpf: Mapped[str | None] = mapped_column(String(14), unique=True)
     email: Mapped[str | None] = mapped_column(String(200), unique=True, nullable=True)
     senha_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     papel: Mapped[PapelUsuario] = mapped_column(Enum(PapelUsuario), nullable=False, default=PapelUsuario.USUARIO)

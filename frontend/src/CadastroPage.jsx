@@ -397,7 +397,11 @@ async function confirmarExclusao() {
                     <ComboCriavel
                       required={c.required}
                       value={form[c.name] ?? ""}
-                      onChange={(valor) => setForm((f) => ({ ...f, [c.name]: valor }))}
+                      onChange={(valor) =>
+                        c.aoSelecionar
+                          ? setForm((f) => c.aoSelecionar(valor, f))
+                          : setForm((f) => ({ ...f, [c.name]: valor }))
+                      }
                       options={typeof c.options === "function" ? c.options(form) : c.options || []}
                       onCriar={(texto) => c.onCriar(texto, form)}
                       placeholder={c.placeholder}
