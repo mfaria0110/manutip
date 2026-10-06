@@ -17,7 +17,7 @@ const GRUPOS = [
   {
     label: "Comercial",
     itens: [
-      { to: "/contratos", icon: "ti-file-text", label: "Contratos" },
+      { to: "/contratos", icon: "ti-file-text", label: "Contratos", modulo: "contratos" },
       { to: "/materiais", icon: "ti-package", label: "Materiais" },
       { to: "/categorias-material", icon: "ti-category", label: "Categorias de Material", modulo: "categorias_material" },
     ],
@@ -38,7 +38,7 @@ const GRUPOS = [
   },
   {
     label: "Administração",
-    itens: [{ to: "/usuarios", icon: "ti-shield-lock", label: "Usuários" }],
+    itens: [{ to: "/usuarios", icon: "ti-shield-lock", label: "Usuários", modulo: "usuarios" }],
   },
 ];
 

@@ -57,6 +57,11 @@ NIVEL_MAX_POR_PERFIL = {
 # material (a listagem para popular combos continua em "materiais").
 MODULOS_SOMENTE_SUPERADMIN = {"categorias_material"}
 
+# Módulos que só ADMIN/SUPERADMIN acessam (nem leitura para USUARIO comum),
+# e sem bypass por permissão extra — dados administrativos/financeiros
+# sensíveis: usuários do sistema e contratos (incluindo preços do contrato).
+MODULOS_SOMENTE_ADMIN = {"usuarios", "contratos", "precos"}
+
 
 def nivel_ok(papel: PapelUsuario, nivel_requerido: str) -> bool:
     """True se o perfil (sem considerar extras) já alcança o nível pedido."""
@@ -94,6 +99,8 @@ def usuario_pode(usuario: Usuario, modulo: str, nivel: str = "use") -> bool:
         return False
     if modulo in MODULOS_SOMENTE_SUPERADMIN:
         return usuario.papel == PapelUsuario.SUPERADMIN
+    if modulo in MODULOS_SOMENTE_ADMIN:
+        return usuario.papel in (PapelUsuario.ADMIN, PapelUsuario.SUPERADMIN)
     if nivel_ok(usuario.papel, nivel):
         return True
     override = _nivel_override(usuario, modulo)

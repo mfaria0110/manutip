@@ -12,6 +12,10 @@ const NIVEL_MAX_POR_PERFIL = { SUPERADMIN: "admin", ADMIN: "admin", USUARIO: "us
 // (MODULOS_SOMENTE_SUPERADMIN), nem ADMIN nem permissão extra libera.
 const MODULOS_SOMENTE_SUPERADMIN = ["categorias_material"];
 
+// Módulos só de ADMIN/SUPERADMIN — mesma lista de app/core/acesso.py
+// (MODULOS_SOMENTE_ADMIN), nem permissão extra libera para USUARIO comum.
+const MODULOS_SOMENTE_ADMIN = ["usuarios", "contratos", "precos"];
+
 function nivelOk(papel, nivelRequerido) {
   const max = NIVEL_MAX_POR_PERFIL[papel];
   if (!max || !NIVEIS_ORDEM.includes(nivelRequerido)) return false;
@@ -69,6 +73,7 @@ export function AcessoProvider({ children }) {
       // mostrar indevido.
       pode: (modulo, nivel = "use") => {
         if (MODULOS_SOMENTE_SUPERADMIN.includes(modulo)) return papel === "SUPERADMIN";
+        if (MODULOS_SOMENTE_ADMIN.includes(modulo)) return papel === "ADMIN" || papel === "SUPERADMIN";
         if (nivelOk(papel, nivel)) return true;
         const ov = nivelOverride(extras, modulo);
         return !!ov && NIVEIS_ORDEM.indexOf(ov) >= NIVEIS_ORDEM.indexOf(nivel);
