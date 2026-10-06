@@ -38,6 +38,7 @@ export default function Usuarios() {
             ...(ehSuperadmin ? [{ value: "SUPERADMIN", label: "Superadmin (acima do admin)" }] : []),
             { value: "ADMIN", label: "Admin (acesso total)" },
             { value: "USUARIO", label: "Usuário (acesso operacional)" },
+            { value: "OPERACIONAL", label: "Operacional (app de campo)" },
           ],
         },
         { name: "ativo", label: "Ativo", type: "checkbox" },
