@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAcesso } from "../AcessoContext";
 import ComboCriavel from "../ComboCriavel";
 import ConfirmDialog from "../ConfirmDialog";
@@ -54,6 +54,9 @@ function totalPontosItem(item, mat) {
 export default function ExecucaoReclamacao() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const prefeituraId = searchParams.get("prefeitura_id");
+  const voltarParaLista = () => navigate(prefeituraId ? `/reclamacoes?prefeitura_id=${prefeituraId}` : "/reclamacoes");
   const { ehAdmin } = useAcesso();
 
   const [reclamacao, setReclamacao] = useState(null);
@@ -398,7 +401,7 @@ export default function ExecucaoReclamacao() {
     <>
       <header className="topbar">
         <h1>Execução da reclamação</h1>
-        <button className="btn" onClick={() => navigate("/reclamacoes")}>
+        <button className="btn" onClick={voltarParaLista}>
           <i className="ti ti-arrow-left" aria-hidden="true" style={{ marginRight: 6 }} />
           Voltar
         </button>

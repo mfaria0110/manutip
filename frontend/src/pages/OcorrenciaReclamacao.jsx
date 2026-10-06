@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { apiExecucoesReclamacao, apiReclamacoes, obterFotoURL } from "../api";
 
 function formatarData(iso) {
@@ -11,6 +11,9 @@ function formatarData(iso) {
 export default function OcorrenciaReclamacao() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const prefeituraId = searchParams.get("prefeitura_id");
+  const voltarParaLista = () => navigate(prefeituraId ? `/reclamacoes?prefeitura_id=${prefeituraId}` : "/reclamacoes");
   const [reclamacao, setReclamacao] = useState(null);
   const [execucoes, setExecucoes] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -40,7 +43,7 @@ export default function OcorrenciaReclamacao() {
     <>
       <header className="topbar">
         <h1>Fotos e localização da ocorrência</h1>
-        <button className="btn" onClick={() => navigate("/reclamacoes")}>
+        <button className="btn" onClick={voltarParaLista}>
           <i className="ti ti-arrow-left" aria-hidden="true" style={{ marginRight: 6 }} />
           Voltar
         </button>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import CadastroPage from "../CadastroPage";
 import { apiBairros, apiCidades, apiPrefeituras, apiReclamacoes } from "../api";
 import { buscarEnderecoPorCep } from "../viacep";
@@ -24,11 +24,15 @@ const STATUS_RECLAMACAO = [
 
 export default function Reclamacoes() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [cidades, setCidades] = useState([]);
   const [bairros, setBairros] = useState([]);
   const [prefeituras, setPrefeituras] = useState([]);
   const [prefeituraEscolhida, setPrefeituraEscolhida] = useState("");
-  const [prefeituraConfirmada, setPrefeituraConfirmada] = useState(null);
+  // Guardada na URL (não em estado solto) pra sobreviver a navegar pra
+  // execução/ocorrência e voltar — o botão Voltar dessas telas devolve pra
+  // cá com o mesmo ?prefeitura_id=, sem precisar escolher de novo.
+  const prefeituraConfirmada = searchParams.get("prefeitura_id");
 
   useEffect(() => {
     apiCidades.listar().then(setCidades);
@@ -100,7 +104,7 @@ export default function Reclamacoes() {
               className="btn btn-primary"
               style={{ marginTop: 10 }}
               disabled={!prefeituraEscolhida}
-              onClick={() => setPrefeituraConfirmada(prefeituraEscolhida)}
+              onClick={() => setSearchParams({ prefeitura_id: prefeituraEscolhida })}
             >
               Continuar
             </button>
@@ -123,7 +127,7 @@ export default function Reclamacoes() {
         <>
           <button
             className="btn btn-ghost"
-            onClick={() => navigate(`/reclamacoes/${item.id}/execucao`)}
+            onClick={() => navigate(`/reclamacoes/${item.id}/execucao?prefeitura_id=${prefeituraConfirmada}`)}
             title="Registrar execução"
           >
             <i className="ti ti-tool" aria-hidden="true" />
@@ -131,7 +135,7 @@ export default function Reclamacoes() {
           {["VALIDADA", "CONCLUIDA"].includes(item.status) && (
             <button
               className="btn btn-ghost"
-              onClick={() => navigate(`/reclamacoes/${item.id}/ocorrencia`)}
+              onClick={() => navigate(`/reclamacoes/${item.id}/ocorrencia?prefeitura_id=${prefeituraConfirmada}`)}
               title="Fotos e localização"
             >
               <i className="ti ti-photo" aria-hidden="true" />
@@ -230,7 +234,7 @@ export default function Reclamacoes() {
             type="button"
             className="btn"
             onClick={() => {
-              setPrefeituraConfirmada(null);
+              setSearchParams({});
               setPrefeituraEscolhida("");
             }}
           >
