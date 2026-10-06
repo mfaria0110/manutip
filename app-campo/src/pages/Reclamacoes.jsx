@@ -5,12 +5,6 @@ import { useFluxo } from "../FluxoContext";
 import { comCache } from "../offline/cache";
 import Topo from "../Topo";
 
-function formatarData(iso) {
-  if (!iso) return "";
-  const [ano, mes, dia] = iso.split("-");
-  return `${dia}/${mes}/${ano}`;
-}
-
 export default function Reclamacoes() {
   const navigate = useNavigate();
   const { prefeituraId } = useFluxo();
@@ -64,14 +58,7 @@ export default function Reclamacoes() {
                 {r.logradouro || "—"}
                 {r.numero ? `, ${r.numero}` : ""}
               </div>
-              <div className="cartao-sub">{formatarData(r.data_reclamacao)}</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 10px", marginTop: 4 }}>
-                <div className="cartao-sub">
-                  <strong>Reclamante:</strong> {r.nome_reclamante || "—"}
-                </div>
-                <div className="cartao-sub">
-                  <strong>Telefone:</strong> {r.telefone || "—"}
-                </div>
                 <div className="cartao-sub">
                   <strong>Cidade:</strong> {nomeCidade(r.cidade_id)}
                 </div>
@@ -80,9 +67,6 @@ export default function Reclamacoes() {
                 </div>
                 <div className="cartao-sub">
                   <strong>Ponto de referência:</strong> {r.ponto_referencia || "—"}
-                </div>
-                <div className="cartao-sub">
-                  <strong>Observações:</strong> {r.observacoes || "—"}
                 </div>
               </div>
             </div>
