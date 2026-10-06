@@ -373,9 +373,11 @@ export default function ExecucaoReclamacao() {
     );
   }
 
-  // Uma vez validada (ou além), a reclamação trava: Nova execução, editar e
-  // excluir ficam desabilitados até um ADMIN reabrir com a própria senha.
-  const bloqueado = reclamacao.status !== "ABERTA";
+  // Validada trava: Nova execução, editar e excluir ficam desabilitados até
+  // um ADMIN reabrir com a própria senha. Concluída fica liberada pra
+  // edição normal (é só uma marcação de "já terminou", não uma revisão
+  // formal como a validação).
+  const bloqueado = reclamacao.status === "VALIDADA" || reclamacao.status === "EM_ANDAMENTO";
 
   // Agrupa por data + equipe — só abre um card novo quando a data ou a
   // equipe mudam; a equipe fica no cabeçalho do card, não repetida linha a
