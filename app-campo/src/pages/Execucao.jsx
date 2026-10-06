@@ -218,9 +218,13 @@ export default function Execucao() {
         (Number(item.quantidade_instalada) || 0) +
         (Number(item.quantidade_retirada) || 0) +
         (Number(item.quantidade_substituida) || 0);
+      const mat = materialPorId(item.material_id);
+      const nome = mat?.nome || "selecionado";
       if (total === 0) {
-        const nome = materialPorId(item.material_id)?.nome || "selecionado";
         return `O material "${nome}" está selecionado mas sem nenhuma quantidade informada. Preencha instalado/retirado/substituído ou remova a linha.`;
+      }
+      if (mat?.categoria === "LAMPADA" && (!item.tipo_lampada_id || !item.potencia_lampada_id)) {
+        return `O material "${nome}" é uma lâmpada e precisa de Tipo e Potência preenchidos.`;
       }
       temItemValido = true;
     }

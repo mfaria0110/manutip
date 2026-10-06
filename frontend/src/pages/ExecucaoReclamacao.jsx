@@ -224,8 +224,34 @@ export default function ExecucaoReclamacao() {
     atualizarItem(idx, patch);
   }
 
+  // Linha com material selecionado mas sem nenhuma quantidade, ou lâmpada
+  // sem Tipo/Potência (obrigatórios pro relatório e pro cálculo de pontos).
+  function validarItens() {
+    for (const item of itens) {
+      if (!item.material_id) continue;
+      const mat = materiais.find((m) => m.id === item.material_id);
+      const nome = mat?.nome || "selecionado";
+      const total =
+        (Number(item.quantidade_instalada) || 0) +
+        (Number(item.quantidade_retirada) || 0) +
+        (Number(item.quantidade_substituida) || 0);
+      if (total === 0) {
+        return `O material "${nome}" está selecionado mas sem nenhuma quantidade informada. Preencha instalado/retirado/substituído ou remova a linha.`;
+      }
+      if (mat?.categoria === "LAMPADA" && (!item.tipo_lampada_id || !item.potencia_lampada_id)) {
+        return `O material "${nome}" é uma lâmpada e precisa de Tipo e Potência preenchidos.`;
+      }
+    }
+    return null;
+  }
+
   async function salvar(e) {
     e.preventDefault();
+    const erroValidacao = validarItens();
+    if (erroValidacao) {
+      setErro(erroValidacao);
+      return;
+    }
     setSalvando(true);
     setErro("");
     try {
