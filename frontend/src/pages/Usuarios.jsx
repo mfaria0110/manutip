@@ -26,9 +26,9 @@ export default function Usuarios() {
         },
       ]}
       campos={[
-        { name: "nome", label: "Nome", required: true },
-        { name: "username", label: "Usuário (login)", required: true },
-        { name: "senha", label: "Senha (deixe em branco para manter)" },
+        { name: "nome", label: "Nome", required: true, size: 4 },
+        { name: "username", label: "Usuário (login)", required: true, size: 3 },
+        { name: "senha", label: "Senha (deixe em branco para manter)", size: 5 },
         {
           name: "papel",
           label: "Perfil",
