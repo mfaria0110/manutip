@@ -39,12 +39,13 @@ export default function Contratos() {
           label: "Prefeitura",
           type: "select",
           required: true,
+          size: 5,
           options: prefeituras.map((p) => ({ value: p.id, label: p.nome })),
         },
-        { name: "numero_contrato", label: "Número do contrato" },
-        { name: "data_inicio", label: "Data de início", type: "date", required: true },
-        { name: "data_fim", label: "Data de fim", type: "date" },
-        { name: "observacoes", label: "Observações" },
+        { name: "numero_contrato", label: "Número do contrato", size: 3 },
+        { name: "data_inicio", label: "Data de início", type: "date", required: true, size: 2 },
+        { name: "data_fim", label: "Data de fim", type: "date", size: 2 },
+        { name: "observacoes", label: "Observações", type: "textarea", rows: 4, fullWidth: true },
       ]}
       acoesExtras={(item) => (
         <button
