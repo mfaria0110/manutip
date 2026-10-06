@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiReclamacoes } from "../api";
+import { apiBairros, apiCidades, apiReclamacoes } from "../api";
 import { useFluxo } from "../FluxoContext";
 import { comCache } from "../offline/cache";
 import Topo from "../Topo";
@@ -15,6 +15,8 @@ export default function Reclamacoes() {
   const navigate = useNavigate();
   const { prefeituraId } = useFluxo();
   const [lista, setLista] = useState([]);
+  const [cidades, setCidades] = useState([]);
+  const [bairros, setBairros] = useState([]);
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(true);
 
@@ -23,13 +25,24 @@ export default function Reclamacoes() {
       navigate("/prefeitura", { replace: true });
       return;
     }
-    comCache(`reclamacoesAbertas:${prefeituraId}`, () =>
-      apiReclamacoes.listar(`?prefeitura_id=${prefeituraId}&status=ABERTA`)
-    )
-      .then((r) => setLista(r.dados))
+    Promise.all([
+      comCache(`reclamacoesAbertas:${prefeituraId}`, () =>
+        apiReclamacoes.listar(`?prefeitura_id=${prefeituraId}&status=ABERTA`)
+      ),
+      comCache("cidades", () => apiCidades.listar()),
+      comCache("bairros", () => apiBairros.listar()),
+    ])
+      .then(([r, c, b]) => {
+        setLista(r.dados);
+        setCidades(c.dados);
+        setBairros(b.dados);
+      })
       .catch((e) => setErro(e.message))
       .finally(() => setCarregando(false));
   }, [prefeituraId, navigate]);
+
+  const nomeCidade = (id) => cidades.find((c) => c.id === id)?.nome || "—";
+  const nomeBairro = (id) => bairros.find((b) => b.id === id)?.nome || "—";
 
   return (
     <div className="tela">
@@ -40,15 +53,35 @@ export default function Reclamacoes() {
         {!carregando && lista.length === 0 && <div className="vazio">Nenhuma reclamação aberta nessa prefeitura.</div>}
         {lista.map((r) => (
           <div key={r.id} className="cartao cartao-toque" onClick={() => navigate(`/execucao/${r.id}`)}>
-            <div>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div className="cartao-titulo">{r.codigo}</div>
               <div className="cartao-sub">
                 {r.logradouro || "—"}
                 {r.numero ? `, ${r.numero}` : ""}
               </div>
               <div className="cartao-sub">{formatarData(r.data_reclamacao)}</div>
+              <div className="cartao-sub">
+                <strong>Reclamante:</strong> {r.nome_reclamante || "—"}
+              </div>
+              <div className="cartao-sub">
+                <strong>Telefone:</strong> {r.telefone || "—"}
+              </div>
+              <div className="cartao-sub">
+                <strong>Cidade:</strong> {nomeCidade(r.cidade_id)}
+              </div>
+              <div className="cartao-sub">
+                <strong>Bairro:</strong> {nomeBairro(r.bairro_id)}
+              </div>
+              <div className="cartao-sub">
+                <strong>Ponto de referência:</strong> {r.ponto_referencia || "—"}
+              </div>
+              <div className="cartao-sub">
+                <strong>Observações:</strong> {r.observacoes || "—"}
+              </div>
             </div>
-            <i className="ti ti-chevron-right" aria-hidden="true" />
+            <button type="button" className="btn btn-secundario" style={{ width: "auto", whiteSpace: "nowrap" }}>
+              Ir para execução
+            </button>
           </div>
         ))}
         <button type="button" className="btn btn-secundario" style={{ marginTop: 10 }} onClick={() => navigate("/reclamacoes/nova")}>

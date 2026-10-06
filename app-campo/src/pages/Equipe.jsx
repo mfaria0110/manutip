@@ -79,6 +79,11 @@ export default function Equipe() {
 
   const nomeCargo = (id) => cargos.find((c) => c.id === id)?.nome;
   const nomeFuncionario = (id) => funcionarios.find((f) => f.id === id)?.nome || "—";
+  const matriculaFuncionario = (id) => funcionarios.find((f) => f.id === id)?.matricula;
+  const nomeVeiculo = (id) => {
+    const v = veiculos.find((x) => x.id === id);
+    return v ? `${v.placa} — ${v.modelo}` : null;
+  };
   const funcionariosDisponiveis = funcionarios.filter((f) => !membros.some((m) => m.funcionario_id === f.id));
   // Identifica o próprio usuário logado entre os membros (pelo CPF, elo
   // entre o login e o cadastro de Funcionário) pra nunca deixar ele se
@@ -160,8 +165,8 @@ export default function Equipe() {
         setEquipeAtual(local);
         setEquipes((prev) => prev.map((e) => (e.id === local.id ? local : e)));
       }
-      definirEquipe(equipeAtual.id);
-      navigate("/prefeitura");
+      // Fica na própria tela depois de validar — o usuário decide quando
+      // seguir pra escolha de prefeitura clicando em "Continuar".
     } catch (e) {
       setErro(e.message);
     } finally {
@@ -246,9 +251,25 @@ export default function Equipe() {
         {equipes.length === 0 && <p className="vazio">Nenhuma equipe cadastrada hoje ainda.</p>}
         {equipes.map((eq) => (
           <div key={eq.id} className="cartao cartao-toque" onClick={() => abrirEquipe(eq)}>
-            <div>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div className="cartao-titulo">{eq.nome}</div>
-              <div className="cartao-sub">{eq.membros.length} membro(s){eq.validada_em ? " · validada" : ""}</div>
+              <div className="cartao-sub">
+                {eq.membros.length} membro(s){eq.validada_em ? " · validada" : ""}
+              </div>
+              <div className="cartao-sub">
+                <strong>Veículo:</strong> {nomeVeiculo(eq.veiculo_id) || "—"}
+              </div>
+              <div className="cartao-sub">
+                <strong>Membros:</strong>{" "}
+                {eq.membros.length === 0
+                  ? "—"
+                  : eq.membros
+                      .map((m) => {
+                        const matricula = matriculaFuncionario(m.funcionario_id);
+                        return `${nomeFuncionario(m.funcionario_id)}${matricula ? ` (${matricula})` : ""}`;
+                      })
+                      .join(", ")}
+              </div>
             </div>
             <i className="ti ti-chevron-right" aria-hidden="true" />
           </div>
