@@ -52,6 +52,7 @@ export default function Execucao() {
   // 1 só sendo atualizado.
   const [uuidLocal, setUuidLocal] = useState(() => crypto.randomUUID());
   const [itens, setItens] = useState([novoItem()]);
+  const [observacoes, setObservacoes] = useState("");
   const [localizacao, setLocalizacao] = useState(null); // {lat, lng}
   const [capturandoGps, setCapturandoGps] = useState(false);
   const [fotosExistentes, setFotosExistentes] = useState([]); // [{id, url, previewUrl}]
@@ -95,6 +96,7 @@ export default function Execucao() {
           if (existente.latitude && existente.longitude) {
             setLocalizacao({ lat: existente.latitude, lng: existente.longitude });
           }
+          setObservacoes(existente.observacoes || "");
           const comPreview = await Promise.all(
             existente.fotos.map(async (f) => ({ ...f, previewUrl: await obterFotoURL(f.url).catch(() => null) }))
           );
@@ -107,6 +109,7 @@ export default function Execucao() {
         const rascunho = await lerCache(chaveRascunho);
         if (rascunho) {
           setItens(rascunho.itens);
+          setObservacoes(rascunho.observacoes || "");
           setLocalizacao(rascunho.localizacao);
           if (rascunho.uuidLocal) setUuidLocal(rascunho.uuidLocal);
           if (rascunho.fotos?.length) {
@@ -191,6 +194,7 @@ export default function Execucao() {
       data_execucao: hoje(),
       equipe_dia_id: equipeDiaId,
       uuid_local: uuidLocal,
+      observacoes: observacoes || null,
       latitude: localizacao?.lat ?? null,
       longitude: localizacao?.lng ?? null,
       itens: itens
@@ -206,7 +210,27 @@ export default function Execucao() {
     };
   }
 
+  function validarItens() {
+    for (const item of itens) {
+      if (!item.material_id) continue;
+      const total =
+        (Number(item.quantidade_instalada) || 0) +
+        (Number(item.quantidade_retirada) || 0) +
+        (Number(item.quantidade_substituida) || 0);
+      if (total === 0) {
+        const nome = materialPorId(item.material_id)?.nome || "selecionado";
+        return `O material "${nome}" está selecionado mas sem nenhuma quantidade informada. Preencha instalado/retirado/substituído ou remova a linha.`;
+      }
+    }
+    return null;
+  }
+
   async function salvar() {
+    const erroValidacao = validarItens();
+    if (erroValidacao) {
+      setErro(erroValidacao);
+      return;
+    }
     setSalvando(true);
     setErro("");
     setSucesso("");
@@ -241,6 +265,7 @@ export default function Execucao() {
         // jeito que deixou, não em branco.
         await salvarCache(chaveRascunho, {
           itens,
+          observacoes,
           localizacao,
           uuidLocal,
           fotos: fotosNovas.map((f) => f.file),
@@ -329,11 +354,15 @@ export default function Execucao() {
                     ))}
                   </select>
                 </div>
-                {itens.length > 1 && (
-                  <button type="button" className="btn-perigo" style={{ border: "none", background: "none" }} onClick={() => removerLinha(idx)}>
-                    <i className="ti ti-trash" aria-hidden="true" />
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className="btn-perigo"
+                  style={{ border: "none", background: "none" }}
+                  onClick={() => removerLinha(idx)}
+                  title="Remover material"
+                >
+                  <i className="ti ti-trash" aria-hidden="true" />
+                </button>
               </div>
 
               {ehLampada && (
@@ -398,6 +427,16 @@ export default function Execucao() {
         <button type="button" className="btn btn-secundario" onClick={adicionarLinha}>
           <i className="ti ti-plus" aria-hidden="true" /> Adicionar material
         </button>
+
+        <div className="campo" style={{ marginTop: 14 }}>
+          <label>Observação</label>
+          <textarea
+            rows={3}
+            value={observacoes}
+            onChange={(e) => setObservacoes(e.target.value)}
+            placeholder="Algo a registrar sobre o atendimento..."
+          />
+        </div>
 
         <div className="cartao" style={{ marginTop: 14 }}>
           <div className="linha-entre">

@@ -118,7 +118,7 @@ input,
 select,
 textarea {
   width: 100%;
-  padding: 12px;
+  padding: 8px 12px;
   font-size: 16px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -132,12 +132,17 @@ input[type="number"] {
   text-align: center;
 }
 
-/* Select de material/tipo/potência — fonte menor e menos espaço nas
-   laterais, pra sobrar mais largura pro texto (nomes de material longos). */
+/* Select de material/tipo/potência — fonte menor, menos altura e menos
+   espaço nas laterais, pra sobrar mais largura pro texto (nomes de
+   material longos). Vale pro item fechado e pras opções da lista (herdam
+   do select). */
 select {
-  font-size: 14px;
-  padding-left: 6px;
-  padding-right: 6px;
+  font-size: 13px;
+  padding: 6px;
+}
+
+select option {
+  font-size: 12px;
 }
 
 .campo {
