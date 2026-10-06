@@ -14,6 +14,10 @@ interno de uma única empresa:
   (contratos, preços, usuários, materiais, veículos, funcionários) a menos
   que o admin conceda uma permissão extra pontual (`permissoes_extra` no
   próprio usuário, formato "modulo:nivel", ex.: "contratos:edit").
+- OPERACIONAL: perfil do app de campo. Mesmo teto "use" do USUARIO, mas com
+  "edit" liberado especificamente em equipes/reclamacoes/execucoes (ver
+  MODULOS_EDIT_OPERACIONAL) — precisa validar a equipe do dia e lançar a
+  execução, mas não deve editar cadastros administrativos.
 """
 
 from __future__ import annotations
@@ -50,7 +54,13 @@ NIVEL_MAX_POR_PERFIL = {
     PapelUsuario.SUPERADMIN: "admin",
     PapelUsuario.ADMIN: "admin",
     PapelUsuario.USUARIO: "use",
+    PapelUsuario.OPERACIONAL: "use",
 }
+
+# OPERACIONAL (app de campo) precisa criar/editar equipe do dia, lançar
+# execução e marcar reclamação como validada — "edit" só nesses 3 módulos,
+# os demais ficam em "use" (leitura), igual USUARIO.
+MODULOS_EDIT_OPERACIONAL = {"equipes", "reclamacoes", "execucoes"}
 
 # Módulos que só o SUPERADMIN acessa, mesmo o ADMIN ficando de fora e mesmo
 # com permissão extra concedida — hoje só o cadastro de categorias de
@@ -101,6 +111,8 @@ def usuario_pode(usuario: Usuario, modulo: str, nivel: str = "use") -> bool:
         return usuario.papel == PapelUsuario.SUPERADMIN
     if modulo in MODULOS_SOMENTE_ADMIN:
         return usuario.papel in (PapelUsuario.ADMIN, PapelUsuario.SUPERADMIN)
+    if usuario.papel == PapelUsuario.OPERACIONAL and modulo in MODULOS_EDIT_OPERACIONAL:
+        return NIVEIS_ORDEM.index("edit") >= NIVEIS_ORDEM.index(nivel)
     if nivel_ok(usuario.papel, nivel):
         return True
     override = _nivel_override(usuario, modulo)

@@ -1,5 +1,5 @@
 import uuid
-from datetime import date
+from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel
@@ -30,6 +30,7 @@ class EquipeDiaOut(BaseModel):
     nome: str | None
     data: date
     veiculo_id: uuid.UUID | None
+    validada_em: datetime | None
     membros: list[MembroOut]
 
     class Config:
@@ -102,6 +103,19 @@ def atualizar(equipe_id: uuid.UUID, req: EquipeDiaUpdate, db: Session = Depends(
         db.query(EquipeMembro).filter(EquipeMembro.equipe_dia_id == equipe_id).delete()
         for membro in membros:
             db.add(EquipeMembro(equipe_dia_id=equipe_id, **membro))
+    db.commit()
+    return _saida(_com_membros(db.query(EquipeDia)).filter(EquipeDia.id == equipe_id).first())
+
+
+@router.post("/{equipe_id}/validar", response_model=EquipeDiaOut, dependencies=[Depends(requer_acesso("equipes", "edit"))])
+def validar(equipe_id: uuid.UUID, db: Session = Depends(get_db)):
+    """Marca a composição do dia como confirmada pelo app de campo — não
+    trava edição (um admin ainda pode corrigir pela tela de escritório),
+    só sinaliza pro front parar de oferecer troca de membros."""
+    obj = db.get(EquipeDia, equipe_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Equipe não encontrada.")
+    obj.validada_em = datetime.now(timezone.utc)
     db.commit()
     return _saida(_com_membros(db.query(EquipeDia)).filter(EquipeDia.id == equipe_id).first())
 

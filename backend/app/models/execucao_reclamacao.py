@@ -1,7 +1,7 @@
 import uuid
-from datetime import date
+from datetime import date, datetime
 
-from sqlalchemy import Date, ForeignKey, Numeric, Text
+from sqlalchemy import Date, DateTime, ForeignKey, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -13,9 +13,9 @@ class ExecucaoReclamacao(TimestampMixin, Base):
     """Execução de uma reclamação pelo escritório/equipe: quando foi atendida,
     qual equipe foi a campo e quais materiais entraram/saíram do ponto.
 
-    Separado do `Execucao` ligado a `PedidoManutencao` (esse é o registro
-    feito pelo técnico no futuro app de campo, offline-first); aqui é o
-    lançamento direto no escritório a partir da reclamação."""
+    Mesma tabela serve tanto o lançamento feito no escritório quanto o do
+    app de campo (perfil OPERACIONAL) — não é mais separado do `Execucao`
+    ligado a `PedidoManutencao` (esse ficou sem uso, ver app/models/pedido.py)."""
 
     __tablename__ = "execucoes_reclamacao"
 
@@ -28,8 +28,17 @@ class ExecucaoReclamacao(TimestampMixin, Base):
     # total_pontos de cada item lançado (instalação/retirada/substituição x
     # peso em pontos do material), recalculado a cada alteração dos itens.
     pontos: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0, server_default="0")
+    # GPS do poste, capturado pelo app de campo no momento do lançamento —
+    # fica vazio em lançamentos feitos pelo escritório.
+    latitude: Mapped[float | None] = mapped_column(Numeric(10, 7))
+    longitude: Mapped[float | None] = mapped_column(Numeric(10, 7))
+    # Gerado no app de campo (crypto.randomUUID()) no momento da criação,
+    # antes de existir conexão — garante idempotência quando o registro sobe
+    # pro servidor (reenvio seguro em caso de falha de rede no meio do sync).
+    uuid_local: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), unique=True)
 
     itens: Mapped[list["ItemExecucaoMaterial"]] = relationship(back_populates="execucao")
+    fotos: Mapped[list["FotoExecucao"]] = relationship(back_populates="execucao")
     reclamacao: Mapped["object"] = relationship("Reclamacao")
 
 
@@ -61,3 +70,17 @@ class ItemExecucaoMaterial(Base):
 
     execucao: Mapped["ExecucaoReclamacao"] = relationship(back_populates="itens")
     material: Mapped["object"] = relationship("Material")
+
+
+class FotoExecucao(Base):
+    """Foto anexada por quem registrou a execução (tipicamente o app de
+    campo) — registro do que foi feito/encontrado no poste."""
+
+    __tablename__ = "fotos_execucao"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    execucao_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("execucoes_reclamacao.id"), nullable=False)
+    arquivo_path: Mapped[str] = mapped_column(String(500), nullable=False)
+    criado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    execucao: Mapped["ExecucaoReclamacao"] = relationship(back_populates="fotos")

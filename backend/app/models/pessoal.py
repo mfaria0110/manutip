@@ -1,7 +1,7 @@
 import uuid
-from datetime import date
+from datetime import date, datetime
 
-from sqlalchemy import Date, ForeignKey, String, Text
+from sqlalchemy import Date, DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -46,6 +46,10 @@ class EquipeDia(TimestampMixin, Base):
     nome: Mapped[str | None] = mapped_column(String(50))
     data: Mapped[date] = mapped_column(Date, nullable=False)
     veiculo_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("veiculos.id"))
+    # Marcado pelo app de campo (perfil OPERACIONAL) ao confirmar a
+    # composição do dia. Não trava edição no backend — só sinaliza pro
+    # front parar de oferecer troca de membros depois de validada.
+    validada_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     veiculo: Mapped["Veiculo | None"] = relationship()
     membros: Mapped[list["EquipeMembro"]] = relationship(back_populates="equipe_dia")

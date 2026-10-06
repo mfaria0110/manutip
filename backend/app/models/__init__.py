@@ -9,7 +9,7 @@ from app.models.material import Material
 from app.models.categoria_material import CategoriaMaterial
 from app.models.lampada import TipoLampada, PotenciaLampada
 from app.models.reclamacao import Reclamacao
-from app.models.execucao_reclamacao import ExecucaoReclamacao, ItemExecucaoMaterial
+from app.models.execucao_reclamacao import ExecucaoReclamacao, ItemExecucaoMaterial, FotoExecucao
 from app.models.pedido import (
     PedidoManutencao,
     Execucao,
@@ -40,6 +40,7 @@ __all__ = [
     "Reclamacao",
     "ExecucaoReclamacao",
     "ItemExecucaoMaterial",
+    "FotoExecucao",
     "PedidoManutencao",
     "Execucao",
     "Foto",

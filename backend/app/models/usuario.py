@@ -16,6 +16,10 @@ class PapelUsuario(str, enum.Enum):
     ADMIN = "ADMIN"  # acesso total, sem precisar de permissão extra
     USUARIO = "USUARIO"  # acesso operacional (nível "use"); edição de cadastros
     # administrativos (contratos, preços, usuários...) só com permissão extra
+    OPERACIONAL = "OPERACIONAL"  # app de campo: mesmo teto "use" do USUARIO,
+    # mas com "edit" liberado em equipes/reclamacoes/execucoes (ver
+    # MODULOS_EDIT_OPERACIONAL em app/core/acesso.py) para validar a equipe
+    # do dia e lançar a execução direto do poste
 
 
 class Usuario(TimestampMixin, Base):

@@ -112,10 +112,16 @@ router = APIRouter(prefix="/api/reclamacoes", tags=["reclamacoes"])
 
 
 @router.get("", response_model=list[ReclamacaoOut], dependencies=[Depends(requer_acesso("reclamacoes", "use"))])
-def listar(prefeitura_id: uuid.UUID | None = Query(default=None), db: Session = Depends(get_db)):
+def listar(
+    prefeitura_id: uuid.UUID | None = Query(default=None),
+    status: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+):
     query = db.query(Reclamacao)
     if prefeitura_id:
         query = query.filter(Reclamacao.prefeitura_id == prefeitura_id)
+    if status:
+        query = query.filter(Reclamacao.status == status)
     return query.order_by(Reclamacao.data_reclamacao.desc()).all()
 
 
