@@ -55,36 +55,49 @@ export default function Reclamacoes() {
           <div
             key={r.id}
             className="cartao cartao-toque"
-            style={{ flexDirection: "column", alignItems: "stretch" }}
+            style={{ alignItems: "center" }}
             onClick={() => navigate(`/execucao/${r.id}`)}
           >
-            <div className="cartao-titulo">{r.codigo}</div>
-            <div className="cartao-sub">
-              {r.logradouro || "—"}
-              {r.numero ? `, ${r.numero}` : ""}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="cartao-titulo">{r.codigo}</div>
+              <div className="cartao-sub">
+                {r.logradouro || "—"}
+                {r.numero ? `, ${r.numero}` : ""}
+              </div>
+              <div className="cartao-sub">{formatarData(r.data_reclamacao)}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 10px", marginTop: 4 }}>
+                <div className="cartao-sub">
+                  <strong>Reclamante:</strong> {r.nome_reclamante || "—"}
+                </div>
+                <div className="cartao-sub">
+                  <strong>Telefone:</strong> {r.telefone || "—"}
+                </div>
+                <div className="cartao-sub">
+                  <strong>Cidade:</strong> {nomeCidade(r.cidade_id)}
+                </div>
+                <div className="cartao-sub">
+                  <strong>Bairro:</strong> {nomeBairro(r.bairro_id)}
+                </div>
+                <div className="cartao-sub">
+                  <strong>Ponto de referência:</strong> {r.ponto_referencia || "—"}
+                </div>
+                <div className="cartao-sub">
+                  <strong>Observações:</strong> {r.observacoes || "—"}
+                </div>
+              </div>
             </div>
-            <div className="cartao-sub">{formatarData(r.data_reclamacao)}</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 16px", marginTop: 4 }}>
-              <div className="cartao-sub">
-                <strong>Reclamante:</strong> {r.nome_reclamante || "—"}
-              </div>
-              <div className="cartao-sub">
-                <strong>Telefone:</strong> {r.telefone || "—"}
-              </div>
-              <div className="cartao-sub">
-                <strong>Cidade:</strong> {nomeCidade(r.cidade_id)}
-              </div>
-              <div className="cartao-sub">
-                <strong>Bairro:</strong> {nomeBairro(r.bairro_id)}
-              </div>
-              <div className="cartao-sub">
-                <strong>Ponto de referência:</strong> {r.ponto_referencia || "—"}
-              </div>
-              <div className="cartao-sub" style={{ gridColumn: "1 / -1", minHeight: "2.6em" }}>
-                <strong>Observações:</strong> {r.observacoes || "—"}
-              </div>
-            </div>
-            <button type="button" className="btn btn-secundario" style={{ marginTop: 10 }}>
+            <button
+              type="button"
+              className="btn btn-secundario"
+              style={{
+                width: "auto",
+                flexShrink: 0,
+                whiteSpace: "nowrap",
+                marginLeft: 10,
+                padding: "10px 12px",
+                fontSize: 13,
+              }}
+            >
               Ir para execução
             </button>
           </div>
