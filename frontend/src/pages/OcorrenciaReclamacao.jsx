@@ -74,12 +74,12 @@ export default function OcorrenciaReclamacao() {
               {ex.latitude && ex.longitude && (
                 <a
                   className="btn btn-ghost"
-                  href={`https://www.google.com/maps?q=${ex.latitude},${ex.longitude}`}
+                  href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${ex.latitude},${ex.longitude}`}
                   target="_blank"
                   rel="noreferrer"
                 >
                   <i className="ti ti-map-pin" aria-hidden="true" style={{ marginRight: 6 }} />
-                  Ver localização no mapa
+                  Ver no Street View
                 </a>
               )}
             </div>
