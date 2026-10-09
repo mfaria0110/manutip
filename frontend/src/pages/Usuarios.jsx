@@ -19,6 +19,7 @@ export default function Usuarios() {
       api={apiUsuarios}
       colunas={[
         { key: "nome", label: "Nome" },
+        { key: "cpf", label: "CPF", render: (item) => item.cpf || "—" },
         { key: "username", label: "Usuário" },
         { key: "papel", label: "Perfil" },
         {
@@ -34,8 +35,9 @@ export default function Usuarios() {
       campos={[
         {
           name: "cpf",
-          label: "Funcionário (busque por nome ou CPF)",
+          label: "CPF (busque o funcionário por nome ou CPF)",
           type: "combo",
+          required: true,
           size: 5,
           options: funcionarios
             .filter((f) => f.cpf)

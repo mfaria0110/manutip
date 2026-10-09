@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useAcesso } from "../AcessoContext";
 import ConfirmDialog from "../ConfirmDialog";
 import { apiCargos, apiEquipesDia, apiFuncionarios, apiVeiculos, proximoNomeEquipe } from "../api";
+import { aplicarMascara } from "../CadastroPage";
+import { formatarData, hojeLocal } from "../formatos";
 
 export default function EquipesDia() {
   const { pode, ehAdmin } = useAcesso();
@@ -18,6 +20,8 @@ export default function EquipesDia() {
   const [nome, setNome] = useState("");
   const [sugestaoNome, setSugestaoNome] = useState("");
   const [data, setData] = useState("");
+  const [celular, setCelular] = useState("");
+  const [ativa, setAtiva] = useState(true);
   const [veiculoId, setVeiculoId] = useState("");
   const [membrosLista, setMembrosLista] = useState([]); // [{ funcionario_id, papel }]
   const [novoMembroId, setNovoMembroId] = useState("");
@@ -56,20 +60,28 @@ export default function EquipesDia() {
   function abrirNovo() {
     setNome("");
     setSugestaoNome("");
-    setData(new Date().toISOString().slice(0, 10));
+    setData(hojeLocal());
+    setCelular("");
+    setAtiva(true);
     setVeiculoId("");
     setMembrosLista([]);
     setNovoMembroId("");
     setErro("");
     setEditando({});
     proximoNomeEquipe()
-      .then((r) => setSugestaoNome(r.nome))
+      // Já preenche o nome com o próximo SELxxx (maior número + 1); segue editável.
+      .then((r) => {
+        setSugestaoNome(r.nome);
+        setNome((atual) => atual || r.nome);
+      })
       .catch(() => {});
   }
 
   function abrirEdicao(item) {
     setNome(item.nome || "");
-    setData(item.data);
+    setData(item.data_cadastro);
+    setCelular(item.celular || "");
+    setAtiva(item.ativa !== false);
     setVeiculoId(item.veiculo_id || "");
     setMembrosLista(item.membros.map((m) => ({ funcionario_id: m.funcionario_id, papel: m.papel || "" })));
     setNovoMembroId("");
@@ -100,7 +112,9 @@ export default function EquipesDia() {
     try {
       const payload = {
         nome,
-        data,
+        data_cadastro: data,
+        celular,
+        ativa,
         veiculo_id: veiculoId || null,
         membros: membrosLista.map((m) => ({ funcionario_id: m.funcionario_id, papel: m.papel || null })),
       };
@@ -136,7 +150,7 @@ export default function EquipesDia() {
   return (
     <>
       <header className="topbar">
-        <h1>Equipes do dia</h1>
+        <h1>Equipes</h1>
         {podeEditar && (
           <button className="btn btn-primary" onClick={abrirNovo}>
             <i className="ti ti-plus" aria-hidden="true" style={{ marginRight: 6 }} />
@@ -157,7 +171,9 @@ export default function EquipesDia() {
               <thead>
                 <tr>
                   <th>Nome</th>
-                  <th>Data</th>
+                  <th>Data de cadastro</th>
+                  <th>Celular</th>
+                  <th>Situação</th>
                   <th>Veículo</th>
                   <th>Membros</th>
                   {(podeEditar || ehAdmin) && <th style={{ width: 90 }} />}
@@ -167,7 +183,13 @@ export default function EquipesDia() {
                 {itens.map((item) => (
                   <tr key={item.id}>
                     <td>{item.nome || "—"}</td>
-                    <td>{item.data}</td>
+                    <td>{formatarData(item.data_cadastro)}</td>
+                    <td>{item.celular || "—"}</td>
+                    <td>
+                      <span className={`badge ${item.ativa === false ? "badge-muted" : "badge-success"}`}>
+                        {item.ativa === false ? "Inativa" : "Ativa"}
+                      </span>
+                    </td>
                     <td>{nomeVeiculo(item.veiculo_id)}</td>
                     <td>{item.membros.map((m) => m.funcionario_nome).join(", ") || "—"}</td>
                     {(podeEditar || ehAdmin) && (
@@ -202,10 +224,10 @@ export default function EquipesDia() {
       {editando !== null && (
         <div className="modal-overlay">
           <div className="modal">
-            <h2>{editando.id ? "Editar" : "Nova"} equipe do dia</h2>
+            <h2>{editando.id ? "Editar" : "Nova"} equipe</h2>
             <form onSubmit={salvar}>
               <div className="form-grid">
-                <div className="form-field" style={{ "--span": 4 }}>
+                <div className="form-field" style={{ "--span": 3 }}>
                   <label>Nome da equipe</label>
                   <input
                     required
@@ -214,13 +236,32 @@ export default function EquipesDia() {
                     onChange={(e) => setNome(e.target.value)}
                   />
                 </div>
-                <div className="form-field" style={{ "--span": 4 }}>
-                  <label>Data</label>
+                <div className="form-field" style={{ "--span": 3 }}>
+                  <label>Data de cadastro</label>
                   <input type="date" required value={data} onChange={(e) => setData(e.target.value)} />
                 </div>
-                <div className="form-field" style={{ "--span": 4 }}>
+                <div className="form-field" style={{ "--span": 3 }}>
+                  <label>Celular</label>
+                  <input
+                    required
+                    inputMode="numeric"
+                    placeholder="(00) 00000-0000"
+                    minLength={15}
+                    maxLength={15}
+                    title="Celular com DDD: (24) 99999-9999"
+                    style={{ textAlign: "center" }}
+                    value={celular}
+                    onChange={(e) => setCelular(aplicarMascara("telefone", e.target.value))}
+                  />
+                </div>
+                <div className="form-field" style={{ "--span": 3 }}>
                   <label>Veículo</label>
-                  <select required value={veiculoId} onChange={(e) => setVeiculoId(e.target.value)}>
+                  <select
+                    required
+                    disabled={!!editando.em_uso}
+                    value={veiculoId}
+                    onChange={(e) => setVeiculoId(e.target.value)}
+                  >
                     <option value="">Selecione...</option>
                     {veiculos.map((v) => (
                       <option key={v.id} value={v.id}>
@@ -229,10 +270,29 @@ export default function EquipesDia() {
                     ))}
                   </select>
                 </div>
+                {editando.id && (
+                  <div className="form-field" style={{ "--span": 12, flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <input
+                      id="equipe-ativa"
+                      type="checkbox"
+                      checked={ativa}
+                      onChange={(e) => setAtiva(e.target.checked)}
+                      style={{ width: 16, height: 16, padding: 0 }}
+                    />
+                    <label htmlFor="equipe-ativa">Equipe ativa (inativa não aparece para designar nem lançar execução)</label>
+                  </div>
+                )}
+                {editando.em_uso && (
+                  <p className="aviso-msg" style={{ gridColumn: "span 12", margin: "0 0 10px" }}>
+                    Esta equipe já foi usada em roteiro ou execução: veículo e membros não podem ser trocados. Para
+                    mudar o carro ou algum membro, cadastre uma nova equipe.
+                  </p>
+                )}
                 <div className="form-field" style={{ "--span": 12 }}>
                   <label>Membros</label>
                   <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
                     <select
+                      disabled={!!editando.em_uso}
                       style={{ width: "50%" }}
                       value={novoMembroId}
                       onChange={(e) => setNovoMembroId(e.target.value)}
@@ -248,7 +308,7 @@ export default function EquipesDia() {
                       type="button"
                       className="btn btn-primary"
                       onClick={adicionarMembro}
-                      disabled={!novoMembroId}
+                      disabled={!novoMembroId || !!editando.em_uso}
                       style={{ height: 30, padding: "0 8px", fontSize: 12 }}
                     >
                       <i className="ti ti-plus" aria-hidden="true" />
@@ -277,6 +337,7 @@ export default function EquipesDia() {
                           type="button"
                           className="btn btn-ghost"
                           onClick={() => removerMembro(m.funcionario_id)}
+                          disabled={!!editando.em_uso}
                           title="Remover"
                           style={{ color: "var(--danger)" }}
                         >
@@ -304,7 +365,7 @@ export default function EquipesDia() {
       <ConfirmDialog
         aberto={!!excluindo}
         titulo="Excluir equipe"
-        mensagem='Excluir esta equipe do dia? Essa ação não pode ser desfeita.'
+        mensagem='Excluir esta equipe? Essa ação não pode ser desfeita.'
         confirmando={apagando}
         onConfirmar={confirmarExclusao}
         onCancelar={() => setExcluindo(null)}

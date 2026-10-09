@@ -50,7 +50,7 @@ export default function Materiais() {
       obterValoresPadrao={() => proximoCodigoMaterial()}
       larguraModal={880}
       classeTabela="tabela-compacta"
-      notaModal="Depois de salvar, acesse Contratos > Pontos de materiais (em cada contrato) para cadastrar os pontos deste material — sem isso, o lançamento de execução com ele fica bloqueado."
+      notaModal="Para prefeituras com contrato do tipo Por item: depois de salvar, acesse Contratos > Pontos de materiais (em cada contrato) para cadastrar os pontos deste material — sem isso, o lançamento de execução com ele fica bloqueado. Contratos do tipo Por ponto não precisam disso."
     />
   );
 }

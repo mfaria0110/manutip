@@ -26,7 +26,7 @@ const GRUPOS = [
     label: "Operação",
     itens: [
       { to: "/reclamacoes", icon: "ti-phone-call", label: "Reclamações" },
-      { to: "/equipes", icon: "ti-users-group", label: "Equipes do dia" },
+      { to: "/equipes", icon: "ti-users-group", label: "Equipes" },
       { to: "/veiculos", icon: "ti-truck", label: "Veículos" },
       { to: "/cargos", icon: "ti-id-badge-2", label: "Cargos" },
       { to: "/funcionarios", icon: "ti-users", label: "Funcionários" },
@@ -34,7 +34,10 @@ const GRUPOS = [
   },
   {
     label: "Relatórios",
-    itens: [{ to: "/relatorios/pontos-atendidos", icon: "ti-report", label: "Pontos atendidos" }],
+    itens: [
+      { to: "/relatorios/pontos-atendidos", icon: "ti-report", label: "Pontos atendidos" },
+      { to: "/relatorios/materiais-gastos", icon: "ti-package", label: "Materiais gastos" },
+    ],
   },
   {
     label: "Administração",

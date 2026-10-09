@@ -25,11 +25,12 @@ export default function Funcionarios() {
       ]}
       campos={[
         { name: "nome", label: "Nome", required: true, fullWidth: true },
-        { name: "matricula", label: "Matrícula", size: 2, center: true },
+        { name: "matricula", label: "Matrícula", required: true, size: 2, center: true },
         {
           name: "cargo_id",
           label: "Cargo",
           type: "combo",
+          required: true,
           size: 6,
           placeholder: "Digite para buscar ou criar...",
           options: cargos.map((c) => ({ value: c.id, label: c.nome })),
@@ -39,7 +40,7 @@ export default function Funcionarios() {
             return { value: novo.id, label: novo.nome };
           },
         },
-        { name: "cpf", label: "CPF", mask: "cpf" },
+        { name: "cpf", label: "CPF", mask: "cpf", required: true },
       ]}
     />
   );

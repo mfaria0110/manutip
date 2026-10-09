@@ -43,7 +43,7 @@ const MASCARAS = {
   moeda: (v) => formatarMoeda(v),
 };
 
-function aplicarMascara(mascara, valor) {
+export function aplicarMascara(mascara, valor) {
   const fn = MASCARAS[mascara];
   return fn ? fn(valor) : valor;
 }
@@ -120,6 +120,7 @@ export default function CadastroPage({
   api,
   idKey = "id",
   filtroTopo,
+  acaoAposFiltro,
   queryExtra,
   exigeFiltro,
   valoresPadrao,
@@ -305,6 +306,7 @@ async function confirmarExclusao() {
               />
             </div>
           )}
+          {acaoAposFiltro}
         </div>
         <div className="card">
           {carregando ? (

@@ -94,11 +94,21 @@ export const apiPontosMaterialContrato = {
       body: JSON.stringify({ itens }),
     }),
   vigente: (prefeituraId, data) => req(`/pontos-material-contrato/vigente?prefeitura_id=${prefeituraId}&data=${data}`),
+  contratoVigente: (prefeituraId, data) =>
+    req(`/pontos-material-contrato/contrato-vigente?prefeitura_id=${prefeituraId}&data=${data}`),
 };
 export const apiReclamacoes = crud("/reclamacoes");
 export function reabrirReclamacao(id, username, senha) {
   return req(`/reclamacoes/${id}/reabrir`, { method: "POST", body: JSON.stringify({ username, senha }) });
 }
+export const apiDesignacoes = {
+  listar: (query = "") => req(`/designacoes${query}`),
+  salvarDoDia: (prefeituraId, data, itens) =>
+    req("/designacoes/dia", {
+      method: "PUT",
+      body: JSON.stringify({ prefeitura_id: prefeituraId, data, itens }),
+    }),
+};
 export const apiEquipesDia = crud("/equipes");
 export function proximoNomeEquipe() {
   return req("/equipes/proximo-nome");
@@ -112,6 +122,13 @@ export async function obterFotoURL(fotoUrl) {
   if (!resp.ok) throw new Error("Não foi possível carregar a foto.");
   const blob = await resp.blob();
   return URL.createObjectURL(blob);
+}
+// Mesma foto, mas devolvendo o arquivo (blob) — usado pra salvar no computador.
+export async function obterFotoBlob(fotoUrl) {
+  const t = token();
+  const resp = await fetch(fotoUrl, { headers: t ? { Authorization: `Bearer ${t}` } : {} });
+  if (!resp.ok) throw new Error("Não foi possível carregar a foto.");
+  return resp.blob();
 }
 export const apiItensExecucao = {
   atualizar: (id, dados) => req(`/execucoes-reclamacao/itens/${id}`, { method: "PUT", body: JSON.stringify(dados) }),
@@ -131,6 +148,38 @@ export function relatorioPontosAtendidos(prefeituraId, dataInicio, dataFim) {
     data_fim: dataFim,
   });
   return req(`/relatorios/pontos-atendidos?${params}`);
+}
+
+export function relatorioMateriaisGastos(prefeituraId, dataInicio, dataFim) {
+  const params = new URLSearchParams({
+    prefeitura_id: prefeituraId,
+    data_inicio: dataInicio,
+    data_fim: dataFim,
+  });
+  return req(`/relatorios/materiais-gastos?${params}`);
+}
+
+// Baixa a planilha .xlsx de um relatório (precisa do fetch autenticado, link
+// direto não manda o token). `relatorio`: "pontos-atendidos" | "materiais-gastos".
+export async function baixarRelatorioExcel(relatorio, prefeituraId, dataInicio, dataFim, nomeArquivo) {
+  const params = new URLSearchParams({
+    prefeitura_id: prefeituraId,
+    data_inicio: dataInicio,
+    data_fim: dataFim,
+  });
+  const t = token();
+  const resp = await fetch(`${BASE}/relatorios/${relatorio}/excel?${params}`, {
+    headers: t ? { Authorization: `Bearer ${t}` } : {},
+  });
+  if (!resp.ok) throw new Error("Não foi possível gerar a planilha. Tente novamente.");
+  const url = URL.createObjectURL(await resp.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nomeArquivo;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 // Mantidos para compatibilidade com código existente.

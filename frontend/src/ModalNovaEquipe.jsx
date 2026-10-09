@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { aplicarMascara } from "./CadastroPage";
+import { hojeLocal } from "./formatos";
 import { apiCargos, apiEquipesDia, apiFuncionarios, apiVeiculos, proximoNomeEquipe } from "./api";
 
-/** Modal de cadastro rápido de equipe do dia, usado a partir de outras
+/** Modal de cadastro rápido de equipe, usado a partir de outras
  * telas (ex.: execução de reclamação) sem sair do fluxo atual. */
 export default function ModalNovaEquipe({ aberto, onFechar, onCriada }) {
   const [funcionarios, setFuncionarios] = useState([]);
@@ -10,6 +12,7 @@ export default function ModalNovaEquipe({ aberto, onFechar, onCriada }) {
   const [nome, setNome] = useState("");
   const [sugestaoNome, setSugestaoNome] = useState("");
   const [data, setData] = useState("");
+  const [celular, setCelular] = useState("");
   const [veiculoId, setVeiculoId] = useState("");
   const [membrosLista, setMembrosLista] = useState([]); // [{ funcionario_id, papel }]
   const [novoMembroId, setNovoMembroId] = useState("");
@@ -23,13 +26,18 @@ export default function ModalNovaEquipe({ aberto, onFechar, onCriada }) {
     apiCargos.listar().then(setCargos);
     setNome("");
     setSugestaoNome("");
-    setData(new Date().toISOString().slice(0, 10));
+    setData(hojeLocal());
+    setCelular("");
     setVeiculoId("");
     setMembrosLista([]);
     setNovoMembroId("");
     setErro("");
     proximoNomeEquipe()
-      .then((r) => setSugestaoNome(r.nome))
+      // Já preenche o nome com o próximo SELxxx (maior número + 1); segue editável.
+      .then((r) => {
+        setSugestaoNome(r.nome);
+        setNome((atual) => atual || r.nome);
+      })
       .catch(() => {});
   }, [aberto]);
 
@@ -65,7 +73,8 @@ export default function ModalNovaEquipe({ aberto, onFechar, onCriada }) {
     try {
       const payload = {
         nome,
-        data,
+        data_cadastro: data,
+        celular,
         veiculo_id: veiculoId || null,
         membros: membrosLista.map((m) => ({ funcionario_id: m.funcionario_id, papel: m.papel || null })),
       };
@@ -81,10 +90,10 @@ export default function ModalNovaEquipe({ aberto, onFechar, onCriada }) {
   return (
     <div className="modal-overlay">
       <div className="modal">
-        <h2>Nova equipe do dia</h2>
+        <h2>Nova equipe</h2>
         <form onSubmit={salvar}>
           <div className="form-grid">
-            <div className="form-field" style={{ "--span": 4 }}>
+            <div className="form-field" style={{ "--span": 3 }}>
               <label>Nome da equipe</label>
               <input
                 required
@@ -93,11 +102,25 @@ export default function ModalNovaEquipe({ aberto, onFechar, onCriada }) {
                 onChange={(e) => setNome(e.target.value)}
               />
             </div>
-            <div className="form-field" style={{ "--span": 4 }}>
-              <label>Data</label>
+            <div className="form-field" style={{ "--span": 3 }}>
+              <label>Data de cadastro</label>
               <input type="date" required value={data} onChange={(e) => setData(e.target.value)} />
             </div>
-            <div className="form-field" style={{ "--span": 4 }}>
+            <div className="form-field" style={{ "--span": 3 }}>
+              <label>Celular</label>
+              <input
+                required
+                inputMode="numeric"
+                placeholder="(00) 00000-0000"
+                minLength={15}
+                maxLength={15}
+                title="Celular com DDD: (24) 99999-9999"
+                style={{ textAlign: "center" }}
+                value={celular}
+                onChange={(e) => setCelular(aplicarMascara("telefone", e.target.value))}
+              />
+            </div>
+            <div className="form-field" style={{ "--span": 3 }}>
               <label>Veículo</label>
               <select required value={veiculoId} onChange={(e) => setVeiculoId(e.target.value)}>
                 <option value="">Selecione...</option>

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import CadastroPage from "../CadastroPage";
 import { apiBairros, apiCidades, apiPrefeituras, apiReclamacoes } from "../api";
+import ModalDesignarEquipe from "../ModalDesignarEquipe";
+import { formatarData } from "../formatos";
 import { buscarEnderecoPorCep } from "../viacep";
 
 const TIPOS_RECLAMACAO = [
@@ -26,6 +28,9 @@ export default function Reclamacoes() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [concluindoId, setConcluindoId] = useState(null);
+  const [designando, setDesignando] = useState(false);
+  // Muda ao salvar designações, remontando a lista pra recarregar a coluna "Designado".
+  const [versaoLista, setVersaoLista] = useState(0);
   const [cidades, setCidades] = useState([]);
   const [bairros, setBairros] = useState([]);
   const [prefeituras, setPrefeituras] = useState([]);
@@ -63,28 +68,22 @@ export default function Reclamacoes() {
     try {
       const end = await buscarEnderecoPorCep(valor);
 
-      let cidade = cidades.find(
-        (c) => c.nome.toLowerCase() === end.cidade.toLowerCase() && c.uf === end.uf
-      );
-      if (!cidade && end.cidade) {
-        cidade = await apiCidades.criar({ nome: end.cidade, uf: end.uf });
-        setCidades((prev) => [...prev, cidade]);
-      }
+      // A cidade vem da prefeitura (já preenchida no formulário), não do CEP:
+      // o CEP só completa logradouro e bairro, e o bairro é buscado/criado
+      // dentro da cidade da prefeitura.
+      const cidadeId = prefeituras.find((p) => p.id === prefeituraConfirmada)?.cidade_id;
 
       let bairro = null;
-      if (cidade && end.bairro) {
-        bairro = bairros.find(
-          (b) => b.nome.toLowerCase() === end.bairro.toLowerCase() && b.cidade_id === cidade.id
-        );
+      if (cidadeId && end.bairro) {
+        bairro = bairros.find((b) => b.nome.toLowerCase() === end.bairro.toLowerCase() && b.cidade_id === cidadeId);
         if (!bairro) {
-          bairro = await apiBairros.criar({ nome: end.bairro, cidade_id: cidade.id });
+          bairro = await apiBairros.criar({ nome: end.bairro, cidade_id: cidadeId });
           setBairros((prev) => [...prev, bairro]);
         }
       }
 
       atualizarCampos({
         logradouro: end.logradouro || "",
-        cidade_id: cidade?.id || "",
         bairro_id: bairro?.id || "",
       });
     } catch {
@@ -128,7 +127,7 @@ export default function Reclamacoes() {
 
   return (
     <CadastroPage
-      key={prefeituraConfirmada}
+      key={`${prefeituraConfirmada}-${versaoLista}`}
       titulo="Reclamações"
       modulo="reclamacoes"
       api={apiReclamacoes}
@@ -139,7 +138,7 @@ export default function Reclamacoes() {
         cidade_id: prefeituras.find((p) => p.id === prefeituraConfirmada)?.cidade_id || "",
       }}
       queryExtra={`?prefeitura_id=${prefeituraConfirmada}`}
-      classeTabela="tabela-compacta"
+      classeTabela="tabela-compacta cabecalho-35"
       acoesExtras={(item) => (
         <>
           <button
@@ -173,12 +172,17 @@ export default function Reclamacoes() {
       )}
       colunas={[
         { key: "codigo", label: "Código", width: 130 },
-        { key: "data_reclamacao", label: "Data" },
+        { key: "data_reclamacao", label: "Data_Rec", render: (item) => formatarData(item.data_reclamacao) },
         { key: "nome_reclamante", label: "Reclamante" },
         { key: "logradouro", label: "Logradouro", width: 260, render: (item) => item.logradouro || "—" },
         { key: "numero", label: "Número", render: (item) => item.numero || "—" },
         { key: "bairro_id", label: "Bairro", render: (item) => nomeBairro(item.bairro_id) },
         { key: "cidade_id", label: "Cidade", width: 160, render: (item) => nomeCidade(item.cidade_id) },
+        {
+          key: "designada",
+          label: "Designado",
+          render: (item) => (item.designada ? "Sim" : "Não"),
+        },
         {
           key: "status",
           label: "Status",
@@ -244,6 +248,7 @@ export default function Reclamacoes() {
           name: "cidade_id",
           label: "Cidade",
           type: "select",
+          required: true,
           size: 6,
           options: cidades.map((c) => ({ value: c.id, label: `${c.nome} - ${c.uf}` })),
         },
@@ -267,6 +272,25 @@ export default function Reclamacoes() {
         { name: "ponto_referencia", label: "Ponto de referência", type: "textarea", rows: 2, fullWidth: true },
         { name: "observacoes", label: "Observações", type: "textarea", rows: 3, fullWidth: true },
       ]}
+      acaoAposFiltro={
+        <>
+          <button type="button" className="btn btn-primary" onClick={() => setDesignando(true)}>
+            <i className="ti ti-users-group" aria-hidden="true" style={{ marginRight: 6 }} />
+            Designar equipe
+          </button>
+          {designando && (
+            <ModalDesignarEquipe
+              prefeitura={prefeituras.find((p) => p.id === prefeituraConfirmada)}
+              nomeBairro={nomeBairro}
+              nomeCidade={nomeCidade}
+              onFechar={(salvou) => {
+                setDesignando(false);
+                if (salvou) setVersaoLista((v) => v + 1);
+              }}
+            />
+          )}
+        </>
+      }
       filtroTopo={
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <button
@@ -280,6 +304,7 @@ export default function Reclamacoes() {
             <i className="ti ti-replace" aria-hidden="true" style={{ marginRight: 6 }} />
             Trocar prefeitura
           </button>
+
           <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>
             {prefeituras.find((p) => p.id === prefeituraConfirmada)?.nome}
           </span>
