@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.acesso import requer_admin
 from app.core.database import get_db
 from app.core.security import hash_senha
+from app.models.pessoal import Funcionario
 from app.models.usuario import PapelUsuario, Usuario
 
 router = APIRouter(prefix="/api/usuarios", tags=["usuarios"])
@@ -44,6 +45,21 @@ class UsuarioUpdate(BaseModel):
     senha: str | None = None
 
 
+def _validar_cpf_do_funcionario(cpf: str | None, db: Session) -> str:
+    """CPF é obrigatório e precisa ser o de um Funcionário cadastrado — é o
+    elo entre o login e a equipe (o app de campo acha a equipe do usuário por
+    ele), então não pode ser um valor livre."""
+    cpf = (cpf or "").strip()
+    if not cpf:
+        raise HTTPException(status_code=400, detail="Informe o CPF do usuário (funcionário cadastrado).")
+    if not db.query(Funcionario).filter(Funcionario.cpf == cpf).first():
+        raise HTTPException(
+            status_code=400,
+            detail="CPF não encontrado no cadastro de Funcionários. Cadastre o funcionário primeiro.",
+        )
+    return cpf
+
+
 # Toda a gestão de usuários é restrita a ADMIN (ou SUPERADMIN) — só quem já
 # tem acesso total pode criar outro usuário ou conceder permissão extra a
 # alguém. Mas um ADMIN comum não enxerga nem mexe em cadastro de SUPERADMIN —
@@ -62,12 +78,13 @@ def criar(req: UsuarioCreate, db: Session = Depends(get_db), usuario_logado: Usu
         raise HTTPException(status_code=403, detail="Só um SUPERADMIN pode criar outro usuário SUPERADMIN.")
     if db.query(Usuario).filter(Usuario.username == req.username).first():
         raise HTTPException(status_code=400, detail="Usuário já existe.")
-    if req.cpf and db.query(Usuario).filter(Usuario.cpf == req.cpf).first():
+    cpf = _validar_cpf_do_funcionario(req.cpf, db)
+    if db.query(Usuario).filter(Usuario.cpf == cpf).first():
         raise HTTPException(status_code=400, detail="Já existe um usuário com esse CPF.")
     usuario = Usuario(
         nome=req.nome,
         username=req.username,
-        cpf=req.cpf,
+        cpf=cpf,
         senha_hash=hash_senha(req.senha),
         papel=req.papel,
         permissoes_extra=req.permissoes_extra,
@@ -98,10 +115,13 @@ def atualizar(
         if db.query(Usuario).filter(Usuario.username == req.username, Usuario.id != usuario_id).first():
             raise HTTPException(status_code=400, detail="Já existe um usuário com esse login.")
         usuario.username = req.username
-    if req.cpf is not None and req.cpf != usuario.cpf:
-        if db.query(Usuario).filter(Usuario.cpf == req.cpf, Usuario.id != usuario_id).first():
-            raise HTTPException(status_code=400, detail="Já existe um usuário com esse CPF.")
-        usuario.cpf = req.cpf
+    # CPF obrigatório: se a edição não traz CPF e o usuário ainda não tem, recusa.
+    if req.cpf is not None or not usuario.cpf:
+        cpf = _validar_cpf_do_funcionario(req.cpf if req.cpf is not None else usuario.cpf, db)
+        if cpf != usuario.cpf:
+            if db.query(Usuario).filter(Usuario.cpf == cpf, Usuario.id != usuario_id).first():
+                raise HTTPException(status_code=400, detail="Já existe um usuário com esse CPF.")
+            usuario.cpf = cpf
     if req.papel is not None:
         usuario.papel = req.papel
     if req.ativo is not None:

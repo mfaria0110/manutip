@@ -103,3 +103,15 @@ def obter_vigente(prefeitura_id: uuid.UUID, data: date = Query(...), db: Session
         }
         for p in registros
     }
+
+
+@router.get("/contrato-vigente", dependencies=[Depends(requer_acesso("execucoes", "use"))])
+def obter_contrato_vigente(prefeitura_id: uuid.UUID, data: date = Query(...), db: Session = Depends(get_db)):
+    """Tipo (por ponto / por item) do contrato vigente da prefeitura na data —
+    o formulário de execução usa pra decidir se mostra os pontos por material."""
+    contrato = contrato_vigente(prefeitura_id, data, db)
+    return {
+        "contrato_id": str(contrato.id),
+        "numero_contrato": contrato.numero_contrato,
+        "tipo_contrato": contrato.tipo_contrato.value,
+    }

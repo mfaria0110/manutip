@@ -1,6 +1,7 @@
 import re
 import uuid
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
@@ -11,6 +12,7 @@ from app.core.acesso import requer_acesso, requer_admin
 from app.core.crud_simples import _mensagem_duplicidade
 from app.core.database import get_db
 from app.core.security import verificar_senha
+from app.models.designacao import DesignacaoReclamacao
 from app.models.execucao_reclamacao import ExecucaoReclamacao, ItemExecucaoMaterial
 from app.models.prefeitura import Prefeitura
 from app.models.reclamacao import Reclamacao
@@ -37,6 +39,9 @@ class ReclamacaoOut(BaseModel):
     # de campo) — a reclamação pode ter sido atendida sem alguém lembrar de
     # marcar como Concluída, daí o aviso + atalho na lista (ver listar()).
     tem_execucao: bool = False
+    # True se está designada a uma equipe para hoje ou para um dia futuro
+    # (roteiro vigente — designações de dias passados não contam).
+    designada: bool = False
 
     class Config:
         from_attributes = True
@@ -100,6 +105,9 @@ def _excluir_execucoes(reclamacao: Reclamacao, db: Session) -> None:
     """Exclui em cascata as execuções (e seus itens de material) da
     reclamação — sem isso, apagar uma reclamação já executada falharia
     por violação de FK."""
+    db.query(DesignacaoReclamacao).filter(DesignacaoReclamacao.reclamacao_id == reclamacao.id).delete(
+        synchronize_session=False
+    )
     execucao_ids = [
         e.id for e in db.query(ExecucaoReclamacao.id).filter(ExecucaoReclamacao.reclamacao_id == reclamacao.id)
     ]
@@ -110,6 +118,11 @@ def _excluir_execucoes(reclamacao: Reclamacao, db: Session) -> None:
         db.query(ExecucaoReclamacao).filter(ExecucaoReclamacao.id.in_(execucao_ids)).delete(
             synchronize_session=False
         )
+
+
+def _hoje_brasil() -> date:
+    """Hoje no fuso de Brasília (o servidor roda em UTC: à noite já seria amanhã)."""
+    return datetime.now(ZoneInfo("America/Sao_Paulo")).date()
 
 
 router = APIRouter(prefix="/api/reclamacoes", tags=["reclamacoes"])
@@ -128,16 +141,28 @@ def listar(
         query = query.filter(Reclamacao.status == status)
     reclamacoes = query.order_by(Reclamacao.data_reclamacao.desc()).all()
 
+    ids = [r.id for r in reclamacoes]
+    # "Já atendida": só conta execução com material lançado — execução vazia
+    # (todos os itens excluídos) não atende a reclamação.
     ids_com_execucao = {
         rid
         for (rid,) in db.query(ExecucaoReclamacao.reclamacao_id)
-        .filter(ExecucaoReclamacao.reclamacao_id.in_([r.id for r in reclamacoes]))
+        .join(ItemExecucaoMaterial, ItemExecucaoMaterial.execucao_id == ExecucaoReclamacao.id)
+        .filter(ExecucaoReclamacao.reclamacao_id.in_(ids))
         .distinct()
     }
+    ids_designadas = {
+        rid
+        for (rid,) in db.query(DesignacaoReclamacao.reclamacao_id)
+        .filter(DesignacaoReclamacao.reclamacao_id.in_(ids), DesignacaoReclamacao.data >= _hoje_brasil())
+        .distinct()
+    }
+
     saida = []
     for r in reclamacoes:
         item = ReclamacaoOut.model_validate(r)
         item.tem_execucao = r.id in ids_com_execucao
+        item.designada = r.id in ids_designadas
         saida.append(item)
     return saida
 

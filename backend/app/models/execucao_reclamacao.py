@@ -1,7 +1,7 @@
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, time
 
-from sqlalchemy import Date, DateTime, ForeignKey, Numeric, String, Text
+from sqlalchemy import Date, DateTime, ForeignKey, Numeric, String, Text, Time
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -22,6 +22,9 @@ class ExecucaoReclamacao(TimestampMixin, Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     reclamacao_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("reclamacoes.id"), nullable=False)
     data_execucao: Mapped[date] = mapped_column(Date, nullable=False)
+    # Hora do atendimento — o app de campo grava a hora real; lançamentos
+    # feitos pelo sistema ficam 00:00 (editável).
+    hora_execucao: Mapped[time] = mapped_column(Time, nullable=False, default=time(0, 0), server_default="00:00:00")
     equipe_dia_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("equipes_dia.id"))
     observacoes: Mapped[str | None] = mapped_column(Text)
     # Total de pontos da execução — calculado automaticamente como a soma de

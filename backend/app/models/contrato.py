@@ -15,6 +15,15 @@ class CategoriaPreco(str, enum.Enum):
     OBRAS = "OBRAS"
 
 
+class TipoContrato(str, enum.Enum):
+    """Como o contrato mede a produção: POR_PONTO conta 1 ponto por
+    atendimento (poste), sem olhar os materiais; POR_ITEM soma o peso em
+    pontos de cada material lançado (tabela "Pontos por material")."""
+
+    POR_PONTO = "POR_PONTO"
+    POR_ITEM = "POR_ITEM"
+
+
 class Contrato(TimestampMixin, Base):
     """Contrato entre a empresa prestadora e uma prefeitura.
 
@@ -29,6 +38,9 @@ class Contrato(TimestampMixin, Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     prefeitura_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("prefeituras.id"), nullable=False)
     numero_contrato: Mapped[str | None] = mapped_column(String(50))
+    tipo_contrato: Mapped[TipoContrato] = mapped_column(
+        Enum(TipoContrato), nullable=False, default=TipoContrato.POR_ITEM, server_default=TipoContrato.POR_ITEM.value
+    )
     data_inicio: Mapped[date] = mapped_column(Date, nullable=False)
     data_fim: Mapped[date | None] = mapped_column(Date)
     ativo: Mapped[bool] = mapped_column(default=True)

@@ -20,6 +20,18 @@ from app.core.acesso import requer_acesso, requer_admin
 from app.core.database import get_db
 
 
+# Nome do campo único como o usuário conhece (em vez do nome da coluna).
+_ROTULOS_CAMPOS_UNICOS = {
+    "cpf": "o CPF",
+    "matricula": "a matrícula",
+    "codigo": "o código",
+    "placa": "a placa",
+    "nome": "o nome",
+    "username": "o login",
+    "sigla": "a sigla",
+}
+
+
 def _mensagem_duplicidade(erro: IntegrityError) -> str:
     """Traduz a violação de unicidade do Postgres (ex.: "Key (cpf)=(123)
     already exists.") numa mensagem amigável, sem expor o nome da coluna/
@@ -32,7 +44,8 @@ def _mensagem_duplicidade(erro: IntegrityError) -> str:
     m = re.search(r"(?:Key|Chave) \((\w+)\)=\(([^)]*)\)", texto)
     if m:
         campo, valor = m.group(1), m.group(2)
-        return f"Já existe um registro com {campo} = \"{valor}\"."
+        rotulo = _ROTULOS_CAMPOS_UNICOS.get(campo, campo)
+        return f"Já existe um registro com {rotulo} \"{valor}\". Esse campo não pode se repetir."
     return "Já existe um registro com esses dados (campo único duplicado)."
 
 

@@ -50,3 +50,4 @@ __all__ = [
     "Usuario",
     "PapelUsuario",
 ]
+from app.models.designacao import DesignacaoReclamacao

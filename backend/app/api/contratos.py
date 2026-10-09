@@ -4,13 +4,14 @@ from datetime import date
 from pydantic import BaseModel
 
 from app.core.crud_simples import crud_simples
-from app.models.contrato import CategoriaPreco, Contrato, PrecoPonto
+from app.models.contrato import CategoriaPreco, Contrato, PrecoPonto, TipoContrato
 
 
 class ContratoOut(BaseModel):
     id: uuid.UUID
     prefeitura_id: uuid.UUID
     numero_contrato: str | None
+    tipo_contrato: TipoContrato
     data_inicio: date
     data_fim: date | None
     ativo: bool
@@ -23,6 +24,7 @@ class ContratoOut(BaseModel):
 class ContratoCreate(BaseModel):
     prefeitura_id: uuid.UUID
     numero_contrato: str | None = None
+    tipo_contrato: TipoContrato = TipoContrato.POR_ITEM
     data_inicio: date
     data_fim: date | None = None
     observacoes: str | None = None
@@ -30,6 +32,7 @@ class ContratoCreate(BaseModel):
 
 class ContratoUpdate(BaseModel):
     numero_contrato: str | None = None
+    tipo_contrato: TipoContrato | None = None
     data_inicio: date | None = None
     data_fim: date | None = None
     ativo: bool | None = None

@@ -9,6 +9,7 @@ from app.api import (
     categorias_material,
     cidades,
     contratos,
+    designacoes,
     equipes_dia,
     execucoes_reclamacao,
     funcionarios,
@@ -42,6 +43,7 @@ app.include_router(veiculos.router)
 app.include_router(funcionarios.router)
 app.include_router(reclamacoes.router)
 app.include_router(equipes_dia.router)
+app.include_router(designacoes.router)
 app.include_router(execucoes_reclamacao.router)
 app.include_router(relatorios.router)
 
@@ -61,6 +63,13 @@ _MENSAGENS_ERRO_VALIDACAO = {
     "bool_parsing": "deve ser verdadeiro ou falso",
     "bool_type": "deve ser verdadeiro ou falso",
     "uuid_parsing": "deve ser um identificador válido",
+    # Campo de seleção (cargo, veículo...) enviado vazio.
+    "uuid_type": "é obrigatório: selecione uma das opções da lista",
+    "date_type": "deve ser uma data",
+    "time_parsing": "deve ser uma hora válida",
+    "time_type": "deve ser uma hora",
+    "string_pattern_mismatch": "está em formato inválido",
+    "extra_forbidden": "não é permitido",
     "date_parsing": "deve ser uma data válida",
     "datetime_parsing": "deve ser uma data/hora válida",
     "greater_than": "deve ser maior que o mínimo permitido",
@@ -71,12 +80,38 @@ _MENSAGENS_ERRO_VALIDACAO = {
 }
 
 
+# Nome amigável dos campos de seleção na mensagem (em vez do nome técnico).
+_NOMES_CAMPOS = {
+    "cargo_id": "Cargo",
+    "matricula": "Matrícula",
+    "cpf": "CPF",
+    "veiculo_id": "Veículo",
+    "prefeitura_id": "Prefeitura",
+    "cidade_id": "Cidade",
+    "bairro_id": "Bairro",
+    "material_id": "Material",
+    "equipe_dia_id": "Equipe",
+    "funcionario_id": "Funcionário",
+    "reclamacao_id": "Reclamação",
+    "contrato_id": "Contrato",
+    "categoria": "Categoria",
+    "tipo_contrato": "Tipo de contrato",
+    "data_cadastro": "Data de cadastro",
+    "data_reclamacao": "Data",
+    "data_execucao": "Data da execução",
+}
+
+
 @app.exception_handler(RequestValidationError)
 async def erro_validacao_em_portugues(request: Request, exc: RequestValidationError):
     mensagens = []
     for erro in exc.errors():
         campo = erro["loc"][-1] if erro["loc"] else "campo"
+        campo = _NOMES_CAMPOS.get(campo, campo)
         texto = _MENSAGENS_ERRO_VALIDACAO.get(erro["type"], erro.get("msg", "valor inválido"))
+        # Validadores próprios (ValueError) já trazem a mensagem em português.
+        if erro["type"] == "value_error" and erro.get("ctx", {}).get("error"):
+            texto = str(erro["ctx"]["error"])
         mensagens.append(f'Campo "{campo}": {texto}.')
     return JSONResponse(status_code=422, content={"detail": " ".join(mensagens)})
 

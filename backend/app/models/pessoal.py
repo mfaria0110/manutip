@@ -38,14 +38,28 @@ class Veiculo(TimestampMixin, Base):
 
 
 class EquipeDia(TimestampMixin, Base):
-    """Composição da equipe para um dia específico: membros + veículo."""
+    """Equipe cadastrada: nome, celular, veículo e membros. Não é mais "do
+    dia": a equipe é permanente e `data_cadastro` só registra quando foi
+    cadastrada (o roteiro de cada dia fica em DesignacaoReclamacao). O nome da
+    tabela/classe continua `equipes_dia`/EquipeDia por herança."""
 
     __tablename__ = "equipes_dia"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     nome: Mapped[str | None] = mapped_column(String(50))
-    data: Mapped[date] = mapped_column(Date, nullable=False)
+    data_cadastro: Mapped[date] = mapped_column(Date, nullable=False)
     veiculo_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("veiculos.id"))
+    # Celular de contato da equipe, no formato "(DD) 9XXXX-XXXX" — usado pra
+    # enviar o roteiro do dia por WhatsApp. Obrigatório nos cadastros feitos
+    # pelo sistema; equipes antigas (e as criadas pelo app de campo) podem
+    # estar sem.
+    celular: Mapped[str | None] = mapped_column(String(15))
+    # Equipe inativa deixa de aparecer pra designar/lançar execução (some do
+    # dia a dia sem apagar o histórico). Troca de veículo/membros = equipe nova.
+    ativa: Mapped[bool] = mapped_column(default=True, server_default="true")
+    # Equipe inativa deixa de aparecer pra designar/lançar execução (some do
+    # dia a dia sem apagar o histórico). Troca de veículo/membros = equipe nova.
+    ativa: Mapped[bool] = mapped_column(default=True, server_default="true")
     # Marcado pelo app de campo (perfil OPERACIONAL) ao confirmar a
     # composição do dia. Não trava edição no backend — só sinaliza pro
     # front parar de oferecer troca de membros depois de validada.
@@ -53,6 +67,11 @@ class EquipeDia(TimestampMixin, Base):
 
     veiculo: Mapped["Veiculo | None"] = relationship()
     membros: Mapped[list["EquipeMembro"]] = relationship(back_populates="equipe_dia")
+
+    @property
+    def data(self) -> date:
+        """Nome antigo de `data_cadastro` — o app de campo ainda lê/envia `data`."""
+        return self.data_cadastro
 
 
 class EquipeMembro(Base):
