@@ -1,282 +1,131 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  apiCargos,
-  apiEquipesDia,
-  apiFuncionarios,
-  apiVeiculos,
-  proximoNomeEquipe,
-  validarEquipe,
-} from "../api";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { apiDesignacoes, apiEquipesDia, apiVeiculos } from "../api";
 import { useAcesso } from "../AcessoContext";
+import { formatarData, hojeLocal } from "../datas";
 import { useFluxo } from "../FluxoContext";
-import { useOffline } from "../offline/OfflineContext";
-import { comCache, salvarCache } from "../offline/cache";
-import { enfileirar } from "../offline/fila";
+import { comCache } from "../offline/cache";
 import Topo from "../Topo";
 
-const hoje = () => new Date().toISOString().slice(0, 10);
+const soDigitos = (v) => String(v || "").replace(/\D/g, "");
 
+/** Descobre a equipe do usuário logado pelo CPF (elo entre o login e o
+ * cadastro de Funcionário, que é membro das equipes):
+ *  1. equipe ativa dele que tem reclamações designadas hoje (roteiro) — segue
+ *     direto pra escolha da prefeitura;
+ *  2. sem roteiro: ele escolhe entre as equipes ativas de que faz parte.
+ * Não há mais cadastro/validação de equipe aqui: a equipe é cadastrada e
+ * designada pelo escritório. */
 export default function Equipe() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // "Trocar equipe" (voltando da tela de prefeitura) não escolhe sozinho.
+  const forcarEscolha = searchParams.get("escolher") === "1";
   const { perfil } = useAcesso();
   const { definirEquipe } = useFluxo();
-  const { online, atualizarContagem } = useOffline();
 
-  const [equipes, setEquipes] = useState([]);
-  const [funcionarios, setFuncionarios] = useState([]);
+  const [minhasEquipes, setMinhasEquipes] = useState([]);
+  const [designacoes, setDesignacoes] = useState([]);
   const [veiculos, setVeiculos] = useState([]);
-  const [cargos, setCargos] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
+  const hoje = hojeLocal();
 
-  const [equipeAtual, setEquipeAtual] = useState(null); // objeto completo em edição
-  const [veiculoId, setVeiculoId] = useState("");
-  const [membros, setMembros] = useState([]); // [{funcionario_id, papel}]
-  const [novoMembroId, setNovoMembroId] = useState("");
-  const [salvando, setSalvando] = useState(false);
+  function seguir(equipeId) {
+    definirEquipe(equipeId);
+    navigate("/prefeitura", { replace: true });
+  }
 
   useEffect(() => {
     Promise.all([
       comCache("equipesDia", () => apiEquipesDia.listar()),
-      comCache("funcionarios", () => apiFuncionarios.listar()),
+      comCache(`designacoes:${hoje}`, () => apiDesignacoes.listar(`?data=${hoje}`)),
       comCache("veiculos", () => apiVeiculos.listar()),
-      comCache("cargos", () => apiCargos.listar()),
     ])
-      .then(([eq, func, vei, carg]) => {
-        setEquipes(eq.dados.filter((e) => e.data === hoje()));
-        setFuncionarios(func.dados);
+      .then(([eq, des, vei]) => {
+        const meuCpf = soDigitos(perfil?.cpf);
+        const minhas = eq.dados.filter(
+          (e) =>
+            e.ativa !== false &&
+            !!meuCpf &&
+            e.membros.some((m) => soDigitos(m.funcionario_cpf) === meuCpf)
+        );
+        const comRoteiro = minhas.filter((e) => des.dados.some((d) => d.equipe_dia_id === e.id));
+        setMinhasEquipes(minhas);
+        setDesignacoes(des.dados);
         setVeiculos(vei.dados);
-        setCargos(carg.dados);
+        if (!forcarEscolha && comRoteiro.length === 1) {
+          seguir(comRoteiro[0].id);
+          return;
+        }
       })
       .catch((e) => setErro(e.message))
       .finally(() => setCarregando(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function abrirEquipe(eq) {
-    setEquipeAtual(eq);
-    setVeiculoId(eq.veiculo_id || "");
-    setMembros(eq.membros.map((m) => ({ funcionario_id: m.funcionario_id, papel: m.papel || "" })));
-  }
-
-  async function criarNova() {
-    if (!online) {
-      setErro("Não é possível criar uma equipe nova sem internet. Conecte-se e tente de novo.");
-      return;
-    }
-    setErro("");
-    try {
-      const { nome } = await proximoNomeEquipe();
-      const nova = await apiEquipesDia.criar({ nome, data: hoje(), veiculo_id: null, membros: [] });
-      const todas = [nova, ...equipes];
-      setEquipes(todas);
-      salvarCache("equipesDia", todas);
-      abrirEquipe(nova);
-    } catch (e) {
-      setErro(e.message);
-    }
-  }
-
-  const nomeCargo = (id) => cargos.find((c) => c.id === id)?.nome;
-  const nomeFuncionario = (id) => funcionarios.find((f) => f.id === id)?.nome || "—";
-  const matriculaFuncionario = (id) => funcionarios.find((f) => f.id === id)?.matricula;
   const nomeVeiculo = (id) => {
     const v = veiculos.find((x) => x.id === id);
-    return v ? `${v.placa} — ${v.modelo}` : null;
+    return v ? `${v.placa} — ${v.modelo}` : "—";
   };
-  const funcionariosDisponiveis = funcionarios.filter((f) => !membros.some((m) => m.funcionario_id === f.id));
-  // Identifica o próprio usuário logado entre os membros (pelo CPF, elo
-  // entre o login e o cadastro de Funcionário) pra nunca deixar ele se
-  // remover da equipe — os demais membros continuam livres pra trocar.
-  const souEu = (funcionarioId) =>
-    !!perfil?.cpf && funcionarios.find((f) => f.id === funcionarioId)?.cpf === perfil.cpf;
+  const qtdDesignadas = (equipeId) => designacoes.filter((d) => d.equipe_dia_id === equipeId).length;
 
-  function adicionarMembro() {
-    if (!novoMembroId) return;
-    const func = funcionarios.find((f) => f.id === novoMembroId);
-    setMembros((prev) => [...prev, { funcionario_id: novoMembroId, papel: nomeCargo(func?.cargo_id) || "" }]);
-    setNovoMembroId("");
-  }
-
-  function removerMembro(id) {
-    setMembros((prev) => prev.filter((m) => m.funcionario_id !== id));
-  }
-
-  // Monta localmente o que a equipe ficaria depois da composição salva —
-  // usado tanto pro caminho online (até a resposta do servidor chegar)
-  // quanto pro offline (onde a resposta do servidor não existe ainda).
-  function equipeComComposicaoLocal() {
-    return {
-      ...equipeAtual,
-      veiculo_id: veiculoId || null,
-      membros: membros.map((m, i) => ({ id: `local-${i}`, funcionario_id: m.funcionario_id, papel: m.papel || null })),
-    };
-  }
-
-  async function salvarComposicao() {
-    setSalvando(true);
-    setErro("");
-    const dados = {
-      veiculo_id: veiculoId || null,
-      membros: membros.map((m) => ({ funcionario_id: m.funcionario_id, papel: m.papel || null })),
-    };
-    try {
-      if (online) {
-        const atualizada = await apiEquipesDia.atualizar(equipeAtual.id, dados);
-        setEquipeAtual(atualizada);
-        const todas = equipes.map((e) => (e.id === atualizada.id ? atualizada : e));
-        setEquipes(todas);
-        salvarCache("equipesDia", todas);
-      } else {
-        await enfileirar("composicaoEquipe", { equipeId: equipeAtual.id, dados });
-        atualizarContagem();
-        const local = equipeComComposicaoLocal();
-        setEquipeAtual(local);
-        setEquipes((prev) => prev.map((e) => (e.id === local.id ? local : e)));
-      }
-    } catch (e) {
-      setErro(e.message);
-    } finally {
-      setSalvando(false);
-    }
-  }
-
-  async function validar() {
-    setSalvando(true);
-    setErro("");
-    try {
-      if (online) {
-        await apiEquipesDia.atualizar(equipeAtual.id, {
-          veiculo_id: veiculoId || null,
-          membros: membros.map((m) => ({ funcionario_id: m.funcionario_id, papel: m.papel || null })),
-        });
-        const validada = await validarEquipe(equipeAtual.id);
-        setEquipeAtual(validada);
-        setEquipes((prev) => prev.map((e) => (e.id === validada.id ? validada : e)));
-      } else {
-        const dados = {
-          veiculo_id: veiculoId || null,
-          membros: membros.map((m) => ({ funcionario_id: m.funcionario_id, papel: m.papel || null })),
-        };
-        await enfileirar("composicaoEquipe", { equipeId: equipeAtual.id, dados });
-        await enfileirar("validarEquipe", { equipeId: equipeAtual.id });
-        atualizarContagem();
-        const local = { ...equipeComComposicaoLocal(), validada_em: new Date().toISOString() };
-        setEquipeAtual(local);
-        setEquipes((prev) => prev.map((e) => (e.id === local.id ? local : e)));
-      }
-      // Fica na própria tela depois de validar — o usuário decide quando
-      // seguir pra escolha de prefeitura clicando em "Continuar".
-    } catch (e) {
-      setErro(e.message);
-    } finally {
-      setSalvando(false);
-    }
-  }
+  // Com mais de uma equipe com roteiro hoje (e sem forçar), só essas aparecem.
+  const comRoteiro = minhasEquipes.filter((e) => qtdDesignadas(e.id) > 0);
+  const lista = !forcarEscolha && comRoteiro.length > 1 ? comRoteiro : minhasEquipes;
+  const subtitulo = formatarData(hoje);
 
   if (carregando) {
     return (
       <div className="tela">
-        <Topo titulo="Equipe do dia" />
+        <Topo titulo="Equipe" subtitulo={subtitulo} />
         <div className="conteudo vazio">Carregando...</div>
-      </div>
-    );
-  }
-
-  if (equipeAtual) {
-    const jaValidada = !!equipeAtual.validada_em;
-    return (
-      <div className="tela">
-        <Topo titulo={equipeAtual.nome} subtitulo={hoje().split("-").reverse().join("/")} voltar={() => setEquipeAtual(null)} />
-        <div className="conteudo">
-          {erro && <p className="erro-msg">{erro}</p>}
-          {jaValidada && <div className="badge" style={{ marginBottom: 14 }}>Equipe validada</div>}
-
-          <div className="campo">
-            <label>Veículo</label>
-            <select value={veiculoId} onChange={(e) => setVeiculoId(e.target.value)}>
-              <option value="">Selecione...</option>
-              {veiculos.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.placa} — {v.modelo}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <label>Membros</label>
-          <div className="linha" style={{ marginBottom: 10 }}>
-            <select value={novoMembroId} onChange={(e) => setNovoMembroId(e.target.value)}>
-              <option value="">Adicionar funcionário...</option>
-              {funcionariosDisponiveis.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.nome}
-                </option>
-              ))}
-            </select>
-            <button type="button" className="btn btn-primario btn-pequeno" onClick={adicionarMembro} disabled={!novoMembroId}>
-              <i className="ti ti-plus" aria-hidden="true" />
-            </button>
-          </div>
-          {membros.length === 0 && <p className="cartao-sub">Nenhum membro adicionado.</p>}
-          {membros.map((m) => (
-            <div key={m.funcionario_id} className="cartao linha-entre" style={{ marginBottom: 8, padding: 12 }}>
-              <span>{nomeFuncionario(m.funcionario_id)}</span>
-              {!souEu(m.funcionario_id) && (
-                <button type="button" className="btn-perigo" style={{ border: "none", background: "none" }} onClick={() => removerMembro(m.funcionario_id)}>
-                  <i className="ti ti-trash" aria-hidden="true" />
-                </button>
-              )}
-            </div>
-          ))}
-
-          <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
-            <button type="button" className="btn btn-secundario" onClick={salvarComposicao} disabled={salvando}>
-              Salvar composição
-            </button>
-            <button type="button" className="btn btn-primario" onClick={jaValidada ? () => { definirEquipe(equipeAtual.id); navigate("/prefeitura"); } : validar} disabled={salvando}>
-              {jaValidada ? "Continuar" : salvando ? "Validando..." : "Validar equipe do dia"}
-            </button>
-          </div>
-        </div>
       </div>
     );
   }
 
   return (
     <div className="tela">
-      <Topo titulo="Equipe do dia" subtitulo={hoje().split("-").reverse().join("/")} />
+      <Topo titulo="Equipe" subtitulo={subtitulo} />
       <div className="conteudo">
         {erro && <p className="erro-msg">{erro}</p>}
-        {equipes.length === 0 && <p className="vazio">Nenhuma equipe cadastrada hoje ainda.</p>}
-        {equipes.map((eq) => (
-          <div key={eq.id} className="cartao cartao-toque" onClick={() => abrirEquipe(eq)}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="cartao-titulo">{eq.nome}</div>
-              <div className="cartao-sub">
-                {eq.membros.length} membro(s){eq.validada_em ? " · validada" : ""}
+
+        {!erro && !perfil?.cpf && (
+          <p className="vazio">Seu usuário não tem CPF cadastrado. Peça ao administrador para informar o seu CPF.</p>
+        )}
+        {!erro && !!perfil?.cpf && minhasEquipes.length === 0 && (
+          <p className="vazio">
+            Você não faz parte de nenhuma equipe ativa. Peça ao administrador para incluir você em uma equipe.
+          </p>
+        )}
+
+        {lista.length > 0 && (
+          <p className="cartao-sub" style={{ marginBottom: 10 }}>
+            {comRoteiro.length > 0 && !forcarEscolha
+              ? "Escolha a equipe do roteiro de hoje:"
+              : "Escolha a sua equipe de hoje:"}
+          </p>
+        )}
+        {lista.map((eq) => {
+          const qtd = qtdDesignadas(eq.id);
+          return (
+            <div key={eq.id} className="cartao cartao-toque" onClick={() => seguir(eq.id)}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="cartao-titulo">{eq.nome}</div>
+                <div className="cartao-sub">
+                  {qtd > 0 ? `${qtd} reclamação(ões) designada(s) para hoje` : "Sem reclamações designadas hoje"}
+                </div>
+                <div className="cartao-sub">
+                  <strong>Veículo:</strong> {nomeVeiculo(eq.veiculo_id)}
+                </div>
+                <div className="cartao-sub">
+                  <strong>Membros:</strong> {eq.membros.map((m) => m.funcionario_nome).join(", ") || "—"}
+                </div>
               </div>
-              <div className="cartao-sub">
-                <strong>Veículo:</strong> {nomeVeiculo(eq.veiculo_id) || "—"}
-              </div>
-              <div className="cartao-sub">
-                <strong>Membros:</strong>{" "}
-                {eq.membros.length === 0
-                  ? "—"
-                  : eq.membros
-                      .map((m) => {
-                        const matricula = matriculaFuncionario(m.funcionario_id);
-                        return `${nomeFuncionario(m.funcionario_id)}${matricula ? ` (${matricula})` : ""}`;
-                      })
-                      .join(", ")}
-              </div>
+              <i className="ti ti-chevron-right" aria-hidden="true" />
             </div>
-            <i className="ti ti-chevron-right" aria-hidden="true" />
-          </div>
-        ))}
-        <button type="button" className="btn btn-secundario" style={{ marginTop: 10 }} onClick={criarNova}>
-          <i className="ti ti-plus" aria-hidden="true" /> Nova equipe
-        </button>
+          );
+        })}
       </div>
     </div>
   );

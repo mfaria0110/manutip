@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiBairros, apiCidades, apiReclamacoes } from "../api";
+import { apiBairros, apiCidades, apiDesignacoes, apiReclamacoes } from "../api";
+import { hojeLocal } from "../datas";
 import { useFluxo } from "../FluxoContext";
 import { comCache } from "../offline/cache";
 import Topo from "../Topo";
 
 export default function Reclamacoes() {
   const navigate = useNavigate();
-  const { prefeituraId } = useFluxo();
+  const { prefeituraId, equipeDiaId } = useFluxo();
   const [lista, setLista] = useState([]);
   const [cidades, setCidades] = useState([]);
   const [bairros, setBairros] = useState([]);
@@ -15,36 +16,46 @@ export default function Reclamacoes() {
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
+    if (!equipeDiaId) {
+      navigate("/equipe", { replace: true });
+      return;
+    }
     if (!prefeituraId) {
       navigate("/prefeitura", { replace: true });
       return;
     }
+    const hoje = hojeLocal();
     Promise.all([
       comCache(`reclamacoesAbertas:${prefeituraId}`, () =>
         apiReclamacoes.listar(`?prefeitura_id=${prefeituraId}&status=ABERTA`)
       ),
+      // Roteiro de hoje da equipe: só as reclamações designadas a ela aparecem.
+      comCache(`designacoes:${equipeDiaId}:${hoje}`, () =>
+        apiDesignacoes.listar(`?data=${hoje}&equipe_dia_id=${equipeDiaId}`)
+      ),
       comCache("cidades", () => apiCidades.listar()),
       comCache("bairros", () => apiBairros.listar()),
     ])
-      .then(([r, c, b]) => {
-        setLista(r.dados);
+      .then(([r, d, c, b]) => {
+        const designadas = new Set(d.dados.map((x) => x.reclamacao_id));
+        setLista(r.dados.filter((rec) => designadas.has(rec.id)));
         setCidades(c.dados);
         setBairros(b.dados);
       })
       .catch((e) => setErro(e.message))
       .finally(() => setCarregando(false));
-  }, [prefeituraId, navigate]);
+  }, [prefeituraId, equipeDiaId, navigate]);
 
   const nomeCidade = (id) => cidades.find((c) => c.id === id)?.nome || "—";
   const nomeBairro = (id) => bairros.find((b) => b.id === id)?.nome || "—";
 
   return (
     <div className="tela">
-      <Topo titulo="Reclamações abertas" subtitulo={`${lista.length} encontrada(s)`} voltar={() => navigate("/prefeitura")} />
+      <Topo titulo="Reclamações da equipe" subtitulo={`${lista.length} designada(s) para hoje`} voltar={() => navigate("/prefeitura")} />
       <div className="conteudo">
         {erro && <p className="erro-msg">{erro}</p>}
         {carregando && <div className="vazio">Carregando...</div>}
-        {!carregando && lista.length === 0 && <div className="vazio">Nenhuma reclamação aberta nessa prefeitura.</div>}
+        {!carregando && lista.length === 0 && <div className="vazio">Nenhuma reclamação designada para a sua equipe nesta prefeitura hoje.</div>}
         {lista.map((r) => (
           <div
             key={r.id}

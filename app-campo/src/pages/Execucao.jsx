@@ -10,6 +10,7 @@ import {
   obterFotoURL,
 } from "../api";
 import { useFluxo } from "../FluxoContext";
+import { hojeLocal } from "../datas";
 import { useOffline } from "../offline/OfflineContext";
 import { comCache, lerCache, salvarCache } from "../offline/cache";
 import { enfileirar } from "../offline/fila";
@@ -26,7 +27,7 @@ function novoItem() {
   };
 }
 
-const hoje = () => new Date().toISOString().slice(0, 10);
+const hoje = hojeLocal;
 
 export default function Execucao() {
   const { id: reclamacaoId } = useParams();

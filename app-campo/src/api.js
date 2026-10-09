@@ -83,6 +83,10 @@ export const apiPotenciasLampada = crud("/potencias-lampada");
 export const apiReclamacoes = crud("/reclamacoes");
 
 export const apiEquipesDia = crud("/equipes");
+// Roteiro do dia: reclamações designadas a cada equipe (feito pelo escritório).
+export const apiDesignacoes = {
+  listar: (query = "") => req(`/designacoes${query}`),
+};
 export function proximoNomeEquipe() {
   return req("/equipes/proximo-nome");
 }

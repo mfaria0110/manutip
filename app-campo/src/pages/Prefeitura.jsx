@@ -30,7 +30,7 @@ export default function Prefeitura() {
 
   return (
     <div className="tela">
-      <Topo titulo="Prefeitura" subtitulo="Escolha onde vai trabalhar hoje" voltar={() => navigate("/equipe")} />
+      <Topo titulo="Prefeitura" subtitulo="Escolha onde vai trabalhar hoje" voltar={() => navigate("/equipe?escolher=1")} />
       <div className="conteudo">
         {erro && <p className="erro-msg">{erro}</p>}
         {carregando && <div className="vazio">Carregando...</div>}

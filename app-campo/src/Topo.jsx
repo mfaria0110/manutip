@@ -38,9 +38,20 @@ export default function Topo({ titulo, subtitulo, voltar, acao }) {
           type="button"
           onClick={sair}
           title="Sair"
-          style={{ background: "none", border: "none", color: "#fff", padding: 0 }}
+          style={{
+            background: "none",
+            border: "none",
+            color: "#fff",
+            padding: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            fontSize: 14,
+            fontWeight: 600,
+          }}
         >
           <i className="ti ti-logout" style={{ fontSize: 20 }} aria-hidden="true" />
+          Sair
         </button>
       </div>
     </div>

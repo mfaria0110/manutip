@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { apiBairros, apiCidades, apiReclamacoes } from "../api";
 import { buscarEnderecoPorCep } from "../viacep";
 import { useFluxo } from "../FluxoContext";
+import { hojeLocal } from "../datas";
 import { useOffline } from "../offline/OfflineContext";
 import { comCache } from "../offline/cache";
 import Topo from "../Topo";
 
-const hoje = () => new Date().toISOString().slice(0, 10);
+const hoje = hojeLocal;
 
 export default function NovaReclamacao() {
   const navigate = useNavigate();
