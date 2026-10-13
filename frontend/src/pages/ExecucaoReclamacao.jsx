@@ -105,6 +105,8 @@ export default function ExecucaoReclamacao() {
 
   const [itemExcluindo, setItemExcluindo] = useState(null);
   const [apagandoItem, setApagandoItem] = useState(false);
+  const [grupoExcluindo, setGrupoExcluindo] = useState(null); // execuções (sem material) a excluir
+  const [apagandoGrupo, setApagandoGrupo] = useState(false);
   const [validando, setValidando] = useState(false);
 
   const [modalReabrirAberto, setModalReabrirAberto] = useState(false);
@@ -395,6 +397,24 @@ export default function ExecucaoReclamacao() {
     }
   }
 
+  // Exclui as execuções vazias (sem nenhum material) de um mesmo dia e equipe.
+  async function confirmarExclusaoGrupo() {
+    setApagandoGrupo(true);
+    setErroLista("");
+    try {
+      for (const ex of grupoExcluindo) {
+        await apiExecucoesReclamacao.excluir(ex.id);
+      }
+      setGrupoExcluindo(null);
+      carregar();
+    } catch (err) {
+      setErroLista(err.message);
+      setGrupoExcluindo(null);
+    } finally {
+      setApagandoGrupo(false);
+    }
+  }
+
   async function confirmarExclusaoItem() {
     setApagandoItem(true);
     setErroLista("");
@@ -595,6 +615,7 @@ export default function ExecucaoReclamacao() {
                   {formatarData(grupo.data)} {formatarHora(grupo.execucoes[0].hora_execucao) || "00:00"}
                   {grupo.equipeId ? ` — ${nomeEquipe(grupo.equipeId)}` : ""}
                 </strong>
+                <div style={{ display: "flex", gap: 4 }}>
                 <button
                   className="btn btn-ghost"
                   onClick={() => abrirEdicaoExecucao(grupo.execucoes[0])}
@@ -612,6 +633,28 @@ export default function ExecucaoReclamacao() {
                 >
                   <i className="ti ti-edit" aria-hidden="true" />
                 </button>
+                {/* Execução sem nenhum material: pode ser excluída (só administrador). */}
+                {ehAdmin && grupo.execucoes.every((ex) => ex.itens.length === 0) && (
+                  <button
+                    className="btn btn-ghost"
+                    onClick={() => setGrupoExcluindo(grupo.execucoes)}
+                    disabled={bloqueado}
+                    title="Excluir esta execução (não tem materiais)"
+                    style={{
+                      fontSize: 22,
+                      width: 38,
+                      height: 38,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: 0,
+                      color: "var(--danger)",
+                    }}
+                  >
+                    <i className="ti ti-trash" aria-hidden="true" />
+                  </button>
+                )}
+                </div>
               </div>
               {grupo.execucoes.length === 1 && grupo.execucoes[0].observacoes && (
                 <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 6 }}>
@@ -1007,6 +1050,15 @@ export default function ExecucaoReclamacao() {
         aberto={modalMaterialIdx !== null}
         onFechar={() => setModalMaterialIdx(null)}
         onCriado={materialCriado}
+      />
+
+      <ConfirmDialog
+        aberto={!!grupoExcluindo}
+        titulo="Excluir execução"
+        mensagem="Excluir esta execução, que não tem materiais lançados? Essa ação não pode ser desfeita."
+        confirmando={apagandoGrupo}
+        onConfirmar={confirmarExclusaoGrupo}
+        onCancelar={() => setGrupoExcluindo(null)}
       />
 
       <ConfirmDialog
