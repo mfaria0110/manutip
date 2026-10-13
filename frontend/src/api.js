@@ -124,7 +124,12 @@ export async function baixarRoteiroExcel(prefeituraId, data, equipeDiaId, reclam
   const resp = await fetch(`${BASE}/designacoes/excel`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...(t ? { Authorization: `Bearer ${t}` } : {}) },
-    body: JSON.stringify({ prefeitura_id: prefeituraId, data, itens }),
+    body: JSON.stringify({
+      prefeitura_id: prefeituraId,
+      data,
+      equipe_dia_id: equipeDiaId,
+      reclamacao_ids: reclamacaoIds,
+    }),
   });
   if (!resp.ok) throw new Error("Não foi possível gerar a planilha. Tente novamente.");
   const url = URL.createObjectURL(await resp.blob());
