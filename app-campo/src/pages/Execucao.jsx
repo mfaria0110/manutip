@@ -29,6 +29,27 @@ function novoItem() {
 
 const hoje = hojeLocal;
 
+// Mensagem em português (e com o caminho pra liberar a permissão) para cada
+// motivo de falha do GPS: 1 = permissão negada, 2 = sem sinal, 3 = demorou.
+function mensagemErroGps(err) {
+  if (err?.code === 1) {
+    return (
+      "A localização está bloqueada para este site. " +
+      "iPhone: Ajustes > Privacidade e Segurança > Serviços de Localização > Safari (Sites) > \"Ao Usar o App\"; " +
+      "depois, no Safari, toque em \"aA\" > Ajustes do Site > Localização > Permitir. " +
+      "Android: toque no cadeado ao lado do endereço > Permissões > Localização > Permitir. " +
+      "Depois toque em Capturar de novo."
+    );
+  }
+  if (err?.code === 2) {
+    return "Sem sinal de GPS no momento. Vá para um local aberto e toque em Capturar de novo.";
+  }
+  if (err?.code === 3) {
+    return "O GPS demorou para responder. Toque em Capturar de novo.";
+  }
+  return `Não foi possível capturar a localização: ${err?.message || "erro desconhecido"}`;
+}
+
 export default function Execucao() {
   const { id: reclamacaoId } = useParams();
   const navigate = useNavigate();
@@ -170,7 +191,7 @@ export default function Execucao() {
         setCapturandoGps(false);
       },
       (err) => {
-        setErro(`Não foi possível capturar a localização: ${err.message}`);
+        setErro(mensagemErroGps(err));
         setCapturandoGps(false);
       },
       { enableHighAccuracy: true, timeout: 15000 }
