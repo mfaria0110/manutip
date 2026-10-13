@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiBairros, apiCidades, apiDesignacoes, apiReclamacoes } from "../api";
+import { apiBairros, apiCidades, apiDesignacoes, apiEquipesDia, apiReclamacoes, apiVeiculos } from "../api";
 import { hojeLocal } from "../datas";
 import { useFluxo } from "../FluxoContext";
 import { comCache } from "../offline/cache";
@@ -12,6 +12,8 @@ export default function Reclamacoes() {
   const [lista, setLista] = useState([]);
   const [cidades, setCidades] = useState([]);
   const [bairros, setBairros] = useState([]);
+  const [equipe, setEquipe] = useState(null); // equipe escolhida (nome, viatura e membros)
+  const [veiculos, setVeiculos] = useState([]);
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(true);
 
@@ -35,8 +37,12 @@ export default function Reclamacoes() {
       ),
       comCache("cidades", () => apiCidades.listar()),
       comCache("bairros", () => apiBairros.listar()),
+      comCache("equipesDia", () => apiEquipesDia.listar()),
+      comCache("veiculos", () => apiVeiculos.listar()),
     ])
-      .then(([r, d, c, b]) => {
+      .then(([r, d, c, b, eqs, vs]) => {
+        setEquipe(eqs.dados.find((e) => e.id === equipeDiaId) || null);
+        setVeiculos(vs.dados);
         const designadas = new Set(d.dados.map((x) => x.reclamacao_id));
         setLista(r.dados.filter((rec) => designadas.has(rec.id)));
         setCidades(c.dados);
@@ -54,6 +60,21 @@ export default function Reclamacoes() {
       <Topo titulo="Reclamações da equipe" subtitulo={`${lista.length} designada(s) para hoje`} voltar={() => navigate("/prefeitura")} />
       <div className="conteudo">
         {erro && <p className="erro-msg">{erro}</p>}
+        {equipe && (
+          <div className="cartao" style={{ marginBottom: 12, padding: 12 }}>
+            <div className="cartao-titulo">Equipe {equipe.nome}</div>
+            <div className="cartao-sub">
+              <strong>Viatura:</strong>{" "}
+              {(() => {
+                const v = veiculos.find((x) => x.id === equipe.veiculo_id);
+                return v ? `${v.placa} — ${v.modelo}` : "—";
+              })()}
+            </div>
+            <div className="cartao-sub">
+              <strong>Componentes:</strong> {equipe.membros.map((m) => m.funcionario_nome).join(", ") || "—"}
+            </div>
+          </div>
+        )}
         {carregando && <div className="vazio">Carregando...</div>}
         {!carregando && lista.length === 0 && <div className="vazio">Nenhuma reclamação designada para a sua equipe nesta prefeitura hoje.</div>}
         {lista.map((r) => (
