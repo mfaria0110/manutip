@@ -423,7 +423,8 @@ export default function ExecucaoReclamacao() {
     setApagandoItem(true);
     setErroLista("");
     try {
-      await apiItensExecucao.excluir(itemExcluindo.id);
+      // Se for o último material e houver foto, a exclusão leva as fotos junto (já confirmado na tela).
+      await apiItensExecucao.excluir(itemExcluindo.id, ultimoMaterialTravado);
       setItemExcluindo(null);
       carregar();
     } catch (err) {
@@ -708,10 +709,10 @@ export default function ExecucaoReclamacao() {
                                   <button
                                     className="btn btn-ghost"
                                     onClick={() => setItemExcluindo(it)}
-                                    disabled={bloqueado || ultimoMaterialTravado}
+                                    disabled={bloqueado}
                                     title={
                                       ultimoMaterialTravado
-                                        ? "Último material: não pode ser excluído porque a reclamação tem foto"
+                                        ? "Último material: só pode ser excluído junto com as fotos"
                                         : "Excluir"
                                     }
                                     style={{ color: "var(--danger)" }}
@@ -1076,8 +1077,13 @@ export default function ExecucaoReclamacao() {
 
       <ConfirmDialog
         aberto={!!itemExcluindo}
-        titulo="Excluir material"
-        mensagem="Excluir este material lançado na execução? Essa ação não pode ser desfeita."
+        titulo={ultimoMaterialTravado ? "Excluir material e fotos" : "Excluir material"}
+        mensagem={
+          ultimoMaterialTravado
+            ? `Este é o último material da reclamação e ela tem ${totalFotosReclamacao} foto(s) anexada(s). ` +
+              "Ele só pode ser excluído junto com as fotos, que também serão apagadas. Essa ação não pode ser desfeita."
+            : "Excluir este material lançado na execução? Essa ação não pode ser desfeita."
+        }
         confirmando={apagandoItem}
         onConfirmar={confirmarExclusaoItem}
         onCancelar={() => setItemExcluindo(null)}

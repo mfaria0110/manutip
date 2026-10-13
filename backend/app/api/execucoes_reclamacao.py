@@ -223,7 +223,7 @@ def _qtd_itens_da_reclamacao(reclamacao_id: uuid.UUID, db: Session, exceto_execu
 # Foto é da reclamação (não do material): dá pra excluir materiais à vontade, mas
 # uma reclamação com foto não pode ficar sem nenhum material lançado.
 _MSG_ULTIMO_MATERIAL_COM_FOTO = (
-    "Esta reclamação tem foto anexada, então precisa manter pelo menos um material lançado. O último material só pode ser excluído se a reclamação não tiver foto."
+    "Esta reclamação tem foto anexada, então precisa manter pelo menos um material lançado. O último material só pode ser excluído junto com as fotos."
 )
 
 
@@ -393,21 +393,28 @@ def atualizar_item(item_id: uuid.UUID, req: ItemIn, db: Session = Depends(get_db
 
 
 @router.delete("/itens/{item_id}", status_code=204, dependencies=[Depends(requer_admin)])
-def excluir_item(item_id: uuid.UUID, db: Session = Depends(get_db)):
+def excluir_item(item_id: uuid.UUID, apagar_fotos: bool = False, db: Session = Depends(get_db)):
+    """Exclui um material lançado. O último material de uma reclamação com foto
+    só sai junto com as fotos (apagar_fotos=true) — o front pede confirmação."""
     item = db.get(ItemExecucaoMaterial, item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Item não encontrado.")
     execucao_id = item.execucao_id
     execucao = db.get(ExecucaoReclamacao, execucao_id)
+    caminhos_fotos: list[str] = []
     if execucao and _qtd_itens_da_reclamacao(execucao.reclamacao_id, db) <= 1:
         if _reclamacao_tem_foto(execucao.reclamacao_id, db):
-            raise HTTPException(status_code=409, detail=_MSG_ULTIMO_MATERIAL_COM_FOTO)
+            if not apagar_fotos:
+                raise HTTPException(status_code=409, detail=_MSG_ULTIMO_MATERIAL_COM_FOTO)
+            ids = [e.id for e in db.query(ExecucaoReclamacao.id).filter(ExecucaoReclamacao.reclamacao_id == execucao.reclamacao_id)]
+            caminhos_fotos = apagar_registros_fotos(ids, db)
     db.delete(item)
     db.flush()
     _recalcular_pontos_execucao(execucao_id, db)
     if execucao:
         _reabrir_se_sem_itens(execucao.reclamacao_id, db)
     db.commit()
+    remover_arquivos(caminhos_fotos)
     return Response(status_code=204)
 
 
@@ -438,6 +445,20 @@ async def anexar_foto(execucao_id: uuid.UUID, arquivo: UploadFile, db: Session =
     db.commit()
     db.refresh(foto)
     return FotoOut(id=foto.id, url=f"/api/execucoes-reclamacao/fotos/{foto.id}")
+
+
+@router.delete("/fotos/{foto_id}", status_code=204, dependencies=[Depends(requer_admin)])
+def excluir_foto(foto_id: uuid.UUID, db: Session = Depends(get_db)):
+    """Exclui uma foto (registro e arquivo). A foto é da reclamação, não de um
+    material, então pode sair a qualquer momento."""
+    foto = db.get(FotoExecucao, foto_id)
+    if not foto:
+        raise HTTPException(status_code=404, detail="Foto não encontrada.")
+    caminho = foto.arquivo_path
+    db.delete(foto)
+    db.commit()
+    remover_arquivos([caminho])
+    return Response(status_code=204)
 
 
 @router.get("/fotos/{foto_id}", dependencies=[Depends(requer_acesso("execucoes", "use"))])

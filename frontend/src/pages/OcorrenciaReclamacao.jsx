@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { apiExecucoesReclamacao, apiReclamacoes, obterFotoBlob } from "../api";
+import { useAcesso } from "../AcessoContext";
+import ConfirmDialog from "../ConfirmDialog";
+import { apiExecucoesReclamacao, apiReclamacoes, excluirFotoExecucao, obterFotoBlob } from "../api";
 import { formatarData } from "../formatos";
 
 export default function OcorrenciaReclamacao() {
@@ -16,8 +18,12 @@ export default function OcorrenciaReclamacao() {
   const [marcadas, setMarcadas] = useState(new Set()); // ids das fotos marcadas pra baixar
   const [baixando, setBaixando] = useState(false);
   const [aviso, setAviso] = useState("");
+  const { ehAdmin } = useAcesso();
+  const [excluindoFotos, setExcluindoFotos] = useState(null); // fotos a excluir (aguardando confirmação)
+  const [apagandoFotos, setApagandoFotos] = useState(false);
 
-  useEffect(() => {
+  function carregar() {
+    setCarregando(true);
     Promise.all([apiReclamacoes.obter(id), apiExecucoesReclamacao.listar(`?reclamacao_id=${id}`)])
       .then(async ([rec, execs]) => {
         setReclamacao(rec);
@@ -36,7 +42,9 @@ export default function OcorrenciaReclamacao() {
       })
       .catch((e) => setErro(e.message))
       .finally(() => setCarregando(false));
-  }, [id]);
+  }
+
+  useEffect(carregar, [id]);
 
   const comDados = execucoes.filter((ex) => (ex.latitude && ex.longitude) || ex.fotos.length > 0);
 
@@ -74,6 +82,26 @@ export default function OcorrenciaReclamacao() {
   // Salva as fotos marcadas no computador. Chrome/Edge deixam escolher uma pasta
   // e gravam todas nela; em outros navegadores cada foto vira um download normal
   // (vai para a pasta de Downloads).
+  async function confirmarExclusaoFotos() {
+    setApagandoFotos(true);
+    setErro("");
+    setAviso("");
+    try {
+      for (const f of excluindoFotos) {
+        await excluirFotoExecucao(f.id);
+      }
+      setAviso(`${excluindoFotos.length} foto(s) excluída(s).`);
+      setMarcadas(new Set());
+      setExcluindoFotos(null);
+      carregar();
+    } catch (e) {
+      setErro(e.message || "Não foi possível excluir as fotos.");
+      setExcluindoFotos(null);
+    } finally {
+      setApagandoFotos(false);
+    }
+  }
+
   async function baixarMarcadas() {
     const fotos = todasFotos.filter((f) => marcadas.has(f.id));
     if (fotos.length === 0) return;
@@ -157,6 +185,30 @@ export default function OcorrenciaReclamacao() {
               <i className="ti ti-download" aria-hidden="true" style={{ marginRight: 6 }} />
               {baixando ? "Salvando..." : "Baixar marcadas"}
             </button>
+            {ehAdmin && (
+              <>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => setExcluindoFotos(todasFotos.filter((f) => marcadas.has(f.id)))}
+                  disabled={marcadas.size === 0 || apagandoFotos}
+                  style={{ color: "var(--danger)" }}
+                >
+                  <i className="ti ti-trash" aria-hidden="true" style={{ marginRight: 6 }} />
+                  Excluir marcadas
+                </button>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => setExcluindoFotos(todasFotos)}
+                  disabled={apagandoFotos}
+                  style={{ color: "var(--danger)" }}
+                >
+                  <i className="ti ti-trash" aria-hidden="true" style={{ marginRight: 6 }} />
+                  Excluir todas
+                </button>
+              </>
+            )}
           </div>
         )}
         {aviso && <p style={{ color: "var(--success, #15803d)", fontSize: 13 }}>{aviso}</p>}
@@ -215,6 +267,15 @@ export default function OcorrenciaReclamacao() {
           </div>
         ))}
       </div>
+
+      <ConfirmDialog
+        aberto={!!excluindoFotos}
+        titulo="Excluir fotos"
+        mensagem={`Excluir ${excluindoFotos?.length || 0} foto(s) desta reclamação? Os arquivos serão apagados e essa ação não pode ser desfeita.`}
+        confirmando={apagandoFotos}
+        onConfirmar={confirmarExclusaoFotos}
+        onCancelar={() => setExcluindoFotos(null)}
+      />
     </>
   );
 }

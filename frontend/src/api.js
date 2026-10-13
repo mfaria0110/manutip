@@ -132,8 +132,11 @@ export async function obterFotoBlob(fotoUrl) {
 }
 export const apiItensExecucao = {
   atualizar: (id, dados) => req(`/execucoes-reclamacao/itens/${id}`, { method: "PUT", body: JSON.stringify(dados) }),
-  excluir: (id) => req(`/execucoes-reclamacao/itens/${id}`, { method: "DELETE" }),
+  // apagarFotos: o último material de uma reclamação com foto só sai junto com as fotos.
+  excluir: (id, apagarFotos = false) =>
+    req(`/execucoes-reclamacao/itens/${id}${apagarFotos ? "?apagar_fotos=true" : ""}`, { method: "DELETE" }),
 };
+export const excluirFotoExecucao = (id) => req(`/execucoes-reclamacao/fotos/${id}`, { method: "DELETE" });
 export const apiTiposLampada = crud("/tipos-lampada");
 export const apiPotenciasLampada = crud("/potencias-lampada");
 
