@@ -10,7 +10,7 @@ import {
   obterFotoURL,
 } from "../api";
 import { useFluxo } from "../FluxoContext";
-import { hojeLocal } from "../datas";
+import { hojeLocal, horaAgoraLocal } from "../datas";
 import { useOffline } from "../offline/OfflineContext";
 import { comCache, lerCache, salvarCache } from "../offline/cache";
 import { enfileirar } from "../offline/fila";
@@ -214,6 +214,8 @@ export default function Execucao() {
       ...(execucaoId ? { id: execucaoId } : {}),
       reclamacao_id: reclamacaoId,
       data_execucao: hoje(),
+      // Hora do salvamento (a execução é lançada em campo, na hora do atendimento).
+      hora_execucao: horaAgoraLocal(),
       equipe_dia_id: equipeDiaId,
       uuid_local: uuidLocal,
       observacoes: observacoes || null,

@@ -11,9 +11,9 @@ const soDigitos = (v) => String(v || "").replace(/\D/g, "");
 
 /** Descobre a equipe do usuário logado pelo CPF (elo entre o login e o
  * cadastro de Funcionário, que é membro das equipes):
- *  1. equipe ativa dele que tem reclamações designadas hoje (roteiro) — segue
- *     direto pra escolha da prefeitura;
- *  2. sem roteiro: ele escolhe entre as equipes ativas de que faz parte.
+ *  - só uma equipe ativa: segue direto pra escolha da prefeitura;
+ *  - mais de uma: mostra TODAS as equipes ativas de que ele faz parte e ele
+ *    escolhe uma — é nela que as execuções do dia serão lançadas.
  * Não há mais cadastro/validação de equipe aqui: a equipe é cadastrada e
  * designada pelo escritório. */
 export default function Equipe() {
@@ -50,12 +50,12 @@ export default function Equipe() {
             !!meuCpf &&
             e.membros.some((m) => soDigitos(m.funcionario_cpf) === meuCpf)
         );
-        const comRoteiro = minhas.filter((e) => des.dados.some((d) => d.equipe_dia_id === e.id));
         setMinhasEquipes(minhas);
         setDesignacoes(des.dados);
         setVeiculos(vei.dados);
-        if (!forcarEscolha && comRoteiro.length === 1) {
-          seguir(comRoteiro[0].id);
+        // Com mais de uma equipe ele sempre escolhe; com uma só não há o que escolher.
+        if (!forcarEscolha && minhas.length === 1) {
+          seguir(minhas[0].id);
           return;
         }
       })
@@ -70,9 +70,8 @@ export default function Equipe() {
   };
   const qtdDesignadas = (equipeId) => designacoes.filter((d) => d.equipe_dia_id === equipeId).length;
 
-  // Com mais de uma equipe com roteiro hoje (e sem forçar), só essas aparecem.
-  const comRoteiro = minhasEquipes.filter((e) => qtdDesignadas(e.id) > 0);
-  const lista = !forcarEscolha && comRoteiro.length > 1 ? comRoteiro : minhasEquipes;
+  // Todas as equipes ativas dele; as que têm roteiro hoje aparecem primeiro.
+  const lista = [...minhasEquipes].sort((a, b) => qtdDesignadas(b.id) - qtdDesignadas(a.id));
   const subtitulo = formatarData(hoje);
 
   if (carregando) {
@@ -101,9 +100,8 @@ export default function Equipe() {
 
         {lista.length > 0 && (
           <p className="cartao-sub" style={{ marginBottom: 10 }}>
-            {comRoteiro.length > 0 && !forcarEscolha
-              ? "Escolha a equipe do roteiro de hoje:"
-              : "Escolha a sua equipe de hoje:"}
+            Você faz parte de mais de uma equipe. Escolha a equipe em que está hoje: as execuções serão lançadas
+            nela.
           </p>
         )}
         {lista.map((eq) => {
