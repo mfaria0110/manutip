@@ -1,4 +1,4 @@
-import { abrirDB } from "./db";
+import { comDB } from "./db";
 import { apiEquipesDia, apiExecucoesReclamacao, apiReclamacoes, anexarFotoExecucao, validarEquipe } from "../api";
 import { salvarCache } from "./cache";
 
@@ -10,18 +10,15 @@ import { salvarCache } from "./cache";
 // - "composicaoEquipe": payload = { equipeId, dados }
 // - "concluirReclamacao": payload = { reclamacaoId }
 export async function enfileirar(tipo, payload) {
-  const db = await abrirDB();
-  await db.add("fila", { tipo, payload, criadoEm: Date.now() });
+  await comDB((db) => db.add("fila", { tipo, payload, criadoEm: Date.now() }));
 }
 
 export async function listarFila() {
-  const db = await abrirDB();
-  return db.getAll("fila");
+  return comDB((db) => db.getAll("fila"));
 }
 
 export async function contarPendentes() {
-  const db = await abrirDB();
-  return db.count("fila");
+  return comDB((db) => db.count("fila"));
 }
 
 async function processarItem(item) {
@@ -56,13 +53,12 @@ async function processarItem(item) {
 // erro pra não embaralhar a ordem nem perder nada.
 export async function sincronizar() {
   if (!navigator.onLine) return { sincronizados: 0, restantes: await contarPendentes() };
-  const db = await abrirDB();
-  const itens = await db.getAll("fila");
+  const itens = await comDB((db) => db.getAll("fila"));
   let sincronizados = 0;
   for (const item of itens) {
     try {
       await processarItem(item);
-      await db.delete("fila", item.id);
+      await comDB((db) => db.delete("fila", item.id));
       sincronizados++;
     } catch {
       break;
