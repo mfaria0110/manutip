@@ -12,6 +12,7 @@ from app.core.acesso import requer_acesso, requer_admin
 from app.core.crud_simples import _mensagem_duplicidade
 from app.core.database import get_db
 from app.core.security import verificar_senha
+from app.api.execucoes_reclamacao import apagar_registros_fotos, remover_arquivos
 from app.models.designacao import DesignacaoReclamacao
 from app.models.execucao_reclamacao import ExecucaoReclamacao, ItemExecucaoMaterial
 from app.models.prefeitura import Prefeitura
@@ -101,10 +102,12 @@ def _proximo_codigo(prefeitura_id: uuid.UUID | None, db: Session) -> str:
     return f"{prefixo}{maior + 1:07d}"
 
 
-def _excluir_execucoes(reclamacao: Reclamacao, db: Session) -> None:
-    """Exclui em cascata as execuções (e seus itens de material) da
+def _excluir_execucoes(reclamacao: Reclamacao, db: Session) -> list[str]:
+    """Exclui em cascata as execuções (com itens de material e fotos) da
     reclamação — sem isso, apagar uma reclamação já executada falharia
-    por violação de FK."""
+    por violação de FK. Devolve os arquivos de foto a remover do disco
+    depois do commit."""
+    caminhos_fotos: list[str] = []
     db.query(DesignacaoReclamacao).filter(DesignacaoReclamacao.reclamacao_id == reclamacao.id).delete(
         synchronize_session=False
     )
@@ -112,12 +115,14 @@ def _excluir_execucoes(reclamacao: Reclamacao, db: Session) -> None:
         e.id for e in db.query(ExecucaoReclamacao.id).filter(ExecucaoReclamacao.reclamacao_id == reclamacao.id)
     ]
     if execucao_ids:
+        caminhos_fotos = apagar_registros_fotos(execucao_ids, db)
         db.query(ItemExecucaoMaterial).filter(ItemExecucaoMaterial.execucao_id.in_(execucao_ids)).delete(
             synchronize_session=False
         )
         db.query(ExecucaoReclamacao).filter(ExecucaoReclamacao.id.in_(execucao_ids)).delete(
             synchronize_session=False
         )
+    return caminhos_fotos
 
 
 def _hoje_brasil() -> date:
@@ -210,9 +215,10 @@ def excluir(item_id: uuid.UUID, db: Session = Depends(get_db)):
     obj = db.get(Reclamacao, item_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Não encontrado.")
-    _excluir_execucoes(obj, db)
+    caminhos_fotos = _excluir_execucoes(obj, db)
     db.delete(obj)
     db.commit()
+    remover_arquivos(caminhos_fotos)
 
 
 class ReabrirRequest(BaseModel):

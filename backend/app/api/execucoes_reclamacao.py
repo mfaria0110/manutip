@@ -199,6 +199,26 @@ def _recalcular_pontos_execucao(execucao_id: uuid.UUID, db: Session) -> None:
     execucao.pontos = float(total or 0)
 
 
+def apagar_registros_fotos(execucao_ids: list[uuid.UUID], db: Session) -> list[str]:
+    """Apaga os registros de foto das execuções e devolve os caminhos dos
+    arquivos (que só devem sair do disco depois do commit). Sem isso, excluir
+    uma execução com foto falhava: o banco não deixa a foto ficar sem execução."""
+    fotos = db.query(FotoExecucao).filter(FotoExecucao.execucao_id.in_(execucao_ids)).all()
+    caminhos = [f.arquivo_path for f in fotos]
+    for f in fotos:
+        db.delete(f)
+    db.flush()
+    return caminhos
+
+
+def remover_arquivos(caminhos: list[str]) -> None:
+    for caminho in caminhos:
+        try:
+            Path(caminho).unlink(missing_ok=True)
+        except OSError:
+            pass  # arquivo órfão no disco não impede a exclusão
+
+
 def _reabrir_se_sem_itens(reclamacao_id: uuid.UUID, db: Session) -> None:
     """"Já atendida" só vale enquanto há material lançado. Se todos os itens
     de todas as execuções da reclamação foram excluídos, uma reclamação
@@ -300,10 +320,12 @@ def excluir(execucao_id: uuid.UUID, db: Session = Depends(get_db)):
     if not obj:
         raise HTTPException(status_code=404, detail="Execução não encontrada.")
     reclamacao_id = obj.reclamacao_id
+    caminhos_fotos = apagar_registros_fotos([execucao_id], db)
     db.query(ItemExecucaoMaterial).filter(ItemExecucaoMaterial.execucao_id == execucao_id).delete()
     db.delete(obj)
     _reabrir_se_sem_itens(reclamacao_id, db)
     db.commit()
+    remover_arquivos(caminhos_fotos)
     return Response(status_code=204)
 
 

@@ -1055,7 +1055,12 @@ export default function ExecucaoReclamacao() {
       <ConfirmDialog
         aberto={!!grupoExcluindo}
         titulo="Excluir execução"
-        mensagem="Excluir esta execução, que não tem materiais lançados? Essa ação não pode ser desfeita."
+        mensagem={(() => {
+          const qtdFotos = (grupoExcluindo || []).reduce((n, ex) => n + (ex.fotos?.length || 0), 0);
+          return `Excluir esta execução, que não tem materiais lançados?${
+            qtdFotos > 0 ? ` As ${qtdFotos} foto(s) anexada(s) a ela também serão excluídas.` : ""
+          } Essa ação não pode ser desfeita.`;
+        })()}
         confirmando={apagandoGrupo}
         onConfirmar={confirmarExclusaoGrupo}
         onCancelar={() => setGrupoExcluindo(null)}
