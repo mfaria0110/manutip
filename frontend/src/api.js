@@ -110,11 +110,16 @@ export const apiDesignacoes = {
   salvarDoDia: (prefeituraId, data, itens) =>
     req("/designacoes/dia", {
       method: "PUT",
-      body: JSON.stringify({ prefeitura_id: prefeituraId, data, itens }),
+      body: JSON.stringify({
+      prefeitura_id: prefeituraId,
+      data,
+      equipe_dia_id: equipeDiaId,
+      reclamacao_ids: reclamacaoIds,
+    }),
     }),
 };
 // Planilha .xlsx do roteiro (o que está listado no formulário de designação).
-export async function baixarRoteiroExcel(prefeituraId, data, itens, nomeArquivo) {
+export async function baixarRoteiroExcel(prefeituraId, data, equipeDiaId, reclamacaoIds, nomeArquivo) {
   const t = token();
   const resp = await fetch(`${BASE}/designacoes/excel`, {
     method: "POST",

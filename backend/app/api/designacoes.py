@@ -111,88 +111,97 @@ def salvar_do_dia(req: DesignacaoSalvar, db: Session = Depends(get_db)):
     )
 
 
-class ItemExcel(BaseModel):
-    reclamacao_id: uuid.UUID
-    equipe_dia_id: uuid.UUID | None = None
-
-
 class ExcelRoteiro(BaseModel):
     prefeitura_id: uuid.UUID
     data: date
-    itens: list[ItemExcel] = []
+    equipe_dia_id: uuid.UUID
+    reclamacao_ids: list[uuid.UUID] = []
 
 
 @router.post("/excel", dependencies=[Depends(requer_acesso("reclamacoes", "use"))])
 def exportar_excel(req: ExcelRoteiro, db: Session = Depends(get_db)):
-    """Planilha .xlsx com as reclamações que estão listadas no formulário de
-    designação (já com o filtro aplicado) e a equipe de cada uma. Recebe as
-    atribuições como estão na tela, salvas ou não, na ordem da lista."""
+    """Roteiro da equipe em planilha .xlsx, no mesmo modelo do Imprimir:
+    cidade e título no topo, quadro com equipe/viatura/componentes e a tabela
+    Código, Data_Rec, Bairro, Logradouro, Lamp, Pot.(W) e as categorias de
+    material (Lamp até Refletor em branco e com borda, pra preencher em campo)."""
     from openpyxl import Workbook
-    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
     from openpyxl.utils import get_column_letter
 
+    from app.api.relatorios import _ABREVIACOES, _MESCLADAS_EM_OUTROS, _ORDEM_CATEGORIAS
+    from app.models.categoria_material import CategoriaMaterial
+    from app.models.localidade import Cidade
+
     prefeitura = db.get(Prefeitura, req.prefeitura_id)
-    ids = [i.reclamacao_id for i in req.itens]
-    reclamacoes = {r.id: r for r in db.query(Reclamacao).filter(Reclamacao.id.in_(ids))} if ids else {}
-    equipe_ids = {i.equipe_dia_id for i in req.itens if i.equipe_dia_id}
-    equipes = (
-        {
-            e.id: e
-            for e in db.query(EquipeDia)
-            .options(selectinload(EquipeDia.membros).selectinload(EquipeMembro.funcionario))
-            .filter(EquipeDia.id.in_(equipe_ids))
-        }
-        if equipe_ids
-        else {}
+    cidade = db.get(Cidade, prefeitura.cidade_id) if prefeitura and prefeitura.cidade_id else None
+    equipe = (
+        db.query(EquipeDia)
+        .options(selectinload(EquipeDia.membros).selectinload(EquipeMembro.funcionario))
+        .filter(EquipeDia.id == req.equipe_dia_id)
+        .first()
+    )
+    if not equipe:
+        raise HTTPException(status_code=404, detail="Equipe não encontrada.")
+    ordem = {rid: n for n, rid in enumerate(req.reclamacao_ids)}
+    reclamacoes = (
+        sorted(db.query(Reclamacao).filter(Reclamacao.id.in_(req.reclamacao_ids)).all(), key=lambda r: ordem[r.id])
+        if req.reclamacao_ids
+        else []
     )
 
+    categorias = db.query(CategoriaMaterial).all()
+    tem_lampada = any(c.codigo == "LAMPADA" for c in categorias)
+    visiveis = sorted(
+        (c for c in categorias if c.codigo not in _MESCLADAS_EM_OUTROS and c.codigo != "LAMPADA"),
+        key=lambda c: _ORDEM_CATEGORIAS.index(c.codigo) if c.codigo in _ORDEM_CATEGORIAS else -1,
+    )
+
+    fino = Side(style="thin", color="444444")
+    borda = Border(left=fino, right=fino, top=fino, bottom=fino)
     wb = Workbook()
     ws = wb.active
     ws.title = "Roteiro"
-    ws["A1"] = "ROTEIRO DO DIA"
-    ws["A1"].font = Font(bold=True, size=14)
-    ws["A2"] = prefeitura.nome if prefeitura else ""
-    ws["A3"] = f"Data Roteiro: {req.data:%d/%m/%Y}"
+    ws["A1"] = cidade.nome if cidade else (prefeitura.nome if prefeitura else "")
+    ws["A1"].font = Font(bold=True, size=16)
+    ws["A2"] = f"ROTEIRO DO DIA: {req.data:%d/%m/%Y}"
+    ws["A2"].font = Font(bold=True, size=12)
 
-    cabecalho = [
-        "Código", "Data_Rec", "Reclamante", "Logradouro", "Núm.", "Bairro",
-        "Ponto de referência", "Equipe", "Viatura", "Componentes",
-    ]
+    veiculo = f"{equipe.veiculo.placa} {equipe.veiculo.modelo}" if equipe.veiculo else "sem veículo"
+    membros = ", ".join(m.funcionario.nome for m in equipe.membros if m.funcionario) or "sem membros"
+    for linha, (rotulo, valor) in enumerate(
+        (("Equipe:", equipe.nome or "Equipe"), ("Viatura:", veiculo), ("Componentes:", membros)), start=4
+    ):
+        ws.cell(row=linha, column=1, value=rotulo).font = Font(bold=True)
+        ws.cell(row=linha, column=2, value=valor)
+
+    cabecalho = ["Código", "Data_Rec", "Bairro", "Logradouro"]
+    if tem_lampada:
+        cabecalho.append("Lamp")
+    cabecalho.append("Pot.(W)")
+    cabecalho += [_ABREVIACOES.get(c.codigo, c.nome) for c in visiveis]
+    linha_cab = 8
     for col, titulo in enumerate(cabecalho, start=1):
-        c = ws.cell(row=5, column=col, value=titulo)
+        c = ws.cell(row=linha_cab, column=col, value=titulo)
         c.font = Font(bold=True)
         c.fill = PatternFill("solid", fgColor="E5EBF7")
-    linha = 6
-    for item in req.itens:
-        r = reclamacoes.get(item.reclamacao_id)
-        if not r:
-            continue
-        eq = equipes.get(item.equipe_dia_id) if item.equipe_dia_id else None
-        veiculo = ""
-        if eq and eq.veiculo:
-            veiculo = f"{eq.veiculo.placa} {eq.veiculo.modelo}"
-        membros = ", ".join(m.funcionario.nome for m in eq.membros if m.funcionario) if eq else ""
-        valores = [
-            r.codigo,
-            r.data_reclamacao,
-            r.nome_reclamante,
-            r.logradouro or "",
-            r.numero or "",
-            r.bairro.nome if r.bairro else "",
-            r.ponto_referencia or "",
-            eq.nome if eq else "",
-            veiculo,
-            membros,
-        ]
+        c.alignment = Alignment(horizontal="left" if col <= 4 else "center")
+        if col >= 5:
+            c.border = borda
+    linha = linha_cab + 1
+    for r in reclamacoes:
+        logradouro = ", ".join(p for p in (r.logradouro or "—", f"Nº {r.numero}" if r.numero else "") if p)
+        valores = [r.codigo, r.data_reclamacao, r.bairro.nome if r.bairro else "—", logradouro]
         for col, v in enumerate(valores, start=1):
             c = ws.cell(row=linha, column=col, value=v)
             if col == 2:
                 c.number_format = "DD/MM/YYYY"
                 c.alignment = Alignment(horizontal="center")
-            if col == 5:
-                c.alignment = Alignment(horizontal="center")
+        for col in range(5, len(cabecalho) + 1):
+            ws.cell(row=linha, column=col).border = borda
+        ws.row_dimensions[linha].height = 22
         linha += 1
-    for col, largura in enumerate([20, 12, 28, 34, 8, 22, 30, 12, 24, 40], start=1):
+    larguras = [20, 12, 24, 38] + ([12] if tem_lampada else []) + [12] + [11] * len(visiveis)
+    for col, largura in enumerate(larguras, start=1):
         ws.column_dimensions[get_column_letter(col)].width = largura
 
     buffer = io.BytesIO()

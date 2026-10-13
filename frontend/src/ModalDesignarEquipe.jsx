@@ -319,21 +319,16 @@ export default function ModalDesignarEquipe({ prefeitura, nomeBairro, nomeCidade
     window.open(`${base}?text=${encodeURIComponent(linhas.join("\n"))}`, "_blank", "noopener");
   }
 
-  // Exporta pra Excel exatamente o que está listado (com o filtro aplicado),
-  // com a equipe atribuída a cada reclamação como está na tela.
+  // Exporta pra Excel a lista da equipe no mesmo modelo do Imprimir (mesmas
+  // condições: uma única equipe na lista e a seleção salva).
   async function exportarExcel() {
-    if (visiveis.length === 0) {
-      setAviso("");
-      setErro("Não há reclamações listadas para exportar.");
-      return;
-    }
     setErro("");
     try {
-      const itens = visiveis.map((r) => ({ reclamacao_id: r.id, equipe_dia_id: atribuicoes.get(r.id) || null }));
-      const equipesNaLista = [...new Set(itens.map((i) => i.equipe_dia_id).filter(Boolean))];
-      const sufixoEquipe = equipesNaLista.length === 1 ? `_${nomeEquipe(equipesNaLista[0])}` : "";
-      const nomeArquivo = `Roteiro_${prefeitura.sigla || "prefeitura"}${sufixoEquipe}_${formatarData(data).replace(/\//g, "-")}.xlsx`;
-      await baixarRoteiroExcel(prefeitura.id, data, itens, nomeArquivo);
+      const eq = detalhesEquipe(equipeDaLista);
+      const nomeArquivo = `Reclamação_${eq.nome}_${formatarData(data).replace(/\//g, "-")}.xlsx`
+        .replace(/[\\/:*?"<>|]/g, "")
+        .replace(/\s+/g, "_");
+      await baixarRoteiroExcel(prefeitura.id, data, equipeDaLista, visiveis.map((r) => r.id), nomeArquivo);
     } catch (e) {
       setErro(e.message);
     }
@@ -532,9 +527,10 @@ export default function ModalDesignarEquipe({ prefeitura, nomeBairro, nomeCidade
           <button
             type="button"
             className="btn"
-            onClick={exportarExcel}
-            title="Exportar para Excel as reclamações listadas (com o filtro aplicado)"
-            style={{ marginRight: "auto" }}
+            onClick={() => aoExportar(exportarExcel)}
+            aria-disabled={!podeExportar}
+            title={motivoSemExportar || "Exportar para Excel a lista da equipe, no modelo do Imprimir"}
+            style={{ marginRight: "auto", opacity: podeExportar ? 1 : 0.55 }}
           >
             <i className="ti ti-file-spreadsheet" aria-hidden="true" style={{ marginRight: 6 }} />
             Exportar Excel
