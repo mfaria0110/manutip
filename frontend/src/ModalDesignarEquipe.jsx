@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { apiCategoriasMaterial, apiDesignacoes, apiEquipesDia, apiReclamacoes, apiVeiculos } from "./api";
+import { apiCategoriasMaterial, apiDesignacoes, baixarRoteiroExcel, apiEquipesDia, apiReclamacoes, apiVeiculos } from "./api";
 import logoSelles from "./assets/logo-selles.png";
 import ModalNovaEquipe from "./ModalNovaEquipe";
 import { formatarData, hojeLocal } from "./formatos";
@@ -319,6 +319,26 @@ export default function ModalDesignarEquipe({ prefeitura, nomeBairro, nomeCidade
     window.open(`${base}?text=${encodeURIComponent(linhas.join("\n"))}`, "_blank", "noopener");
   }
 
+  // Exporta pra Excel exatamente o que está listado (com o filtro aplicado),
+  // com a equipe atribuída a cada reclamação como está na tela.
+  async function exportarExcel() {
+    if (visiveis.length === 0) {
+      setAviso("");
+      setErro("Não há reclamações listadas para exportar.");
+      return;
+    }
+    setErro("");
+    try {
+      const itens = visiveis.map((r) => ({ reclamacao_id: r.id, equipe_dia_id: atribuicoes.get(r.id) || null }));
+      const equipesNaLista = [...new Set(itens.map((i) => i.equipe_dia_id).filter(Boolean))];
+      const sufixoEquipe = equipesNaLista.length === 1 ? `_${nomeEquipe(equipesNaLista[0])}` : "";
+      const nomeArquivo = `Roteiro_${prefeitura.sigla || "prefeitura"}${sufixoEquipe}_${formatarData(data).replace(/\//g, "-")}.xlsx`;
+      await baixarRoteiroExcel(prefeitura.id, data, itens, nomeArquivo);
+    } catch (e) {
+      setErro(e.message);
+    }
+  }
+
   async function salvar() {
     setSalvando(true);
     setErro("");
@@ -504,10 +524,20 @@ export default function ModalDesignarEquipe({ prefeitura, nomeBairro, nomeCidade
             onClick={() => aoExportar(imprimir)}
             aria-disabled={!podeExportar}
             title={motivoSemExportar || "Imprimir ou salvar em PDF a lista da equipe"}
-            style={{ marginRight: "auto", opacity: podeExportar ? 1 : 0.55 }}
+            style={{ opacity: podeExportar ? 1 : 0.55 }}
           >
             <i className="ti ti-printer" aria-hidden="true" style={{ marginRight: 6 }} />
             Imprimir
+          </button>
+          <button
+            type="button"
+            className="btn"
+            onClick={exportarExcel}
+            title="Exportar para Excel as reclamações listadas (com o filtro aplicado)"
+            style={{ marginRight: "auto" }}
+          >
+            <i className="ti ti-file-spreadsheet" aria-hidden="true" style={{ marginRight: 6 }} />
+            Exportar Excel
           </button>
           <button
             type="button"

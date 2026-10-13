@@ -113,6 +113,24 @@ export const apiDesignacoes = {
       body: JSON.stringify({ prefeitura_id: prefeituraId, data, itens }),
     }),
 };
+// Planilha .xlsx do roteiro (o que está listado no formulário de designação).
+export async function baixarRoteiroExcel(prefeituraId, data, itens, nomeArquivo) {
+  const t = token();
+  const resp = await fetch(`${BASE}/designacoes/excel`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(t ? { Authorization: `Bearer ${t}` } : {}) },
+    body: JSON.stringify({ prefeitura_id: prefeituraId, data, itens }),
+  });
+  if (!resp.ok) throw new Error("Não foi possível gerar a planilha. Tente novamente.");
+  const url = URL.createObjectURL(await resp.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nomeArquivo;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
 export const apiEquipesDia = crud("/equipes");
 export function proximoNomeEquipe() {
   return req("/equipes/proximo-nome");

@@ -1,14 +1,17 @@
+import io
 import uuid
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.core.acesso import requer_acesso
 from app.core.database import get_db
 from app.models.designacao import DesignacaoReclamacao
-from app.models.pessoal import EquipeDia
+from app.models.pessoal import EquipeDia, EquipeMembro
+from app.models.prefeitura import Prefeitura
 from app.models.reclamacao import Reclamacao
 
 router = APIRouter(prefix="/api/designacoes", tags=["designacoes"])
@@ -105,4 +108,98 @@ def salvar_do_dia(req: DesignacaoSalvar, db: Session = Depends(get_db)):
         .join(Reclamacao, Reclamacao.id == DesignacaoReclamacao.reclamacao_id)
         .filter(DesignacaoReclamacao.data == req.data, Reclamacao.prefeitura_id == req.prefeitura_id)
         .all()
+    )
+
+
+class ItemExcel(BaseModel):
+    reclamacao_id: uuid.UUID
+    equipe_dia_id: uuid.UUID | None = None
+
+
+class ExcelRoteiro(BaseModel):
+    prefeitura_id: uuid.UUID
+    data: date
+    itens: list[ItemExcel] = []
+
+
+@router.post("/excel", dependencies=[Depends(requer_acesso("reclamacoes", "use"))])
+def exportar_excel(req: ExcelRoteiro, db: Session = Depends(get_db)):
+    """Planilha .xlsx com as reclamações que estão listadas no formulário de
+    designação (já com o filtro aplicado) e a equipe de cada uma. Recebe as
+    atribuições como estão na tela, salvas ou não, na ordem da lista."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter
+
+    prefeitura = db.get(Prefeitura, req.prefeitura_id)
+    ids = [i.reclamacao_id for i in req.itens]
+    reclamacoes = {r.id: r for r in db.query(Reclamacao).filter(Reclamacao.id.in_(ids))} if ids else {}
+    equipe_ids = {i.equipe_dia_id for i in req.itens if i.equipe_dia_id}
+    equipes = (
+        {
+            e.id: e
+            for e in db.query(EquipeDia)
+            .options(selectinload(EquipeDia.membros).selectinload(EquipeMembro.funcionario))
+            .filter(EquipeDia.id.in_(equipe_ids))
+        }
+        if equipe_ids
+        else {}
+    )
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Roteiro"
+    ws["A1"] = "ROTEIRO DO DIA"
+    ws["A1"].font = Font(bold=True, size=14)
+    ws["A2"] = prefeitura.nome if prefeitura else ""
+    ws["A3"] = f"Data Roteiro: {req.data:%d/%m/%Y}"
+
+    cabecalho = [
+        "Código", "Data_Rec", "Reclamante", "Logradouro", "Núm.", "Bairro",
+        "Ponto de referência", "Equipe", "Viatura", "Componentes",
+    ]
+    for col, titulo in enumerate(cabecalho, start=1):
+        c = ws.cell(row=5, column=col, value=titulo)
+        c.font = Font(bold=True)
+        c.fill = PatternFill("solid", fgColor="E5EBF7")
+    linha = 6
+    for item in req.itens:
+        r = reclamacoes.get(item.reclamacao_id)
+        if not r:
+            continue
+        eq = equipes.get(item.equipe_dia_id) if item.equipe_dia_id else None
+        veiculo = ""
+        if eq and eq.veiculo:
+            veiculo = f"{eq.veiculo.placa} {eq.veiculo.modelo}"
+        membros = ", ".join(m.funcionario.nome for m in eq.membros if m.funcionario) if eq else ""
+        valores = [
+            r.codigo,
+            r.data_reclamacao,
+            r.nome_reclamante,
+            r.logradouro or "",
+            r.numero or "",
+            r.bairro.nome if r.bairro else "",
+            r.ponto_referencia or "",
+            eq.nome if eq else "",
+            veiculo,
+            membros,
+        ]
+        for col, v in enumerate(valores, start=1):
+            c = ws.cell(row=linha, column=col, value=v)
+            if col == 2:
+                c.number_format = "DD/MM/YYYY"
+                c.alignment = Alignment(horizontal="center")
+            if col == 5:
+                c.alignment = Alignment(horizontal="center")
+        linha += 1
+    for col, largura in enumerate([20, 12, 28, 34, 8, 22, 30, 12, 24, 40], start=1):
+        ws.column_dimensions[get_column_letter(col)].width = largura
+
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="roteiro.xlsx"'},
     )
