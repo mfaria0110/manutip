@@ -221,8 +221,21 @@ def atualizar(item_id: uuid.UUID, req: ReclamacaoUpdate, db: Session = Depends(g
     return obj
 
 
-@router.delete("/{item_id}", status_code=204, dependencies=[Depends(requer_admin)])
-def excluir(item_id: uuid.UUID, db: Session = Depends(get_db)):
+class ExcluirRequest(BaseModel):
+    senha: str
+
+
+@router.delete("/{item_id}", status_code=204)
+def excluir(
+    item_id: uuid.UUID,
+    req: ExcluirRequest,
+    db: Session = Depends(get_db),
+    usuario_logado: Usuario = Depends(requer_admin),
+):
+    """Exclusão definitiva (leva execuções, materiais e fotos): além de ser
+    administrador, exige a senha do próprio administrador logado."""
+    if not verificar_senha(req.senha, usuario_logado.senha_hash):
+        raise HTTPException(status_code=403, detail="Senha incorreta. A reclamação não foi excluída.")
     obj = db.get(Reclamacao, item_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Não encontrado.")

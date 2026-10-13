@@ -121,6 +121,7 @@ export default function CadastroPage({
   idKey = "id",
   filtroTopo,
   acaoAposFiltro,
+  exigirSenhaParaExcluir,
   queryExtra,
   exigeFiltro,
   valoresPadrao,
@@ -142,6 +143,9 @@ export default function CadastroPage({
   const [erroLista, setErroLista] = useState("");
   const [excluindo, setExcluindo] = useState(null); // item pendente de confirmação
   const [apagando, setApagando] = useState(false);
+  // Com exigirSenhaParaExcluir, o diálogo pede a senha do admin logado e fica aberto se ela estiver errada.
+  const [senhaExclusao, setSenhaExclusao] = useState("");
+  const [erroExclusao, setErroExclusao] = useState("");
   const [busca, setBusca] = useState("");
 
   const podeEditar = pode(modulo, "edit");
@@ -219,16 +223,27 @@ export default function CadastroPage({
     setEditando(null);
   }
 
+function cancelarExclusao() {
+    setExcluindo(null);
+    setSenhaExclusao("");
+    setErroExclusao("");
+  }
+
 async function confirmarExclusao() {
     setApagando(true);
     setErroLista("");
+    setErroExclusao("");
     try {
-      await api.excluir(excluindo[idKey]);
-      setExcluindo(null);
+      await (exigirSenhaParaExcluir ? api.excluir(excluindo[idKey], senhaExclusao) : api.excluir(excluindo[idKey]));
+      cancelarExclusao();
       carregar();
     } catch (err) {
-      setErroLista(err.message);
-      setExcluindo(null);
+      if (exigirSenhaParaExcluir) {
+        setErroExclusao(err.message); // senha errada etc.: mantém o diálogo aberto
+      } else {
+        setErroLista(err.message);
+        setExcluindo(null);
+      }
     } finally {
       setApagando(false);
     }
@@ -467,7 +482,10 @@ async function confirmarExclusao() {
         mensagem={`Excluir "${excluindo?.nome || excluindo?.numero || excluindo?.placa || excluindo?.codigo || "este registro"}"? Essa ação não pode ser desfeita.`}
         confirmando={apagando}
         onConfirmar={confirmarExclusao}
-        onCancelar={() => setExcluindo(null)}
+        onCancelar={cancelarExclusao}
+        senha={exigirSenhaParaExcluir ? senhaExclusao : undefined}
+        onSenhaChange={exigirSenhaParaExcluir ? setSenhaExclusao : undefined}
+        erro={erroExclusao}
       />
     </>
   );

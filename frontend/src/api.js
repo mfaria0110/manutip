@@ -97,7 +97,11 @@ export const apiPontosMaterialContrato = {
   contratoVigente: (prefeituraId, data) =>
     req(`/pontos-material-contrato/contrato-vigente?prefeitura_id=${prefeituraId}&data=${data}`),
 };
-export const apiReclamacoes = crud("/reclamacoes");
+export const apiReclamacoes = {
+  ...crud("/reclamacoes"),
+  // Exclusão definitiva pede a senha do administrador logado.
+  excluir: (id, senha) => req(`/reclamacoes/${id}`, { method: "DELETE", body: JSON.stringify({ senha }) }),
+};
 export function reabrirReclamacao(id, username, senha) {
   return req(`/reclamacoes/${id}/reabrir`, { method: "POST", body: JSON.stringify({ username, senha }) });
 }

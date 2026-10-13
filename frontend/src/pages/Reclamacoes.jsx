@@ -139,6 +139,7 @@ export default function Reclamacoes() {
       }}
       queryExtra={`?prefeitura_id=${prefeituraConfirmada}`}
       classeTabela="tabela-compacta cabecalho-35"
+      exigirSenhaParaExcluir
       acoesExtras={(item) => (
         <>
           <button
