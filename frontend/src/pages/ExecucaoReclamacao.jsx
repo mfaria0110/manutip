@@ -176,6 +176,10 @@ export default function ExecucaoReclamacao() {
       .then(setContratoCard)
       .catch(() => setContratoCard(null));
   }, [reclamacao?.prefeitura_id, execucoes]);
+  // Foto é da reclamação: com foto anexada, o último material lançado não pode ser excluído.
+  const totalItensReclamacao = execucoes.reduce((n, ex) => n + ex.itens.length, 0);
+  const totalFotosReclamacao = execucoes.reduce((n, ex) => n + (ex.fotos?.length || 0), 0);
+  const ultimoMaterialTravado = totalItensReclamacao <= 1 && totalFotosReclamacao > 0;
   const nomeBairro = (bid) => bairros.find((b) => b.id === bid)?.nome || "—";
   const nomeCidade = (cid) => cidades.find((c) => c.id === cid)?.nome || "—";
   const materialPorId = (mid) => materiais.find((m) => m.id === mid);
@@ -704,8 +708,12 @@ export default function ExecucaoReclamacao() {
                                   <button
                                     className="btn btn-ghost"
                                     onClick={() => setItemExcluindo(it)}
-                                    disabled={bloqueado}
-                                    title="Excluir"
+                                    disabled={bloqueado || ultimoMaterialTravado}
+                                    title={
+                                      ultimoMaterialTravado
+                                        ? "Último material: não pode ser excluído porque a reclamação tem foto"
+                                        : "Excluir"
+                                    }
                                     style={{ color: "var(--danger)" }}
                                   >
                                     <i className="ti ti-trash" aria-hidden="true" />

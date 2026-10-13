@@ -14,7 +14,7 @@ from app.core.database import get_db
 from app.core.security import verificar_senha
 from app.api.execucoes_reclamacao import apagar_registros_fotos, remover_arquivos
 from app.models.designacao import DesignacaoReclamacao
-from app.models.execucao_reclamacao import ExecucaoReclamacao, ItemExecucaoMaterial
+from app.models.execucao_reclamacao import ExecucaoReclamacao, FotoExecucao, ItemExecucaoMaterial
 from app.models.prefeitura import Prefeitura
 from app.models.reclamacao import Reclamacao
 from app.models.usuario import PapelUsuario, Usuario
@@ -40,6 +40,8 @@ class ReclamacaoOut(BaseModel):
     # de campo) — a reclamação pode ter sido atendida sem alguém lembrar de
     # marcar como Concluída, daí o aviso + atalho na lista (ver listar()).
     tem_execucao: bool = False
+    # Tem foto anexada em alguma execução (a foto é da reclamação, não do material).
+    tem_foto: bool = False
     # True se está designada a uma equipe para hoje ou para um dia futuro
     # (roteiro vigente — designações de dias passados não contam).
     designada: bool = False
@@ -163,10 +165,19 @@ def listar(
         .distinct()
     }
 
+    ids_com_foto = {
+        rid
+        for (rid,) in db.query(ExecucaoReclamacao.reclamacao_id)
+        .join(FotoExecucao, FotoExecucao.execucao_id == ExecucaoReclamacao.id)
+        .filter(ExecucaoReclamacao.reclamacao_id.in_(ids))
+        .distinct()
+    }
+
     saida = []
     for r in reclamacoes:
         item = ReclamacaoOut.model_validate(r)
         item.tem_execucao = r.id in ids_com_execucao
+        item.tem_foto = r.id in ids_com_foto
         item.designada = r.id in ids_designadas
         saida.append(item)
     return saida

@@ -199,6 +199,34 @@ def _recalcular_pontos_execucao(execucao_id: uuid.UUID, db: Session) -> None:
     execucao.pontos = float(total or 0)
 
 
+def _reclamacao_tem_foto(reclamacao_id: uuid.UUID, db: Session) -> bool:
+    return (
+        db.query(FotoExecucao.id)
+        .join(ExecucaoReclamacao, ExecucaoReclamacao.id == FotoExecucao.execucao_id)
+        .filter(ExecucaoReclamacao.reclamacao_id == reclamacao_id)
+        .first()
+        is not None
+    )
+
+
+def _qtd_itens_da_reclamacao(reclamacao_id: uuid.UUID, db: Session, exceto_execucao: uuid.UUID | None = None) -> int:
+    query = (
+        db.query(func.count(ItemExecucaoMaterial.id))
+        .join(ExecucaoReclamacao, ExecucaoReclamacao.id == ItemExecucaoMaterial.execucao_id)
+        .filter(ExecucaoReclamacao.reclamacao_id == reclamacao_id)
+    )
+    if exceto_execucao:
+        query = query.filter(ExecucaoReclamacao.id != exceto_execucao)
+    return query.scalar() or 0
+
+
+# Foto é da reclamação (não do material): dá pra excluir materiais à vontade, mas
+# uma reclamação com foto não pode ficar sem nenhum material lançado.
+_MSG_ULTIMO_MATERIAL_COM_FOTO = (
+    "Esta reclamação tem foto anexada, então precisa manter pelo menos um material lançado. O último material só pode ser excluído se a reclamação não tiver foto."
+)
+
+
 def apagar_registros_fotos(execucao_ids: list[uuid.UUID], db: Session) -> list[str]:
     """Apaga os registros de foto das execuções e devolve os caminhos dos
     arquivos (que só devem sair do disco depois do commit). Sem isso, excluir
@@ -302,6 +330,10 @@ def atualizar(execucao_id: uuid.UUID, req: ExecucaoUpdate, db: Session = Depends
     for campo, valor in dados.items():
         setattr(obj, campo, valor)
     if itens is not None:
+        if not itens and _qtd_itens_da_reclamacao(obj.reclamacao_id, db, exceto_execucao=execucao_id) == 0:
+            if _reclamacao_tem_foto(obj.reclamacao_id, db):
+                db.rollback()
+                raise HTTPException(status_code=409, detail=_MSG_ULTIMO_MATERIAL_COM_FOTO)
         db.query(ItemExecucaoMaterial).filter(ItemExecucaoMaterial.execucao_id == execucao_id).delete()
         if itens:
             contrato = _contrato_da_execucao(obj.reclamacao_id, obj.data_execucao, db)
@@ -366,10 +398,13 @@ def excluir_item(item_id: uuid.UUID, db: Session = Depends(get_db)):
     if not item:
         raise HTTPException(status_code=404, detail="Item não encontrado.")
     execucao_id = item.execucao_id
+    execucao = db.get(ExecucaoReclamacao, execucao_id)
+    if execucao and _qtd_itens_da_reclamacao(execucao.reclamacao_id, db) <= 1:
+        if _reclamacao_tem_foto(execucao.reclamacao_id, db):
+            raise HTTPException(status_code=409, detail=_MSG_ULTIMO_MATERIAL_COM_FOTO)
     db.delete(item)
     db.flush()
     _recalcular_pontos_execucao(execucao_id, db)
-    execucao = db.get(ExecucaoReclamacao, execucao_id)
     if execucao:
         _reabrir_se_sem_itens(execucao.reclamacao_id, db)
     db.commit()

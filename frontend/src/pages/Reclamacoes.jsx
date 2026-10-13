@@ -159,7 +159,7 @@ export default function Reclamacoes() {
               <i className="ti ti-check" aria-hidden="true" />
             </button>
           )}
-          {["VALIDADA", "CONCLUIDA"].includes(item.status) && (
+          {(["VALIDADA", "CONCLUIDA"].includes(item.status) || item.tem_foto) && (
             <button
               className="btn btn-ghost"
               onClick={() => navigate(`/reclamacoes/${item.id}/ocorrencia?prefeitura_id=${prefeituraConfirmada}`)}
