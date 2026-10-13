@@ -110,12 +110,7 @@ export const apiDesignacoes = {
   salvarDoDia: (prefeituraId, data, itens) =>
     req("/designacoes/dia", {
       method: "PUT",
-      body: JSON.stringify({
-      prefeitura_id: prefeituraId,
-      data,
-      equipe_dia_id: equipeDiaId,
-      reclamacao_ids: reclamacaoIds,
-    }),
+      body: JSON.stringify({ prefeitura_id: prefeituraId, data, itens }),
     }),
 };
 // Planilha .xlsx do roteiro (o que está listado no formulário de designação).
