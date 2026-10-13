@@ -122,6 +122,7 @@ export default function CadastroPage({
   filtroTopo,
   acaoAposFiltro,
   exigirSenhaParaExcluir,
+  mensagemExclusao,
   queryExtra,
   exigeFiltro,
   valoresPadrao,
@@ -479,7 +480,11 @@ async function confirmarExclusao() {
       <ConfirmDialog
         aberto={!!excluindo}
         titulo="Excluir registro"
-        mensagem={`Excluir "${excluindo?.nome || excluindo?.numero || excluindo?.placa || excluindo?.codigo || "este registro"}"? Essa ação não pode ser desfeita.`}
+        mensagem={
+          mensagemExclusao && excluindo
+            ? mensagemExclusao(excluindo)
+            : `Excluir "${excluindo?.nome || excluindo?.numero || excluindo?.placa || excluindo?.codigo || "este registro"}"? Essa ação não pode ser desfeita.`
+        }
         confirmando={apagando}
         onConfirmar={confirmarExclusao}
         onCancelar={cancelarExclusao}

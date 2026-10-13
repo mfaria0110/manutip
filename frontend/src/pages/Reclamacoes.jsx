@@ -140,6 +140,10 @@ export default function Reclamacoes() {
       queryExtra={`?prefeitura_id=${prefeituraConfirmada}`}
       classeTabela="tabela-compacta cabecalho-35"
       exigirSenhaParaExcluir
+      mensagemExclusao={(item) =>
+        `Excluir a reclamação ${item.codigo}? Serão apagadas também as execuções, os materiais lançados, ` +
+        "as fotos e a localização (latitude e longitude). Essa ação não pode ser desfeita."
+      }
       acoesExtras={(item) => (
         <>
           <button
