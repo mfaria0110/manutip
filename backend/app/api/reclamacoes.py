@@ -257,13 +257,17 @@ class ReabrirRequest(BaseModel):
 )
 def reabrir(reclamacao_id: uuid.UUID, req: ReabrirRequest, db: Session = Depends(get_db)):
     """Volta uma reclamação validada para ABERTA, liberando edição/exclusão
-    de novo. Exige a senha de um usuário ADMIN cadastrado (não precisa ser
+    de novo. Exige a senha de um usuário ADMIN ou SUPERADMIN cadastrado (não precisa ser
     o usuário logado) como confirmação — é uma trava de supervisor, não um
     login."""
     reclamacao = db.get(Reclamacao, reclamacao_id)
     if not reclamacao:
         raise HTTPException(status_code=404, detail="Não encontrado.")
-    admin = db.query(Usuario).filter(Usuario.username == req.username, Usuario.papel == PapelUsuario.ADMIN).first()
+    admin = (
+        db.query(Usuario)
+        .filter(Usuario.username == req.username, Usuario.papel.in_([PapelUsuario.ADMIN, PapelUsuario.SUPERADMIN]))
+        .first()
+    )
     if not admin or not admin.ativo or not verificar_senha(req.senha, admin.senha_hash):
         raise HTTPException(status_code=401, detail="Usuário ou senha de administrador inválidos.")
     reclamacao.status = "ABERTA"
