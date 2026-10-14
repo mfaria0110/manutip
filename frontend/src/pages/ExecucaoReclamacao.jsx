@@ -1087,9 +1087,15 @@ export default function ExecucaoReclamacao() {
                     <label
                       className="btn"
                       title="Importar fotos do computador (as da equipe de campo já aparecem aqui)"
-                      style={{ cursor: importandoFotos ? "not-allowed" : "pointer", opacity: importandoFotos ? 0.5 : 1 }}
+                      style={{
+                        cursor: importandoFotos ? "not-allowed" : "pointer",
+                        opacity: importandoFotos ? 0.5 : 1,
+                        fontSize: 11,
+                        height: 24,
+                        padding: "0 8px",
+                      }}
                     >
-                      <i className="ti ti-photo-up" aria-hidden="true" style={{ marginRight: 6 }} />
+                      <i className="ti ti-photo-up" aria-hidden="true" style={{ marginRight: 4, fontSize: 13 }} />
                       {importandoFotos ? "Importando..." : "Importar fotos"}
                       <input
                         type="file"
