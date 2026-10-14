@@ -11,6 +11,7 @@ import {
   apiEquipesDia,
   apiExecucoesReclamacao,
   apiItensExecucao,
+  excluirFotoExecucao,
   importarFotosExecucao,
   obterFotoBlob,
   apiMateriais,
@@ -111,6 +112,8 @@ export default function ExecucaoReclamacao() {
   const [apagandoGrupo, setApagandoGrupo] = useState(false);
   const [importandoFotos, setImportandoFotos] = useState(false);
   const [fotosModal, setFotosModal] = useState([]); // fotos da execução em edição: [{id, previewUrl}]
+  const [fotosExcluindo, setFotosExcluindo] = useState(null); // ids das fotos aguardando confirmação
+  const [apagandoFotosModal, setApagandoFotosModal] = useState(false);
   const [avisoFotos, setAvisoFotos] = useState("");
   const [validando, setValidando] = useState(false);
 
@@ -233,6 +236,29 @@ export default function ExecucaoReclamacao() {
   // TODAS as execuções da mesma equipe+data (normalmente deveria haver só
   // uma, mas registros antigos podem estar espalhados em várias) — editar
   // e salvar consolida tudo numa execução só.
+  // Exclui fotos (uma ou todas) da execução em edição; só administrador (o servidor também exige).
+  async function confirmarExclusaoFotosModal() {
+    setApagandoFotosModal(true);
+    setErro("");
+    try {
+      for (const fotoId of fotosExcluindo) {
+        await excluirFotoExecucao(fotoId);
+      }
+      setAvisoFotos(`${fotosExcluindo.length} foto(s) excluída(s).`);
+      setFotosExcluindo(null);
+      const atualizadas = await apiExecucoesReclamacao.listar(`?reclamacao_id=${id}`);
+      setExecucoes(atualizadas);
+      if (execucaoEditando) {
+        await carregarFotosDoModal(atualizadas, [execucaoEditando.id, ...idsParaMesclar]);
+      }
+    } catch (err) {
+      setErro(err.message);
+      setFotosExcluindo(null);
+    } finally {
+      setApagandoFotosModal(false);
+    }
+  }
+
   async function carregarFotosDoModal(listaExecs, idsGrupo) {
     const fotos = listaExecs.filter((e) => idsGrupo.includes(e.id)).flatMap((e) => e.fotos || []);
     const comPreview = await Promise.all(
@@ -1116,19 +1142,57 @@ export default function ExecucaoReclamacao() {
                   )}
                 </div>
                 {avisoFotos && <p style={{ color: "var(--success, #15803d)", fontSize: 13, margin: "0 0 8px" }}>{avisoFotos}</p>}
+                {ehAdmin && fotosModal.length > 1 && (
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => setFotosExcluindo(fotosModal.map((f) => f.id))}
+                    style={{ fontSize: 11, height: 24, padding: "0 8px", color: "var(--danger)", marginBottom: 8 }}
+                  >
+                    <i className="ti ti-trash" aria-hidden="true" style={{ marginRight: 4, fontSize: 13 }} />
+                    Excluir todas
+                  </button>
+                )}
                 {execucaoEditando && fotosModal.length === 0 && (
                   <span style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>Nenhuma foto nesta execução.</span>
                 )}
                 {fotosModal.length > 0 && (
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {fotosModal.map((f) => (
-                      <a key={f.id} href={f.previewUrl} target="_blank" rel="noreferrer" title="Abrir a foto">
-                        <img
-                          src={f.previewUrl}
-                          alt="Foto da execução"
-                          style={{ width: 84, height: 84, objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)" }}
-                        />
-                      </a>
+                      <div key={f.id} style={{ position: "relative" }}>
+                        <a href={f.previewUrl} target="_blank" rel="noreferrer" title="Abrir a foto">
+                          <img
+                            src={f.previewUrl}
+                            alt="Foto da execução"
+                            style={{ width: 84, height: 84, objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)" }}
+                          />
+                        </a>
+                        {ehAdmin && (
+                          <button
+                            type="button"
+                            title="Excluir esta foto"
+                            onClick={() => setFotosExcluindo([f.id])}
+                            style={{
+                              position: "absolute",
+                              top: 4,
+                              right: 4,
+                              width: 22,
+                              height: 22,
+                              padding: 0,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              borderRadius: 6,
+                              border: "1px solid var(--border)",
+                              background: "#fff",
+                              color: "var(--danger)",
+                              cursor: "pointer",
+                            }}
+                          >
+                            <i className="ti ti-trash" aria-hidden="true" style={{ fontSize: 13 }} />
+                          </button>
+                        )}
+                      </div>
                     ))}
                   </div>
                 )}
@@ -1158,6 +1222,15 @@ export default function ExecucaoReclamacao() {
         aberto={modalMaterialIdx !== null}
         onFechar={() => setModalMaterialIdx(null)}
         onCriado={materialCriado}
+      />
+
+      <ConfirmDialog
+        aberto={!!fotosExcluindo}
+        titulo="Excluir fotos"
+        mensagem={`Excluir ${fotosExcluindo?.length || 0} foto(s) desta execução? Os arquivos serão apagados e essa ação não pode ser desfeita.`}
+        confirmando={apagandoFotosModal}
+        onConfirmar={confirmarExclusaoFotosModal}
+        onCancelar={() => setFotosExcluindo(null)}
       />
 
       <ConfirmDialog
