@@ -11,6 +11,7 @@ import {
   apiEquipesDia,
   apiExecucoesReclamacao,
   apiItensExecucao,
+  importarFotosExecucao,
   apiMateriais,
   apiPrefeituras,
   apiPontosMaterialContrato,
@@ -107,6 +108,8 @@ export default function ExecucaoReclamacao() {
   const [apagandoItem, setApagandoItem] = useState(false);
   const [grupoExcluindo, setGrupoExcluindo] = useState(null); // execuções (sem material) a excluir
   const [apagandoGrupo, setApagandoGrupo] = useState(false);
+  const [importandoFotos, setImportandoFotos] = useState(false);
+  const [avisoFotos, setAvisoFotos] = useState("");
   const [validando, setValidando] = useState(false);
 
   const [modalReabrirAberto, setModalReabrirAberto] = useState(false);
@@ -401,6 +404,24 @@ export default function ExecucaoReclamacao() {
     }
   }
 
+  // Importa fotos do computador para a execução (quando a equipe não tirou pelo app).
+  // O servidor registra na observação da reclamação que foram importadas.
+  async function importarFotos(execucaoId, arquivos) {
+    if (!arquivos || arquivos.length === 0) return;
+    setImportandoFotos(true);
+    setErroLista("");
+    setAvisoFotos("");
+    try {
+      const salvas = await importarFotosExecucao(execucaoId, Array.from(arquivos));
+      setAvisoFotos(`${salvas.length} foto(s) importada(s). Isso foi registrado na observação da reclamação.`);
+      carregar();
+    } catch (err) {
+      setErroLista(err.message);
+    } finally {
+      setImportandoFotos(false);
+    }
+  }
+
   // Exclui as execuções vazias (sem nenhum material) de um mesmo dia e equipe.
   async function confirmarExclusaoGrupo() {
     setApagandoGrupo(true);
@@ -610,6 +631,8 @@ export default function ExecucaoReclamacao() {
           )}
         </div>
 
+        {avisoFotos && <p style={{ color: "var(--success, #15803d)", fontSize: 13 }}>{avisoFotos}</p>}
+
         {execucoes.length === 0 ? (
           <div className="card empty-state">Nenhuma execução registrada ainda.</div>
         ) : (
@@ -620,7 +643,26 @@ export default function ExecucaoReclamacao() {
                   {formatarData(grupo.data)} {formatarHora(grupo.execucoes[0].hora_execucao) || "00:00"}
                   {grupo.equipeId ? ` — ${nomeEquipe(grupo.equipeId)}` : ""}
                 </strong>
-                <div style={{ display: "flex", gap: 4 }}>
+                <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                <label
+                  className="btn btn-ghost"
+                  title="Importar fotos do computador para esta execução"
+                  style={{ cursor: bloqueado || importandoFotos ? "not-allowed" : "pointer", opacity: bloqueado || importandoFotos ? 0.5 : 1 }}
+                >
+                  <i className="ti ti-photo-up" aria-hidden="true" style={{ marginRight: 6 }} />
+                  {importandoFotos ? "Importando..." : "Importar fotos"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    hidden
+                    disabled={bloqueado || importandoFotos}
+                    onChange={(e) => {
+                      importarFotos(grupo.execucoes[0].id, e.target.files);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
                 <button
                   className="btn btn-ghost"
                   onClick={() => abrirEdicaoExecucao(grupo.execucoes[0])}

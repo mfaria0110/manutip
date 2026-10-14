@@ -163,6 +163,22 @@ export const apiItensExecucao = {
   excluir: (id, apagarFotos = false) =>
     req(`/execucoes-reclamacao/itens/${id}${apagarFotos ? "?apagar_fotos=true" : ""}`, { method: "DELETE" }),
 };
+// Importa fotos pelo escritório (várias de uma vez). O servidor anota na observação da reclamação.
+export async function importarFotosExecucao(execucaoId, arquivos) {
+  const t = token();
+  const form = new FormData();
+  arquivos.forEach((a) => form.append("arquivos", a));
+  const resp = await fetch(`${BASE}/execucoes-reclamacao/${execucaoId}/fotos-importadas`, {
+    method: "POST",
+    headers: t ? { Authorization: `Bearer ${t}` } : {},
+    body: form,
+  });
+  if (!resp.ok) {
+    const corpo = await resp.json().catch(() => ({}));
+    throw new Error(typeof corpo.detail === "string" ? corpo.detail : "Não foi possível importar as fotos.");
+  }
+  return resp.json();
+}
 export const excluirFotoExecucao = (id) => req(`/execucoes-reclamacao/fotos/${id}`, { method: "DELETE" });
 export const apiTiposLampada = crud("/tipos-lampada");
 export const apiPotenciasLampada = crud("/potencias-lampada");

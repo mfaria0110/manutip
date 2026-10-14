@@ -1,5 +1,6 @@
 import uuid
 from datetime import date, datetime, time, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile
@@ -8,13 +9,14 @@ from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 
-from app.core.acesso import requer_acesso, requer_admin
+from app.core.acesso import requer_acesso, requer_admin, usuario_atual
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.pontos_material import contrato_vigente, pontos_do_material
 from app.models.contrato import TipoContrato
 from app.models.execucao_reclamacao import ExecucaoReclamacao, FotoExecucao, ItemExecucaoMaterial
 from app.models.reclamacao import Reclamacao
+from app.models.usuario import Usuario
 
 router = APIRouter(prefix="/api/execucoes-reclamacao", tags=["execucoes_reclamacao"])
 
@@ -445,6 +447,68 @@ async def anexar_foto(execucao_id: uuid.UUID, arquivo: UploadFile, db: Session =
     db.commit()
     db.refresh(foto)
     return FotoOut(id=foto.id, url=f"/api/execucoes-reclamacao/fotos/{foto.id}")
+
+
+_MAX_FOTOS_IMPORTACAO = 30
+_MAX_BYTES_FOTO = 15 * 1024 * 1024
+
+
+@router.post(
+    "/{execucao_id}/fotos-importadas",
+    response_model=list[FotoOut],
+    dependencies=[Depends(requer_acesso("execucoes", "edit"))],
+)
+async def importar_fotos(
+    execucao_id: uuid.UUID,
+    arquivos: list[UploadFile],
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(usuario_atual),
+):
+    """Importação de fotos pelo escritório (quando a equipe não tirou pelo app):
+    grava como as fotos do app e registra na observação da reclamação que
+    foram importadas, por quem e quando."""
+    execucao = db.get(ExecucaoReclamacao, execucao_id)
+    if not execucao:
+        raise HTTPException(status_code=404, detail="Execução não encontrada.")
+    if not arquivos:
+        raise HTTPException(status_code=400, detail="Selecione ao menos uma foto.")
+    if len(arquivos) > _MAX_FOTOS_IMPORTACAO:
+        raise HTTPException(status_code=400, detail=f"Importe no máximo {_MAX_FOTOS_IMPORTACAO} fotos por vez.")
+
+    _PASTA_FOTOS.mkdir(parents=True, exist_ok=True)
+    gravados: list[Path] = []
+    fotos: list[FotoExecucao] = []
+    try:
+        for arquivo in arquivos:
+            if not (arquivo.content_type or "").startswith("image/"):
+                raise HTTPException(status_code=400, detail=f'O arquivo "{arquivo.filename}" não é uma imagem.')
+            conteudo = await arquivo.read()
+            if len(conteudo) > _MAX_BYTES_FOTO:
+                raise HTTPException(status_code=400, detail=f'A foto "{arquivo.filename}" passa de 15 MB.')
+            destino = _PASTA_FOTOS / f"{uuid.uuid4()}{Path(arquivo.filename or '').suffix or '.jpg'}"
+            destino.write_bytes(conteudo)
+            gravados.append(destino)
+            foto = FotoExecucao(
+                execucao_id=execucao_id, arquivo_path=str(destino), criado_em=datetime.now(timezone.utc)
+            )
+            db.add(foto)
+            fotos.append(foto)
+
+        reclamacao = db.get(Reclamacao, execucao.reclamacao_id)
+        agora = datetime.now(ZoneInfo("America/Sao_Paulo"))
+        nota = (
+            f"[{agora:%d/%m/%Y %H:%M}] {len(fotos)} foto(s) importada(s) pelo escritório "
+            f"({usuario.nome}) na execução de {execucao.data_execucao:%d/%m/%Y}."
+        )
+        reclamacao.observacoes = f"{reclamacao.observacoes}\n{nota}" if reclamacao.observacoes else nota
+        db.commit()
+    except Exception:
+        db.rollback()
+        remover_arquivos([str(g) for g in gravados])  # não deixa arquivo órfão se algo falhou
+        raise
+    for f in fotos:
+        db.refresh(f)
+    return [FotoOut(id=f.id, url=f"/api/execucoes-reclamacao/fotos/{f.id}") for f in fotos]
 
 
 @router.delete("/fotos/{foto_id}", status_code=204, dependencies=[Depends(requer_admin)])
