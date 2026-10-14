@@ -349,11 +349,22 @@ def atualizar(execucao_id: uuid.UUID, req: ExecucaoUpdate, db: Session = Depends
 
 
 @router.delete("/{execucao_id}", status_code=204, dependencies=[Depends(requer_admin)])
-def excluir(execucao_id: uuid.UUID, db: Session = Depends(get_db)):
+def excluir(execucao_id: uuid.UUID, mover_fotos_para: uuid.UUID | None = None, db: Session = Depends(get_db)):
+    """Exclui a execução. Ao juntar execuções do mesmo dia e equipe, a tela passa
+    `mover_fotos_para` (a execução que fica) pra as fotos não se perderem."""
     obj = db.get(ExecucaoReclamacao, execucao_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Execução não encontrada.")
     reclamacao_id = obj.reclamacao_id
+    if mover_fotos_para and mover_fotos_para != execucao_id:
+        destino = db.get(ExecucaoReclamacao, mover_fotos_para)
+        if not destino or destino.reclamacao_id != reclamacao_id:
+            raise HTTPException(status_code=400, detail="Execução de destino das fotos inválida.")
+        db.query(FotoExecucao).filter(FotoExecucao.execucao_id == execucao_id).update(
+            {FotoExecucao.execucao_id: mover_fotos_para}, synchronize_session=False
+        )
+        db.flush()
+        db.expire(obj, ["fotos"])
     caminhos_fotos = apagar_registros_fotos([execucao_id], db)
     db.query(ItemExecucaoMaterial).filter(ItemExecucaoMaterial.execucao_id == execucao_id).delete()
     db.delete(obj)

@@ -140,7 +140,12 @@ export const apiEquipesDia = crud("/equipes");
 export function proximoNomeEquipe() {
   return req("/equipes/proximo-nome");
 }
-export const apiExecucoesReclamacao = crud("/execucoes-reclamacao");
+export const apiExecucoesReclamacao = {
+  ...crud("/execucoes-reclamacao"),
+  // moverFotosPara: ao juntar execuções, as fotos da que sai vão para a que fica.
+  excluir: (id, moverFotosPara) =>
+    req(`/execucoes-reclamacao/${id}${moverFotosPara ? `?mover_fotos_para=${moverFotosPara}` : ""}`, { method: "DELETE" }),
+};
 // <img src> não manda o header Authorization — baixa com fetch autenticado
 // e devolve uma URL de blob local pra usar no <img>.
 export async function obterFotoURL(fotoUrl) {

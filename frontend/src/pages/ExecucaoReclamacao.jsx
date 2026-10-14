@@ -12,6 +12,7 @@ import {
   apiExecucoesReclamacao,
   apiItensExecucao,
   importarFotosExecucao,
+  obterFotoBlob,
   apiMateriais,
   apiPrefeituras,
   apiPontosMaterialContrato,
@@ -109,6 +110,7 @@ export default function ExecucaoReclamacao() {
   const [grupoExcluindo, setGrupoExcluindo] = useState(null); // execuções (sem material) a excluir
   const [apagandoGrupo, setApagandoGrupo] = useState(false);
   const [importandoFotos, setImportandoFotos] = useState(false);
+  const [fotosModal, setFotosModal] = useState([]); // fotos da execução em edição: [{id, previewUrl}]
   const [avisoFotos, setAvisoFotos] = useState("");
   const [validando, setValidando] = useState(false);
 
@@ -207,6 +209,7 @@ export default function ExecucaoReclamacao() {
 
   function abrirNovaExecucao() {
     setExecucaoEditando(null);
+    setFotosModal([]);
     setIdsParaMesclar([]);
     setDataExecucao(hojeLocal());
     setHoraExecucao("00:00");
@@ -230,10 +233,23 @@ export default function ExecucaoReclamacao() {
   // TODAS as execuções da mesma equipe+data (normalmente deveria haver só
   // uma, mas registros antigos podem estar espalhados em várias) — editar
   // e salvar consolida tudo numa execução só.
+  async function carregarFotosDoModal(listaExecs, idsGrupo) {
+    const fotos = listaExecs.filter((e) => idsGrupo.includes(e.id)).flatMap((e) => e.fotos || []);
+    const comPreview = await Promise.all(
+      fotos.map(async (f) => {
+        const blob = await obterFotoBlob(f.url).catch(() => null);
+        return { id: f.id, previewUrl: blob ? URL.createObjectURL(blob) : null };
+      })
+    );
+    setFotosModal(comPreview.filter((f) => f.previewUrl));
+  }
+
   function abrirEdicaoExecucao(ex) {
     const grupo = execucoesDoMesmoGrupo(ex);
     const [principal, ...outras] = grupo;
     setExecucaoEditando(principal);
+    setFotosModal([]);
+    carregarFotosDoModal(execucoes, grupo.map((g) => g.id));
     setIdsParaMesclar(outras.map((o) => o.id));
     setDataExecucao(principal.data_execucao);
     setHoraExecucao(formatarHora(principal.hora_execucao) || "00:00");
@@ -353,7 +369,7 @@ export default function ExecucaoReclamacao() {
           itens: itensPayload,
         });
         for (const extraId of idsParaMesclar) {
-          await apiExecucoesReclamacao.excluir(extraId);
+          await apiExecucoesReclamacao.excluir(extraId, execucaoEditando.id);
         }
       } else {
         // Já existe execução(ões) para essa mesma equipe+data? Mescla os
@@ -382,7 +398,7 @@ export default function ExecucaoReclamacao() {
             itens: [...itensExistentes, ...itensPayload],
           });
           for (const extra of extras) {
-            await apiExecucoesReclamacao.excluir(extra.id);
+            await apiExecucoesReclamacao.excluir(extra.id, alvo.id);
           }
         } else {
           await apiExecucoesReclamacao.criar({
@@ -414,7 +430,11 @@ export default function ExecucaoReclamacao() {
     try {
       const salvas = await importarFotosExecucao(execucaoId, Array.from(arquivos));
       setAvisoFotos(`${salvas.length} foto(s) importada(s). Isso foi registrado na observação da reclamação.`);
-      carregar();
+      const atualizadas = await apiExecucoesReclamacao.listar(`?reclamacao_id=${id}`);
+      setExecucoes(atualizadas);
+      if (formAberto && execucaoEditando) {
+        await carregarFotosDoModal(atualizadas, [execucaoEditando.id, ...idsParaMesclar]);
+      }
     } catch (err) {
       setErroLista(err.message);
     } finally {
@@ -1075,6 +1095,56 @@ export default function ExecucaoReclamacao() {
                     </div>
                   );
                 })}
+              </div>
+
+              <div style={{ marginTop: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
+                  <label style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-secondary)" }}>
+                    Fotos {execucaoEditando ? `(${fotosModal.length})` : ""}
+                  </label>
+                  {execucaoEditando ? (
+                    <label
+                      className="btn"
+                      title="Importar fotos do computador (as da equipe de campo já aparecem aqui)"
+                      style={{ cursor: importandoFotos ? "not-allowed" : "pointer", opacity: importandoFotos ? 0.5 : 1 }}
+                    >
+                      <i className="ti ti-photo-up" aria-hidden="true" style={{ marginRight: 6 }} />
+                      {importandoFotos ? "Importando..." : "Importar fotos"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        hidden
+                        disabled={importandoFotos}
+                        onChange={(e) => {
+                          importarFotos(execucaoEditando.id, e.target.files);
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                  ) : (
+                    <span style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>
+                      Salve a execução para poder importar fotos.
+                    </span>
+                  )}
+                </div>
+                {avisoFotos && <p style={{ color: "var(--success, #15803d)", fontSize: 13, margin: "0 0 8px" }}>{avisoFotos}</p>}
+                {execucaoEditando && fotosModal.length === 0 && (
+                  <span style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>Nenhuma foto nesta execução.</span>
+                )}
+                {fotosModal.length > 0 && (
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {fotosModal.map((f) => (
+                      <a key={f.id} href={f.previewUrl} target="_blank" rel="noreferrer" title="Abrir a foto">
+                        <img
+                          src={f.previewUrl}
+                          alt="Foto da execução"
+                          style={{ width: 84, height: 84, objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)" }}
+                        />
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {erroPontosVigentes && <p className="erro-msg">{erroPontosVigentes}</p>}
