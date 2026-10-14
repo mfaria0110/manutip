@@ -664,25 +664,6 @@ export default function ExecucaoReclamacao() {
                   {grupo.equipeId ? ` — ${nomeEquipe(grupo.equipeId)}` : ""}
                 </strong>
                 <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                <label
-                  className="btn btn-ghost"
-                  title="Importar fotos do computador para esta execução"
-                  style={{ cursor: bloqueado || importandoFotos ? "not-allowed" : "pointer", opacity: bloqueado || importandoFotos ? 0.5 : 1 }}
-                >
-                  <i className="ti ti-photo-up" aria-hidden="true" style={{ marginRight: 6 }} />
-                  {importandoFotos ? "Importando..." : "Importar fotos"}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    hidden
-                    disabled={bloqueado || importandoFotos}
-                    onChange={(e) => {
-                      importarFotos(grupo.execucoes[0].id, e.target.files);
-                      e.target.value = "";
-                    }}
-                  />
-                </label>
                 <button
                   className="btn btn-ghost"
                   onClick={() => abrirEdicaoExecucao(grupo.execucoes[0])}
