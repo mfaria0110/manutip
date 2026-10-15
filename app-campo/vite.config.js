@@ -23,7 +23,7 @@ export default defineConfig({
           },
         ],
       },
-      includeAssets: ["icon.svg"],
+      includeAssets: ["icon.svg", "apple-touch-icon.png"],
       manifest: {
         name: "Manutip Campo",
         short_name: "Manutip Campo",
@@ -33,9 +33,12 @@ export default defineConfig({
         display: "standalone",
         background_color: "#f4f6fa",
         theme_color: "#3b82f6",
+        lang: "pt-BR",
         icons: [
+          { src: "icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+          { src: "icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+          { src: "icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
           { src: "icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
-          { src: "icon.svg", sizes: "any", type: "image/svg+xml", purpose: "maskable" },
         ],
       },
     }),
