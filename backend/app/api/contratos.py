@@ -84,7 +84,7 @@ class PrecoPontoUpdate(BaseModel):
 router_precos = crud_simples(
     prefix="/api/precos-ponto",
     tags=["precos"],
-    modulo="precos",
+    modulo="contratos",
     modelo=PrecoPonto,
     schema_out=PrecoPontoOut,
     schema_create=PrecoPontoCreate,

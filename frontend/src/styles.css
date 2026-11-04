@@ -407,6 +407,20 @@ button {
   padding: 0;
 }
 
+.userbar-usuario {
+  background: none;
+  border: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 4px 8px !important;
+}
+
+.userbar-usuario:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
 .userbar .btn-ghost:hover {
   background: rgba(255, 255, 255, 0.18);
 }
@@ -631,6 +645,11 @@ tbody tr:hover {
 .linha-item-material select {
   height: 28px;
   font-size: 11px;
+}
+
+.modal .form-field input:disabled {
+  background: var(--bg-page);
+  color: var(--text-secondary);
 }
 
 .linha-item-material input:disabled {
@@ -1112,4 +1131,145 @@ tbody tr:hover {
 .select-equipe-compacto,
 .select-equipe-compacto option {
   font-size: 11px;
+}
+
+/* ---------------------------------------------------------------- Usuários e perfis de acesso (igual ao PodAPS) */
+.abas {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin: 0 0 14px;
+}
+.abas button {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  margin-bottom: -1px;
+}
+.abas button.ativo {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.topo-aba {
+  margin-bottom: 12px;
+}
+.topo-aba .muted {
+  margin: 10px 0 0;
+}
+.muted {
+  color: var(--text-secondary);
+  font-size: 12.5px;
+}
+p.muted {
+  margin: 0 0 12px;
+}
+.passo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  margin: 6px 0 12px;
+}
+.passo-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 12px;
+}
+.campo-com-botao {
+  display: flex;
+  gap: 6px;
+}
+.campo-com-botao input {
+  flex: 1;
+  min-width: 0;
+}
+.campo-com-botao .btn {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+label.check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+label.check input {
+  width: auto;
+}
+.tabela-clicavel tbody tr {
+  cursor: pointer;
+}
+.linha-inativa td {
+  color: var(--text-secondary);
+}
+.ok-msg {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.modal-perfil {
+  width: 900px;
+}
+.perfil-grade-caixa {
+  max-height: 52vh;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.perfil-grade th,
+.perfil-grade td {
+  padding: 5px 10px;
+  font-size: 12.5px;
+}
+.perfil-grade thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-card);
+  z-index: 1;
+}
+.perfil-grade .centro {
+  text-align: center;
+  width: 70px;
+}
+.perfil-grade input[type="checkbox"] {
+  width: auto;
+  height: auto;
+  margin: 0;
+}
+.perfil-grupo td {
+  background: var(--bg-page);
+}
+.perfil-subitem td:first-child {
+  padding-left: 26px;
+}
+.perfil-sem-acesso td:first-child {
+  color: var(--text-secondary);
+}
+.perfil-nao-aplica {
+  opacity: 0.3;
+}
+.perfil-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
 }

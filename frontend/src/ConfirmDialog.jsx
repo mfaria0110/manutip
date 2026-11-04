@@ -20,7 +20,7 @@ export default function ConfirmDialog({
         <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>{mensagem}</p>
         {pedeSenha && (
           <div className="form-field" style={{ marginTop: 10 }}>
-            <label>Sua senha de administrador</label>
+            <label>Sua senha</label>
             <input
               type="password"
               autoFocus

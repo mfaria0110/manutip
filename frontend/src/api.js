@@ -60,6 +60,10 @@ export function meuPerfil() {
   return req("/me");
 }
 
+export function salvarMeuCadastro(dados) {
+  return req("/me", { method: "PATCH", body: JSON.stringify(dados) });
+}
+
 export function salvarTema(tema) {
   return req("/me/tema", { method: "PUT", body: JSON.stringify({ tema }) });
 }
@@ -75,7 +79,18 @@ function crud(path) {
   };
 }
 
-export const apiUsuarios = crud("/usuarios");
+export const apiUsuarios = {
+  ...crud("/usuarios"),
+  atualizar: (id, dados) => req(`/usuarios/${id}`, { method: "PATCH", body: JSON.stringify(dados) }),
+};
+// Perfis de acesso (tela Usuários → Perfis de acesso): criar/editar/excluir só superadmin.
+export const apiPerfis = {
+  listar: () => req("/perfis"),
+  catalogo: () => req("/perfis/catalogo"),
+  criar: (dados) => req("/perfis", { method: "POST", body: JSON.stringify(dados) }),
+  atualizar: (id, dados) => req(`/perfis/${id}`, { method: "PATCH", body: JSON.stringify(dados) }),
+  excluir: (id) => req(`/perfis/${id}`, { method: "DELETE" }),
+};
 export const apiCidades = crud("/cidades");
 export const apiBairros = crud("/bairros");
 export const apiPrefeituras = crud("/prefeituras");
@@ -99,7 +114,7 @@ export const apiPontosMaterialContrato = {
 };
 export const apiReclamacoes = {
   ...crud("/reclamacoes"),
-  // Exclusão definitiva pede a senha do administrador logado.
+  // Exclusão definitiva pede a senha do usuário logado.
   excluir: (id, senha) => req(`/reclamacoes/${id}`, { method: "DELETE", body: JSON.stringify({ senha }) }),
 };
 export function reabrirReclamacao(id, username, senha) {

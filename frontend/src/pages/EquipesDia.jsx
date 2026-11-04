@@ -6,8 +6,10 @@ import { aplicarMascara } from "../CadastroPage";
 import { formatarData, hojeLocal } from "../formatos";
 
 export default function EquipesDia() {
-  const { pode, ehAdmin } = useAcesso();
-  const podeEditar = pode("equipes", "edit");
+  const { pode } = useAcesso();
+  const podeCriar = pode("equipes.criar");
+  const podeEditar = pode("equipes.editar");
+  const podeExcluir = pode("equipes.excluir");
 
   const [itens, setItens] = useState([]);
   const [funcionarios, setFuncionarios] = useState([]);
@@ -151,7 +153,7 @@ export default function EquipesDia() {
     <>
       <header className="topbar">
         <h1>Equipes</h1>
-        {podeEditar && (
+        {podeCriar && (
           <button className="btn btn-primary" onClick={abrirNovo}>
             <i className="ti ti-plus" aria-hidden="true" style={{ marginRight: 6 }} />
             Novo
@@ -176,7 +178,7 @@ export default function EquipesDia() {
                   <th>Situação</th>
                   <th>Veículo</th>
                   <th>Membros</th>
-                  {(podeEditar || ehAdmin) && <th style={{ width: 90 }} />}
+                  {(podeEditar || podeExcluir) && <th style={{ width: 90 }} />}
                 </tr>
               </thead>
               <tbody>
@@ -192,7 +194,7 @@ export default function EquipesDia() {
                     </td>
                     <td>{nomeVeiculo(item.veiculo_id)}</td>
                     <td>{item.membros.map((m) => m.funcionario_nome).join(", ") || "—"}</td>
-                    {(podeEditar || ehAdmin) && (
+                    {(podeEditar || podeExcluir) && (
                       <td>
                         <div style={{ display: "flex", gap: 4 }}>
                           {podeEditar && (
@@ -200,7 +202,7 @@ export default function EquipesDia() {
                               <i className="ti ti-edit" aria-hidden="true" />
                             </button>
                           )}
-                          {ehAdmin && (
+                          {podeExcluir && (
                             <button
                               className="btn btn-ghost"
                               onClick={() => setExcluindo(item)}

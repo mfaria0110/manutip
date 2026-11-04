@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.core.acesso import requer_acesso
+from app.core.permissoes import exigir
 from app.core.database import get_db
 from app.core.pontos_material import contrato_vigente
 from app.models.material import Material
@@ -60,12 +60,12 @@ def _matriz(contrato_id: uuid.UUID, db: Session) -> list[PontoMaterialOut]:
     return saida
 
 
-@router.get("/matriz", response_model=list[PontoMaterialOut], dependencies=[Depends(requer_acesso("contratos", "use"))])
+@router.get("/matriz", response_model=list[PontoMaterialOut], dependencies=[Depends(exigir("contratos.acesso"))])
 def obter_matriz(contrato_id: uuid.UUID, db: Session = Depends(get_db)):
     return _matriz(contrato_id, db)
 
 
-@router.put("/matriz", response_model=list[PontoMaterialOut], dependencies=[Depends(requer_acesso("contratos", "edit"))])
+@router.put("/matriz", response_model=list[PontoMaterialOut], dependencies=[Depends(exigir("contratos.editar"))])
 def salvar_matriz(contrato_id: uuid.UUID, req: SalvarMatrizIn, db: Session = Depends(get_db)):
     existentes = {
         p.material_id: p
@@ -91,7 +91,7 @@ def salvar_matriz(contrato_id: uuid.UUID, req: SalvarMatrizIn, db: Session = Dep
     return _matriz(contrato_id, db)
 
 
-@router.get("/vigente", dependencies=[Depends(requer_acesso("execucoes", "use"))])
+@router.get("/vigente", dependencies=[Depends(exigir("execucoes.acesso"))])
 def obter_vigente(prefeitura_id: uuid.UUID, data: date = Query(...), db: Session = Depends(get_db)):
     contrato = contrato_vigente(prefeitura_id, data, db)
     registros = db.query(PontoMaterialContrato).filter(PontoMaterialContrato.contrato_id == contrato.id).all()
@@ -105,7 +105,7 @@ def obter_vigente(prefeitura_id: uuid.UUID, data: date = Query(...), db: Session
     }
 
 
-@router.get("/contrato-vigente", dependencies=[Depends(requer_acesso("execucoes", "use"))])
+@router.get("/contrato-vigente", dependencies=[Depends(exigir("execucoes.acesso"))])
 def obter_contrato_vigente(prefeitura_id: uuid.UUID, data: date = Query(...), db: Session = Depends(get_db)):
     """Tipo (por ponto / por item) do contrato vigente da prefeitura na data —
     o formulário de execução usa pra decidir se mostra os pontos por material."""

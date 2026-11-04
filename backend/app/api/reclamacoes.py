@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.acesso import requer_acesso, requer_admin
+from app.core.permissoes import exigir, pode
 from app.core.crud_simples import _mensagem_duplicidade
 from app.core.database import get_db
 from app.core.security import verificar_senha
@@ -17,7 +17,7 @@ from app.models.designacao import DesignacaoReclamacao
 from app.models.execucao_reclamacao import ExecucaoReclamacao, FotoExecucao, ItemExecucaoMaterial
 from app.models.prefeitura import Prefeitura
 from app.models.reclamacao import Reclamacao
-from app.models.usuario import PapelUsuario, Usuario
+from app.models.usuario import Usuario
 
 
 class ReclamacaoOut(BaseModel):
@@ -135,7 +135,7 @@ def _hoje_brasil() -> date:
 router = APIRouter(prefix="/api/reclamacoes", tags=["reclamacoes"])
 
 
-@router.get("", response_model=list[ReclamacaoOut], dependencies=[Depends(requer_acesso("reclamacoes", "use"))])
+@router.get("", response_model=list[ReclamacaoOut], dependencies=[Depends(exigir("reclamacoes.acesso"))])
 def listar(
     prefeitura_id: uuid.UUID | None = Query(default=None),
     status: str | None = Query(default=None),
@@ -183,7 +183,7 @@ def listar(
     return saida
 
 
-@router.get("/{item_id}", response_model=ReclamacaoOut, dependencies=[Depends(requer_acesso("reclamacoes", "use"))])
+@router.get("/{item_id}", response_model=ReclamacaoOut, dependencies=[Depends(exigir("reclamacoes.acesso"))])
 def obter(item_id: uuid.UUID, db: Session = Depends(get_db)):
     obj = db.get(Reclamacao, item_id)
     if not obj:
@@ -191,7 +191,7 @@ def obter(item_id: uuid.UUID, db: Session = Depends(get_db)):
     return obj
 
 
-@router.post("", response_model=ReclamacaoOut, dependencies=[Depends(requer_acesso("reclamacoes", "edit"))])
+@router.post("", response_model=ReclamacaoOut, dependencies=[Depends(exigir("reclamacoes.criar"))])
 def criar(req: ReclamacaoCreate, db: Session = Depends(get_db)):
     codigo = _proximo_codigo(req.prefeitura_id, db)
     obj = Reclamacao(codigo=codigo, **req.model_dump())
@@ -205,7 +205,7 @@ def criar(req: ReclamacaoCreate, db: Session = Depends(get_db)):
     return obj
 
 
-@router.put("/{item_id}", response_model=ReclamacaoOut, dependencies=[Depends(requer_acesso("reclamacoes", "edit"))])
+@router.put("/{item_id}", response_model=ReclamacaoOut, dependencies=[Depends(exigir("reclamacoes.editar"))])
 def atualizar(item_id: uuid.UUID, req: ReclamacaoUpdate, db: Session = Depends(get_db)):
     obj = db.get(Reclamacao, item_id)
     if not obj:
@@ -230,10 +230,10 @@ def excluir(
     item_id: uuid.UUID,
     req: ExcluirRequest,
     db: Session = Depends(get_db),
-    usuario_logado: Usuario = Depends(requer_admin),
+    usuario_logado: Usuario = Depends(exigir("reclamacoes.excluir")),
 ):
-    """Exclusão definitiva (leva execuções, materiais e fotos): além de ser
-    administrador, exige a senha do próprio administrador logado."""
+    """Exclusão definitiva (leva execuções, materiais e fotos): além da
+    permissão Excluir de Reclamações, exige a senha do próprio usuário logado."""
     if not verificar_senha(req.senha, usuario_logado.senha_hash):
         raise HTTPException(status_code=403, detail="Senha incorreta. A reclamação não foi excluída.")
     obj = db.get(Reclamacao, item_id)
@@ -253,23 +253,23 @@ class ReabrirRequest(BaseModel):
 @router.post(
     "/{reclamacao_id}/reabrir",
     response_model=ReclamacaoOut,
-    dependencies=[Depends(requer_acesso("reclamacoes", "use"))],
+    dependencies=[Depends(exigir("reclamacoes.acesso"))],
 )
 def reabrir(reclamacao_id: uuid.UUID, req: ReabrirRequest, db: Session = Depends(get_db)):
     """Volta uma reclamação validada para ABERTA, liberando edição/exclusão
-    de novo. Exige a senha de um usuário ADMIN ou SUPERADMIN cadastrado (não precisa ser
-    o usuário logado) como confirmação — é uma trava de supervisor, não um
-    login."""
+    de novo. Exige a senha de um usuário cujo perfil tenha "Reclamações →
+    Autorizar reabertura com senha" (não precisa ser o usuário logado) como
+    confirmação — é uma trava de supervisor, não um login."""
     reclamacao = db.get(Reclamacao, reclamacao_id)
     if not reclamacao:
         raise HTTPException(status_code=404, detail="Não encontrado.")
-    admin = (
-        db.query(Usuario)
-        .filter(Usuario.username == req.username, Usuario.papel.in_([PapelUsuario.ADMIN, PapelUsuario.SUPERADMIN]))
-        .first()
-    )
-    if not admin or not admin.ativo or not verificar_senha(req.senha, admin.senha_hash):
-        raise HTTPException(status_code=401, detail="Usuário ou senha de administrador inválidos.")
+    autorizador = db.query(Usuario).filter(Usuario.username == req.username).first()
+    if (
+        not autorizador
+        or not pode(autorizador, "reclamacoes.reabrir")
+        or not verificar_senha(req.senha, autorizador.senha_hash)
+    ):
+        raise HTTPException(status_code=401, detail="Usuário ou senha de quem autoriza a reabertura inválidos.")
     reclamacao.status = "ABERTA"
     db.commit()
     db.refresh(reclamacao)

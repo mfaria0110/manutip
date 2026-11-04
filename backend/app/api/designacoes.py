@@ -7,7 +7,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session, selectinload
 
-from app.core.acesso import requer_acesso
+from app.core.permissoes import exigir
 from app.core.database import get_db
 from app.models.designacao import DesignacaoReclamacao
 from app.models.pessoal import EquipeDia, EquipeMembro
@@ -45,7 +45,7 @@ class DesignacaoSalvar(BaseModel):
     itens: list[DesignacaoItem] = []
 
 
-@router.get("", response_model=list[DesignacaoOut], dependencies=[Depends(requer_acesso("reclamacoes", "use"))])
+@router.get("", response_model=list[DesignacaoOut], dependencies=[Depends(exigir("reclamacoes.acesso"))])
 def listar(
     data: date | None = Query(default=None),
     equipe_dia_id: uuid.UUID | None = Query(default=None),
@@ -67,7 +67,7 @@ def listar(
 @router.put(
     "/dia",
     response_model=list[DesignacaoOut],
-    dependencies=[Depends(requer_acesso("reclamacoes", "edit"))],
+    dependencies=[Depends(exigir("reclamacoes.editar"))],
 )
 def salvar_do_dia(req: DesignacaoSalvar, db: Session = Depends(get_db)):
     """Grava o roteiro do dia da prefeitura: cada item liga uma reclamação
@@ -118,7 +118,7 @@ class ExcelRoteiro(BaseModel):
     reclamacao_ids: list[uuid.UUID] = []
 
 
-@router.post("/excel", dependencies=[Depends(requer_acesso("reclamacoes", "use"))])
+@router.post("/excel", dependencies=[Depends(exigir("reclamacoes.acesso"))])
 def exportar_excel(req: ExcelRoteiro, db: Session = Depends(get_db)):
     """Roteiro da equipe em planilha .xlsx, no mesmo modelo do Imprimir:
     cidade e título no topo, quadro com equipe/viatura/componentes e a tabela

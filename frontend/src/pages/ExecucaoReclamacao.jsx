@@ -64,7 +64,8 @@ export default function ExecucaoReclamacao() {
   const [searchParams] = useSearchParams();
   const prefeituraId = searchParams.get("prefeitura_id");
   const voltarParaLista = () => navigate(prefeituraId ? `/reclamacoes?prefeitura_id=${prefeituraId}` : "/reclamacoes");
-  const { ehAdmin } = useAcesso();
+  const { pode } = useAcesso();
+  const podeExcluir = pode("execucoes.excluir");
 
   const [reclamacao, setReclamacao] = useState(null);
   const [execucoes, setExecucoes] = useState([]);
@@ -236,7 +237,7 @@ export default function ExecucaoReclamacao() {
   // TODAS as execuções da mesma equipe+data (normalmente deveria haver só
   // uma, mas registros antigos podem estar espalhados em várias) — editar
   // e salvar consolida tudo numa execução só.
-  // Exclui fotos (uma ou todas) da execução em edição; só administrador (o servidor também exige).
+  // Exclui fotos (uma ou todas) da execução em edição; precisa da permissão Excluir (o servidor também exige).
   async function confirmarExclusaoFotosModal() {
     setApagandoFotosModal(true);
     setErro("");
@@ -634,7 +635,7 @@ export default function ExecucaoReclamacao() {
                   <button
                     className="btn btn-ghost"
                     onClick={abrirModalReabrir}
-                    title="Reabrir (requer senha de administrador)"
+                    title="Reabrir (requer senha de quem autoriza)"
                   >
                     <i className="ti ti-lock-open" aria-hidden="true" />
                   </button>
@@ -707,8 +708,8 @@ export default function ExecucaoReclamacao() {
                 >
                   <i className="ti ti-edit" aria-hidden="true" />
                 </button>
-                {/* Execução sem nenhum material: pode ser excluída (só administrador). */}
-                {ehAdmin && grupo.execucoes.every((ex) => ex.itens.length === 0) && (
+                {/* Execução sem nenhum material: pode ser excluída (precisa da permissão Excluir). */}
+                {podeExcluir && grupo.execucoes.every((ex) => ex.itens.length === 0) && (
                   <button
                     className="btn btn-ghost"
                     onClick={() => setGrupoExcluindo(grupo.execucoes)}
@@ -774,7 +775,7 @@ export default function ExecucaoReclamacao() {
                               {!grupoPorPonto(grupo) && <td style={{ textAlign: "center" }}>{it.qde_pontos_subst || "—"}</td>}
                               {!grupoPorPonto(grupo) && <td style={{ textAlign: "center" }}>{it.total_pontos || "—"}</td>}
                               <td>
-                                {ehAdmin && (
+                                {podeExcluir && (
                                   <button
                                     className="btn btn-ghost"
                                     onClick={() => setItemExcluindo(it)}
@@ -1142,7 +1143,7 @@ export default function ExecucaoReclamacao() {
                   )}
                 </div>
                 {avisoFotos && <p style={{ color: "var(--success, #15803d)", fontSize: 13, margin: "0 0 8px" }}>{avisoFotos}</p>}
-                {ehAdmin && fotosModal.length > 1 && (
+                {podeExcluir && fotosModal.length > 1 && (
                   <button
                     type="button"
                     className="btn"
@@ -1167,7 +1168,7 @@ export default function ExecucaoReclamacao() {
                             style={{ width: 84, height: 84, objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)" }}
                           />
                         </a>
-                        {ehAdmin && (
+                        {podeExcluir && (
                           <button
                             type="button"
                             title="Excluir esta foto"
@@ -1266,12 +1267,12 @@ export default function ExecucaoReclamacao() {
           <div className="modal" style={{ width: 380 }}>
             <h2>Reabrir reclamação</h2>
             <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: -8 }}>
-              Volta o status para "Aberta" e libera edição/exclusão. Exige a senha de um usuário administrador.
+              Volta o status para "Aberta" e libera edição/exclusão. Exige o usuário e a senha de quem tem permissão para autorizar a reabertura.
             </p>
             <form onSubmit={confirmarReabrir}>
               <div className="form-grid">
                 <div className="form-field" style={{ "--span": 12 }}>
-                  <label>Usuário administrador</label>
+                  <label>Usuário que autoriza</label>
                   <input
                     required
                     autoFocus

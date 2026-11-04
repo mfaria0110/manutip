@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from app.core.acesso import usuario_atual
 from app.core.database import get_db
-from app.core.security import gerar_token, verificar_senha
+from app.core.security import gerar_token, hash_senha, problema_forca_senha, verificar_senha
+from app.core.permissoes import eh_operacional, permissoes_do_usuario
 from app.models.usuario import Usuario
 
 router = APIRouter(tags=["auth"])
@@ -27,7 +28,7 @@ class LoginRequest(BaseModel):
 class LoginResponse(BaseModel):
     token: str
     nome: str
-    papel: str
+    perfil: str
     cpf: str | None = None
 
 
@@ -49,7 +50,7 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
     usuario.sessao_ativa_em = agora
     db.commit()
     token = gerar_token(usuario.id)
-    return LoginResponse(token=token, nome=usuario.nome, papel=usuario.papel.value, cpf=usuario.cpf)
+    return LoginResponse(token=token, nome=usuario.nome, perfil=usuario.perfil, cpf=usuario.cpf)
 
 
 @router.post("/api/logout", status_code=204)
@@ -77,11 +78,61 @@ def me(usuario: Usuario = Depends(usuario_atual)):
         "id": str(usuario.id),
         "nome": usuario.nome,
         "username": usuario.username,
+        "email": usuario.email,
         "cpf": usuario.cpf,
-        "papel": usuario.papel.value,
-        "permissoes_extra": usuario.permissoes_extra or [],
+        "perfil": usuario.perfil,
+        "perfil_nome": usuario.perfil_obj.nome if usuario.perfil_obj else usuario.perfil,
+        "operacional": eh_operacional(usuario),
+        "permissoes": sorted(permissoes_do_usuario(usuario)),
         "tema": usuario.tema,
     }
+
+
+class MeuCadastroIn(BaseModel):
+    # Só o que o próprio usuário pode mudar — perfil, login, CPF e situação
+    # ficam com a administração (tela Usuários; o superadmin edita o próprio
+    # usuário por lá). Campo extra é recusado.
+    model_config = ConfigDict(extra="forbid")
+
+    nome: str | None = None
+    email: str | None = None
+    senha: str | None = None
+    senha_atual: str | None = None
+
+
+@router.patch("/api/me")
+def editar_meu_cadastro(
+    req: MeuCadastroIn, usuario: Usuario = Depends(usuario_atual), db: Session = Depends(get_db)
+):
+    # Equipe de campo não edita o próprio cadastro nem troca a senha — quem
+    # cuida disso é a administração (tela Usuários).
+    if eh_operacional(usuario):
+        raise HTTPException(
+            status_code=403,
+            detail="Usuário operacional não altera o próprio cadastro. Fale com o administrador.",
+        )
+    if req.nome is not None:
+        nome = req.nome.strip()
+        if not nome:
+            raise HTTPException(status_code=400, detail="Informe o nome.")
+        usuario.nome = nome
+
+    if req.email is not None:
+        email = req.email.strip() or None
+        if email and db.query(Usuario).filter(Usuario.email == email, Usuario.id != usuario.id).first():
+            raise HTTPException(status_code=400, detail="Esse e-mail já está em uso por outro usuário.")
+        usuario.email = email
+
+    if req.senha:
+        if not verificar_senha(req.senha_atual or "", usuario.senha_hash):
+            raise HTTPException(status_code=400, detail="A senha atual não confere.")
+        problema = problema_forca_senha(req.senha)
+        if problema:
+            raise HTTPException(status_code=400, detail=problema)
+        usuario.senha_hash = hash_senha(req.senha)
+
+    db.commit()
+    return {"ok": True}
 
 
 class TemaRequest(BaseModel):

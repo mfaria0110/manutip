@@ -15,6 +15,7 @@ from app.api import (
     funcionarios,
     lampadas,
     materiais,
+    perfis,
     pontos_material_contrato,
     prefeituras,
     reclamacoes,
@@ -27,6 +28,7 @@ app = FastAPI(title="Manutip API", version="0.1.0")
 
 app.include_router(auth.router)
 app.include_router(usuarios.router)
+app.include_router(perfis.router)
 app.include_router(cidades.router)
 app.include_router(bairros.router)
 app.include_router(prefeituras.router)
@@ -77,6 +79,7 @@ _MENSAGENS_ERRO_VALIDACAO = {
     "less_than": "deve ser menor que o máximo permitido",
     "less_than_equal": "deve ser menor ou igual ao máximo permitido",
     "enum": "valor não é uma opção válida",
+    "extra_forbidden": "não pode ser alterado aqui",
 }
 
 
@@ -114,6 +117,21 @@ async def erro_validacao_em_portugues(request: Request, exc: RequestValidationEr
             texto = str(erro["ctx"]["error"])
         mensagens.append(f'Campo "{campo}": {texto}.')
     return JSONResponse(status_code=422, content={"detail": " ".join(mensagens)})
+
+
+@app.on_event("startup")
+def _garantir_perfis():
+    """Grava os perfis de acesso prontos que faltarem (não mexe nos editados)."""
+    from app.core.database import SessionLocal
+    from app.core.permissoes import garantir_perfis
+
+    db = SessionLocal()
+    try:
+        garantir_perfis(db)
+    except Exception:  # banco ainda sem a tabela (antes do alembic upgrade)
+        db.rollback()
+    finally:
+        db.close()
 
 
 @app.get("/health")

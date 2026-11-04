@@ -61,6 +61,10 @@ export function meuPerfil() {
   return req("/me");
 }
 
+export function salvarMeuCadastro(dados) {
+  return req("/me", { method: "PATCH", body: JSON.stringify(dados) });
+}
+
 function crud(path) {
   return {
     listar: (query = "") => req(`${path}${query}`),

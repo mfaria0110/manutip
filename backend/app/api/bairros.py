@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.acesso import requer_acesso, requer_admin
+from app.core.permissoes import exigir
 from app.core.database import get_db
 from app.models.localidade import Bairro
 
@@ -31,7 +31,7 @@ class BairroUpdate(BaseModel):
     cidade_id: uuid.UUID | None = None
 
 
-@router.get("", response_model=list[BairroOut], dependencies=[Depends(requer_acesso("bairros", "use"))])
+@router.get("", response_model=list[BairroOut], dependencies=[Depends(exigir("bairros.acesso"))])
 def listar(cidade_id: uuid.UUID | None = None, db: Session = Depends(get_db)):
     """Lista bairros; filtra por cidade quando `cidade_id` é informado —
     usado pelo combo em cascata (cidade -> bairro) nos formulários."""
@@ -41,7 +41,7 @@ def listar(cidade_id: uuid.UUID | None = None, db: Session = Depends(get_db)):
     return query.order_by(Bairro.nome).all()
 
 
-@router.post("", response_model=BairroOut, dependencies=[Depends(requer_acesso("bairros", "edit"))])
+@router.post("", response_model=BairroOut, dependencies=[Depends(exigir("bairros.criar"))])
 def criar(req: BairroCreate, db: Session = Depends(get_db)):
     obj = Bairro(**req.model_dump())
     db.add(obj)
@@ -50,7 +50,7 @@ def criar(req: BairroCreate, db: Session = Depends(get_db)):
     return obj
 
 
-@router.put("/{item_id}", response_model=BairroOut, dependencies=[Depends(requer_acesso("bairros", "edit"))])
+@router.put("/{item_id}", response_model=BairroOut, dependencies=[Depends(exigir("bairros.editar"))])
 def atualizar(item_id: uuid.UUID, req: BairroUpdate, db: Session = Depends(get_db)):
     obj = db.get(Bairro, item_id)
     if not obj:
@@ -62,7 +62,7 @@ def atualizar(item_id: uuid.UUID, req: BairroUpdate, db: Session = Depends(get_d
     return obj
 
 
-@router.delete("/{item_id}", status_code=204, dependencies=[Depends(requer_admin)])
+@router.delete("/{item_id}", status_code=204, dependencies=[Depends(exigir("bairros.excluir"))])
 def excluir(item_id: uuid.UUID, db: Session = Depends(get_db)):
     obj = db.get(Bairro, item_id)
     if not obj:

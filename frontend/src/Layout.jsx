@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAcesso } from "./AcessoContext";
 import { heartbeat, logout } from "./api";
+import MeuCadastro from "./MeuCadastro";
 import SeletorTema from "./SeletorTema";
 import logoSelles from "./assets/logo-selles.png";
 
@@ -9,47 +10,48 @@ const GRUPOS = [
   {
     label: "Cadastros base",
     itens: [
-      { to: "/cidades", icon: "ti-map-pin", label: "Cidades" },
-      { to: "/bairros", icon: "ti-map-2", label: "Bairros" },
-      { to: "/prefeituras", icon: "ti-building-bank", label: "Prefeituras" },
+      { to: "/cidades", icon: "ti-map-pin", label: "Cidades", modulo: "cidades" },
+      { to: "/bairros", icon: "ti-map-2", label: "Bairros", modulo: "bairros" },
+      { to: "/prefeituras", icon: "ti-building-bank", label: "Prefeituras", modulo: "prefeituras" },
     ],
   },
   {
     label: "Comercial",
     itens: [
       { to: "/contratos", icon: "ti-file-text", label: "Contratos", modulo: "contratos" },
-      { to: "/materiais", icon: "ti-package", label: "Materiais" },
+      { to: "/materiais", icon: "ti-package", label: "Materiais", modulo: "materiais" },
       { to: "/categorias-material", icon: "ti-category", label: "Categorias de Material", modulo: "categorias_material" },
     ],
   },
   {
     label: "Operação",
     itens: [
-      { to: "/reclamacoes", icon: "ti-phone-call", label: "Reclamações" },
-      { to: "/equipes", icon: "ti-users-group", label: "Equipes" },
-      { to: "/veiculos", icon: "ti-truck", label: "Veículos" },
-      { to: "/cargos", icon: "ti-id-badge-2", label: "Cargos" },
-      { to: "/funcionarios", icon: "ti-users", label: "Funcionários" },
+      { to: "/reclamacoes", icon: "ti-phone-call", label: "Reclamações", modulo: "reclamacoes" },
+      { to: "/equipes", icon: "ti-users-group", label: "Equipes", modulo: "equipes" },
+      { to: "/veiculos", icon: "ti-truck", label: "Veículos", modulo: "veiculos" },
+      { to: "/cargos", icon: "ti-id-badge-2", label: "Cargos", modulo: "cargos" },
+      { to: "/funcionarios", icon: "ti-users", label: "Funcionários", modulo: "funcionarios" },
     ],
   },
   {
     label: "Relatórios",
     itens: [
-      { to: "/relatorios/pontos-atendidos", icon: "ti-report", label: "Pontos atendidos" },
-      { to: "/relatorios/materiais-gastos", icon: "ti-package", label: "Materiais gastos" },
+      { to: "/relatorios/pontos-atendidos", icon: "ti-report", label: "Pontos atendidos", modulo: "relatorios" },
+      { to: "/relatorios/materiais-gastos", icon: "ti-package", label: "Materiais gastos", modulo: "relatorios" },
     ],
   },
   {
     label: "Administração",
-    itens: [{ to: "/usuarios", icon: "ti-shield-lock", label: "Usuários", modulo: "usuarios" }],
+    itens: [{ to: "/usuarios", icon: "ti-shield-lock", label: "Usuários", modulo: ["usuarios", "perfis"] }],
   },
 ];
 
 export default function Layout() {
-  const { perfil, pode } = useAcesso();
+  const { perfil, pode, ehOperacional } = useAcesso();
   const navigate = useNavigate();
   const location = useLocation();
   const [menuAberto, setMenuAberto] = useState(false);
+  const [meuCadastro, setMeuCadastro] = useState(false);
   const [recolhida, setRecolhida] = useState(() => localStorage.getItem("manutip_menu_recolhido") === "1");
 
   // Fecha a gaveta do menu (mobile/tablet) sempre que a rota muda.
@@ -106,7 +108,10 @@ export default function Layout() {
         </NavLink>
 
         {GRUPOS.map((grupo) => {
-          const itensVisiveis = grupo.itens.filter((item) => !item.modulo || pode(item.modulo));
+          // Item do menu aparece com "Ler" (acesso) no módulo — em qualquer um deles, se for lista.
+          const itensVisiveis = grupo.itens.filter(
+            (item) => !item.modulo || [].concat(item.modulo).some((m) => pode(`${m}.acesso`))
+          );
           if (itensVisiveis.length === 0) return null;
           return (
             <div className="sidebar-group" key={grupo.label}>
@@ -141,13 +146,20 @@ export default function Layout() {
           >
             <i className={`ti ${recolhida ? "ti-layout-sidebar-left-expand" : "ti-layout-sidebar-left-collapse"}`} aria-hidden="true" />
           </button>
-          <div className="sidebar-user" style={{ marginLeft: "auto" }}>
+          <button
+            type="button"
+            className={"sidebar-user" + (ehOperacional ? "" : " userbar-usuario")}
+            style={{ marginLeft: "auto", ...(ehOperacional ? { background: "none", border: "none", cursor: "default" } : {}) }}
+            onClick={() => !ehOperacional && setMeuCadastro(true)}
+            title={ehOperacional ? undefined : "Editar meu cadastro"}
+            disabled={ehOperacional}
+          >
             <div className="sidebar-user-avatar">{iniciais}</div>
             <div className="sidebar-user-info">
               <div className="userbar-nome">{perfil?.nome}</div>
-              <div className="userbar-papel">{perfil?.papel}</div>
+              <div className="userbar-papel">{perfil?.perfil_nome || perfil?.perfil}</div>
             </div>
-          </div>
+          </button>
           <button className="btn btn-ghost" style={{ color: "var(--on-accent, #fff)" }} onClick={sair}>
             <i className="ti ti-logout" aria-hidden="true" style={{ marginRight: 6 }} />
             Sair
@@ -155,6 +167,7 @@ export default function Layout() {
         </div>
         <Outlet />
       </div>
+      {meuCadastro && !ehOperacional && <MeuCadastro onFechar={() => setMeuCadastro(false)} />}
     </div>
   );
 }

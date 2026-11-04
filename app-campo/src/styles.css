@@ -127,6 +127,12 @@ textarea {
   font-family: inherit;
 }
 
+input:disabled,
+select:disabled {
+  background: var(--bg-page);
+  color: var(--text-secondary);
+}
+
 /* Quantidades (instalado/retirado/substituído) centralizadas. */
 input[type="number"] {
   text-align: center;
@@ -231,6 +237,66 @@ select option {
   object-fit: cover;
   border-radius: 8px;
   border: 1px solid var(--border);
+}
+
+/* Modal de tela cheia no celular (folha que sobe de baixo), centralizado
+   em tela larga — usado no "Meu cadastro". */
+.modal-fundo {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 14, 22, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal-folha {
+  background: var(--bg-page);
+  color: var(--text-primary);
+  text-align: left;
+  width: 100%;
+  max-width: 480px;
+  max-height: 92vh;
+  overflow-y: auto;
+  border-radius: 16px 16px 0 0;
+  padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 600px) {
+  .modal-fundo {
+    align-items: center;
+  }
+  .modal-folha {
+    border-radius: 16px;
+  }
+}
+
+.modal-titulo {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.topo-usuario {
+  background: none;
+  border: none;
+  color: #fff;
+  padding: 0;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 130px;
+  cursor: pointer;
+}
+
+.topo-usuario span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .offline-aviso {

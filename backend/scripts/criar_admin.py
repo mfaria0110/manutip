@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.core.database import SessionLocal
 from app.core.security import hash_senha
-from app.models.usuario import PapelUsuario, Usuario
+from app.models.usuario import Usuario
 
 
 def main():
@@ -27,7 +27,7 @@ def main():
         usuario = db.query(Usuario).filter(Usuario.username == args.username).first()
         if usuario:
             usuario.senha_hash = hash_senha(args.senha)
-            usuario.papel = PapelUsuario.ADMIN
+            usuario.perfil = "admin"
             usuario.ativo = True
             print(f"Usuário existente atualizado: {args.username}")
         else:
@@ -35,9 +35,8 @@ def main():
                 nome=args.nome,
                 username=args.username,
                 senha_hash=hash_senha(args.senha),
-                papel=PapelUsuario.ADMIN,
+                perfil="admin",
                 ativo=True,
-                permissoes_extra=[],
             )
             db.add(usuario)
             print(f"Usuário admin criado: {args.username}")

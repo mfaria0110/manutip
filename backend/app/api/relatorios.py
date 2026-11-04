@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, selectinload
 
-from app.core.acesso import requer_acesso
+from app.core.permissoes import exigir
 from app.core.database import get_db
 from app.models.categoria_material import CategoriaMaterial
 from app.models.execucao_reclamacao import ExecucaoReclamacao, ItemExecucaoMaterial
@@ -41,7 +41,7 @@ def _com_dados(query):
 @router.get(
     "/pontos-atendidos",
     response_model=list[LinhaPontosAtendidos],
-    dependencies=[Depends(requer_acesso("relatorios", "use"))],
+    dependencies=[Depends(exigir("relatorios.acesso"))],
 )
 def pontos_atendidos(
     prefeitura_id: uuid.UUID,
@@ -135,7 +135,7 @@ class LinhaMaterialGasto(BaseModel):
 @router.get(
     "/materiais-gastos",
     response_model=list[LinhaMaterialGasto],
-    dependencies=[Depends(requer_acesso("relatorios", "use"))],
+    dependencies=[Depends(exigir("relatorios.acesso"))],
 )
 def materiais_gastos(
     prefeitura_id: uuid.UUID,
@@ -209,7 +209,7 @@ def _somar_materiais(prefeitura_id: uuid.UUID, data_inicio: date, data_fim: date
 
 @router.get(
     "/materiais-gastos/excel",
-    dependencies=[Depends(requer_acesso("relatorios", "use"))],
+    dependencies=[Depends(exigir("relatorios.acesso"))],
 )
 def materiais_gastos_excel(
     prefeitura_id: uuid.UUID,
@@ -272,7 +272,7 @@ _ORDEM_CATEGORIAS = ["RELE", "BASE", "CONDUTOR", "CONECTOR", "LUMINARIA", "OUTRO
 
 @router.get(
     "/pontos-atendidos/excel",
-    dependencies=[Depends(requer_acesso("relatorios", "use"))],
+    dependencies=[Depends(exigir("relatorios.acesso"))],
 )
 def pontos_atendidos_excel(
     prefeitura_id: uuid.UUID,

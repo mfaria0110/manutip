@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import AliasChoices, BaseModel, Field
 from sqlalchemy.orm import Session, selectinload
 
-from app.core.acesso import requer_acesso, requer_admin
+from app.core.permissoes import exigir
 from app.core.database import get_db
 from app.models.designacao import DesignacaoReclamacao
 from app.models.execucao_reclamacao import ExecucaoReclamacao
@@ -127,14 +127,14 @@ def _saida(obj: EquipeDia, em_uso: bool = False) -> EquipeDia:
     return obj
 
 
-@router.get("", response_model=list[EquipeDiaOut], dependencies=[Depends(requer_acesso("equipes", "use"))])
+@router.get("", response_model=list[EquipeDiaOut], dependencies=[Depends(exigir("equipes.acesso"))])
 def listar(db: Session = Depends(get_db)):
     itens = _com_membros(db.query(EquipeDia)).order_by(EquipeDia.nome).all()
     em_uso = _ids_em_uso(db)
     return [_saida(i, i.id in em_uso) for i in itens]
 
 
-@router.get("/proximo-nome", dependencies=[Depends(requer_acesso("equipes", "use"))])
+@router.get("/proximo-nome", dependencies=[Depends(exigir("equipes.acesso"))])
 def proximo_nome(db: Session = Depends(get_db)):
     """Sugere o próximo nome de equipe no padrão SELxxx, com base no maior
     número já usado (não depende da equipe não ter sido excluída)."""
@@ -146,7 +146,7 @@ def proximo_nome(db: Session = Depends(get_db)):
     return {"nome": f"SEL{maior + 1:03d}"}
 
 
-@router.post("", response_model=EquipeDiaOut, dependencies=[Depends(requer_acesso("equipes", "edit"))])
+@router.post("", response_model=EquipeDiaOut, dependencies=[Depends(exigir("equipes.criar"))])
 def criar(req: EquipeDiaCreate, db: Session = Depends(get_db)):
     _validar_sem_duplicidade(db, req.veiculo_id, {m.funcionario_id for m in req.membros})
     obj = EquipeDia(
@@ -163,7 +163,7 @@ def criar(req: EquipeDiaCreate, db: Session = Depends(get_db)):
     return _saida(_com_membros(db.query(EquipeDia)).filter(EquipeDia.id == obj.id).first())
 
 
-@router.put("/{equipe_id}", response_model=EquipeDiaOut, dependencies=[Depends(requer_acesso("equipes", "edit"))])
+@router.put("/{equipe_id}", response_model=EquipeDiaOut, dependencies=[Depends(exigir("equipes.editar"))])
 def atualizar(equipe_id: uuid.UUID, req: EquipeDiaUpdate, db: Session = Depends(get_db)):
     obj = db.get(EquipeDia, equipe_id)
     if not obj:
@@ -206,7 +206,7 @@ def atualizar(equipe_id: uuid.UUID, req: EquipeDiaUpdate, db: Session = Depends(
     )
 
 
-@router.post("/{equipe_id}/validar", response_model=EquipeDiaOut, dependencies=[Depends(requer_acesso("equipes", "edit"))])
+@router.post("/{equipe_id}/validar", response_model=EquipeDiaOut, dependencies=[Depends(exigir("equipes.editar"))])
 def validar(equipe_id: uuid.UUID, db: Session = Depends(get_db)):
     """Marca a composição do dia como confirmada pelo app de campo — não
     trava edição (um admin ainda pode corrigir pela tela de escritório),
@@ -221,7 +221,7 @@ def validar(equipe_id: uuid.UUID, db: Session = Depends(get_db)):
     )
 
 
-@router.delete("/{equipe_id}", status_code=204, dependencies=[Depends(requer_admin)])
+@router.delete("/{equipe_id}", status_code=204, dependencies=[Depends(exigir("equipes.excluir"))])
 def excluir(equipe_id: uuid.UUID, db: Session = Depends(get_db)):
     obj = db.get(EquipeDia, equipe_id)
     if not obj:

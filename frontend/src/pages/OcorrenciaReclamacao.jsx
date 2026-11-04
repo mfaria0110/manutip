@@ -18,7 +18,8 @@ export default function OcorrenciaReclamacao() {
   const [marcadas, setMarcadas] = useState(new Set()); // ids das fotos marcadas pra baixar
   const [baixando, setBaixando] = useState(false);
   const [aviso, setAviso] = useState("");
-  const { ehAdmin } = useAcesso();
+  const { pode } = useAcesso();
+  const podeExcluir = pode("execucoes.excluir");
   const [excluindoFotos, setExcluindoFotos] = useState(null); // fotos a excluir (aguardando confirmação)
   const [apagandoFotos, setApagandoFotos] = useState(false);
 
@@ -185,7 +186,7 @@ export default function OcorrenciaReclamacao() {
               <i className="ti ti-download" aria-hidden="true" style={{ marginRight: 6 }} />
               {baixando ? "Salvando..." : "Baixar marcadas"}
             </button>
-            {ehAdmin && (
+            {podeExcluir && (
               <>
                 <button
                   type="button"

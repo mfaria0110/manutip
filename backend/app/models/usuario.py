@@ -1,25 +1,13 @@
-import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, String
-from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.models.mixins import TimestampMixin
-
-
-class PapelUsuario(str, enum.Enum):
-    SUPERADMIN = "SUPERADMIN"  # acima do ADMIN — único que gerencia categorias
-    # de material e os próprios cadastros de outros SUPERADMIN
-    ADMIN = "ADMIN"  # acesso total, sem precisar de permissão extra
-    USUARIO = "USUARIO"  # acesso operacional (nível "use"); edição de cadastros
-    # administrativos (contratos, preços, usuários...) só com permissão extra
-    OPERACIONAL = "OPERACIONAL"  # app de campo: mesmo teto "use" do USUARIO,
-    # mas com "edit" liberado em equipes/reclamacoes/execucoes (ver
-    # MODULOS_EDIT_OPERACIONAL em app/core/acesso.py) para validar a equipe
-    # do dia e lançar a execução direto do poste
+from app.models.perfil import Perfil
 
 
 class Usuario(TimestampMixin, Base):
@@ -34,12 +22,12 @@ class Usuario(TimestampMixin, Base):
     cpf: Mapped[str | None] = mapped_column(String(14), unique=True)
     email: Mapped[str | None] = mapped_column(String(200), unique=True, nullable=True)
     senha_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    papel: Mapped[PapelUsuario] = mapped_column(Enum(PapelUsuario), nullable=False, default=PapelUsuario.USUARIO)
+    # Código do perfil de acesso (tabela perfis) — o que a pessoa pode fazer.
+    perfil: Mapped[str] = mapped_column(
+        String(60), ForeignKey("perfis.codigo", onupdate="CASCADE"), nullable=False
+    )
+    perfil_obj: Mapped[Perfil] = relationship(Perfil, lazy="joined")
     ativo: Mapped[bool] = mapped_column(default=True)
-    # Concessões pontuais além do perfil, ex.: ["contratos:edit", "usuarios:admin"].
-    # Mesmo formato do EcoWatt (slug_modulo:nivel) — permite dar exceção a um
-    # usuário específico sem criar um perfil novo ou torná-lo admin geral.
-    permissoes_extra: Mapped[list[str]] = mapped_column(JSONB, default=list)
     tema: Mapped[str | None] = mapped_column(String(32))
     # Último "sinal de vida" da sessão ativa (atualizado por heartbeat do
     # frontend a cada ~1 min). Login novo é bloqueado enquanto esse timestamp

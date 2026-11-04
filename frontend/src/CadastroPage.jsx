@@ -134,7 +134,7 @@ export default function CadastroPage({
   classeTabela,
   notaModal,
 }) {
-  const { pode, ehAdmin } = useAcesso();
+  const { pode } = useAcesso();
   const [itens, setItens] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
@@ -149,7 +149,9 @@ export default function CadastroPage({
   const [erroExclusao, setErroExclusao] = useState("");
   const [busca, setBusca] = useState("");
 
-  const podeEditar = pode(modulo, "edit");
+  const podeCriar = pode(`${modulo}.criar`);
+  const podeEditar = pode(`${modulo}.editar`);
+  const podeExcluir = pode(`${modulo}.excluir`);
 
   // Campos com mask "moeda" guardam no form o texto já formatado ("1.234,56"),
   // não o número — então todo valor vindo de fora (registro do backend,
@@ -300,7 +302,7 @@ async function confirmarExclusao() {
     <>
       <header className="topbar">
         <h1>{titulo}</h1>
-        {podeEditar && (
+        {podeCriar && (
           <button className="btn btn-primary" onClick={abrirNovo}>
             <i className="ti ti-plus" aria-hidden="true" style={{ marginRight: 6 }} />
             Novo
@@ -342,7 +344,7 @@ async function confirmarExclusao() {
                       {c.label}
                     </th>
                   ))}
-                  {(podeEditar || ehAdmin || acoesExtras) && <th style={{ width: 90 }} />}
+                  {(podeEditar || podeExcluir || acoesExtras) && <th style={{ width: 90 }} />}
                 </tr>
               </thead>
               <tbody>
@@ -351,7 +353,7 @@ async function confirmarExclusao() {
                     {colunasFinal.map((c) => (
                       <td key={c.key}>{c.render ? c.render(item) : String(item[c.key] ?? "")}</td>
                     ))}
-                    {(podeEditar || ehAdmin || acoesExtras) && (
+                    {(podeEditar || podeExcluir || acoesExtras) && (
                       <td>
                         <div style={{ display: "flex", gap: 4 }}>
                           {acoesExtras && acoesExtras(item)}
@@ -360,7 +362,7 @@ async function confirmarExclusao() {
                               <i className="ti ti-edit" aria-hidden="true" />
                             </button>
                           )}
-                          {ehAdmin && (
+                          {podeExcluir && (
                             <button
                               className="btn btn-ghost"
                               onClick={() => setExcluindo(item)}

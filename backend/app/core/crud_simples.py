@@ -1,7 +1,7 @@
 """Factory de CRUD para catálogos simples (cidade, bairro, material, veículo,
-funcionário, prefeitura, contrato...): mesma forma em todos — listar (nível
-'use', qualquer usuário operacional lê pra montar pedidos), criar/editar
-(nível 'edit', só admin ou quem tiver extra).
+funcionário, prefeitura, contrato...): mesma forma em todos — listar/obter
+("<modulo>.acesso"), criar ("<modulo>.criar"), editar ("<modulo>.editar") e
+excluir ("<modulo>.excluir"), conforme o perfil de acesso do usuário.
 
 Entidades com uma regra própria (filtro, validação específica) não usam esta
 factory — ficam com seu próprio router (ex.: bairros filtra por cidade).
@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.acesso import requer_acesso, requer_admin
+from app.core.permissoes import exigir
 from app.core.database import get_db
 
 
@@ -67,21 +67,21 @@ def crud_simples(
     filtro o comportamento é o de sempre (lista tudo)."""
     router = APIRouter(prefix=prefix, tags=tags)
 
-    @router.get("", response_model=list[schema_out], dependencies=[Depends(requer_acesso(modulo, "use"))])
+    @router.get("", response_model=list[schema_out], dependencies=[Depends(exigir(f"{modulo}.acesso"))])
     def listar(request_filtro: uuid.UUID | None = Query(default=None, alias=campo_filtro or "_sem_filtro"), db: Session = Depends(get_db)):
         query = db.query(modelo)
         if campo_filtro and request_filtro:
             query = query.filter(getattr(modelo, campo_filtro) == request_filtro)
         return query.order_by(ordenar_por).all()
 
-    @router.get("/{item_id}", response_model=schema_out, dependencies=[Depends(requer_acesso(modulo, "use"))])
+    @router.get("/{item_id}", response_model=schema_out, dependencies=[Depends(exigir(f"{modulo}.acesso"))])
     def obter(item_id: uuid.UUID, db: Session = Depends(get_db)):
         obj = db.get(modelo, item_id)
         if not obj:
             raise HTTPException(status_code=404, detail="Não encontrado.")
         return obj
 
-    @router.post("", response_model=schema_out, dependencies=[Depends(requer_acesso(modulo, "edit"))])
+    @router.post("", response_model=schema_out, dependencies=[Depends(exigir(f"{modulo}.criar"))])
     def criar(req: schema_create, db: Session = Depends(get_db)):
         obj = modelo(**req.model_dump())
         db.add(obj)
@@ -93,7 +93,7 @@ def crud_simples(
         db.refresh(obj)
         return obj
 
-    @router.put("/{item_id}", response_model=schema_out, dependencies=[Depends(requer_acesso(modulo, "edit"))])
+    @router.put("/{item_id}", response_model=schema_out, dependencies=[Depends(exigir(f"{modulo}.editar"))])
     def atualizar(item_id: uuid.UUID, req: schema_update, db: Session = Depends(get_db)):
         obj = db.get(modelo, item_id)
         if not obj:
@@ -108,9 +108,7 @@ def crud_simples(
         db.refresh(obj)
         return obj
 
-    # Exclusão é sempre restrita a ADMIN, independente do nível do módulo —
-    # diferente de criar/editar, não existe concessão extra que libere excluir.
-    @router.delete("/{item_id}", status_code=204, dependencies=[Depends(requer_admin)])
+    @router.delete("/{item_id}", status_code=204, dependencies=[Depends(exigir(f"{modulo}.excluir"))])
     def excluir(item_id: uuid.UUID, db: Session = Depends(get_db)):
         obj = db.get(modelo, item_id)
         if not obj:

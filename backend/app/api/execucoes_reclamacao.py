@@ -9,7 +9,8 @@ from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 
-from app.core.acesso import requer_acesso, requer_admin, usuario_atual
+from app.core.acesso import usuario_atual
+from app.core.permissoes import exigir
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.pontos_material import contrato_vigente, pontos_do_material
@@ -266,7 +267,7 @@ def _reabrir_se_sem_itens(reclamacao_id: uuid.UUID, db: Session) -> None:
             reclamacao.status = "ABERTA"
 
 
-@router.get("", response_model=list[ExecucaoOut], dependencies=[Depends(requer_acesso("execucoes", "use"))])
+@router.get("", response_model=list[ExecucaoOut], dependencies=[Depends(exigir("execucoes.acesso"))])
 def listar(reclamacao_id: uuid.UUID | None = None, db: Session = Depends(get_db)):
     query = _com_itens(db.query(ExecucaoReclamacao))
     if reclamacao_id:
@@ -274,7 +275,7 @@ def listar(reclamacao_id: uuid.UUID | None = None, db: Session = Depends(get_db)
     return [_para_saida(e, db) for e in query.order_by(ExecucaoReclamacao.data_execucao.desc()).all()]
 
 
-@router.get("/{execucao_id}", response_model=ExecucaoOut, dependencies=[Depends(requer_acesso("execucoes", "use"))])
+@router.get("/{execucao_id}", response_model=ExecucaoOut, dependencies=[Depends(exigir("execucoes.acesso"))])
 def obter(execucao_id: uuid.UUID, db: Session = Depends(get_db)):
     obj = _com_itens(db.query(ExecucaoReclamacao)).filter(ExecucaoReclamacao.id == execucao_id).first()
     if not obj:
@@ -282,7 +283,7 @@ def obter(execucao_id: uuid.UUID, db: Session = Depends(get_db)):
     return _para_saida(obj, db)
 
 
-@router.post("", response_model=ExecucaoOut, dependencies=[Depends(requer_acesso("execucoes", "edit"))])
+@router.post("", response_model=ExecucaoOut, dependencies=[Depends(exigir("execucoes.criar"))])
 def criar(req: ExecucaoCreate, db: Session = Depends(get_db)):
     # Reenvio depois de uma sincronização offline que falhou no meio: se já
     # existe uma execução com esse uuid_local, atualiza em vez de duplicar.
@@ -322,7 +323,7 @@ def criar(req: ExecucaoCreate, db: Session = Depends(get_db)):
     return _para_saida(_com_itens(db.query(ExecucaoReclamacao)).filter(ExecucaoReclamacao.id == obj.id).first(), db)
 
 
-@router.put("/{execucao_id}", response_model=ExecucaoOut, dependencies=[Depends(requer_acesso("execucoes", "edit"))])
+@router.put("/{execucao_id}", response_model=ExecucaoOut, dependencies=[Depends(exigir("execucoes.editar"))])
 def atualizar(execucao_id: uuid.UUID, req: ExecucaoUpdate, db: Session = Depends(get_db)):
     obj = db.get(ExecucaoReclamacao, execucao_id)
     if not obj:
@@ -348,7 +349,7 @@ def atualizar(execucao_id: uuid.UUID, req: ExecucaoUpdate, db: Session = Depends
     return _para_saida(_com_itens(db.query(ExecucaoReclamacao)).filter(ExecucaoReclamacao.id == execucao_id).first(), db)
 
 
-@router.delete("/{execucao_id}", status_code=204, dependencies=[Depends(requer_admin)])
+@router.delete("/{execucao_id}", status_code=204, dependencies=[Depends(exigir("execucoes.excluir"))])
 def excluir(execucao_id: uuid.UUID, mover_fotos_para: uuid.UUID | None = None, db: Session = Depends(get_db)):
     """Exclui a execução. Ao juntar execuções do mesmo dia e equipe, a tela passa
     `mover_fotos_para` (a execução que fica) pra as fotos não se perderem."""
@@ -377,7 +378,7 @@ def excluir(execucao_id: uuid.UUID, mover_fotos_para: uuid.UUID | None = None, d
 # Edição/exclusão de um único material lançado, sem precisar reenviar a
 # execução inteira — usado pela lista agrupada por data na tela. Em ambos os
 # casos o total_pontos do item e o total da execução são recalculados.
-@router.put("/itens/{item_id}", response_model=ItemOut, dependencies=[Depends(requer_acesso("execucoes", "edit"))])
+@router.put("/itens/{item_id}", response_model=ItemOut, dependencies=[Depends(exigir("execucoes.editar"))])
 def atualizar_item(item_id: uuid.UUID, req: ItemIn, db: Session = Depends(get_db)):
     item = db.get(ItemExecucaoMaterial, item_id)
     if not item:
@@ -405,7 +406,7 @@ def atualizar_item(item_id: uuid.UUID, req: ItemIn, db: Session = Depends(get_db
     return item
 
 
-@router.delete("/itens/{item_id}", status_code=204, dependencies=[Depends(requer_admin)])
+@router.delete("/itens/{item_id}", status_code=204, dependencies=[Depends(exigir("execucoes.excluir"))])
 def excluir_item(item_id: uuid.UUID, apagar_fotos: bool = False, db: Session = Depends(get_db)):
     """Exclui um material lançado. O último material de uma reclamação com foto
     só sai junto com as fotos (apagar_fotos=true) — o front pede confirmação."""
@@ -437,7 +438,7 @@ def excluir_item(item_id: uuid.UUID, apagar_fotos: bool = False, db: Session = D
 @router.post(
     "/{execucao_id}/fotos",
     response_model=FotoOut,
-    dependencies=[Depends(requer_acesso("execucoes", "edit"))],
+    dependencies=[Depends(exigir("execucoes.criar"))],
 )
 async def anexar_foto(execucao_id: uuid.UUID, arquivo: UploadFile, db: Session = Depends(get_db)):
     if not db.get(ExecucaoReclamacao, execucao_id):
@@ -467,7 +468,7 @@ _MAX_BYTES_FOTO = 15 * 1024 * 1024
 @router.post(
     "/{execucao_id}/fotos-importadas",
     response_model=list[FotoOut],
-    dependencies=[Depends(requer_acesso("execucoes", "edit"))],
+    dependencies=[Depends(exigir("execucoes.criar"))],
 )
 async def importar_fotos(
     execucao_id: uuid.UUID,
@@ -522,7 +523,7 @@ async def importar_fotos(
     return [FotoOut(id=f.id, url=f"/api/execucoes-reclamacao/fotos/{f.id}") for f in fotos]
 
 
-@router.delete("/fotos/{foto_id}", status_code=204, dependencies=[Depends(requer_admin)])
+@router.delete("/fotos/{foto_id}", status_code=204, dependencies=[Depends(exigir("execucoes.excluir"))])
 def excluir_foto(foto_id: uuid.UUID, db: Session = Depends(get_db)):
     """Exclui uma foto (registro e arquivo). A foto é da reclamação, não de um
     material, então pode sair a qualquer momento."""
@@ -536,7 +537,7 @@ def excluir_foto(foto_id: uuid.UUID, db: Session = Depends(get_db)):
     return Response(status_code=204)
 
 
-@router.get("/fotos/{foto_id}", dependencies=[Depends(requer_acesso("execucoes", "use"))])
+@router.get("/fotos/{foto_id}", dependencies=[Depends(exigir("execucoes.acesso"))])
 def obter_foto(foto_id: uuid.UUID, db: Session = Depends(get_db)):
     foto = db.get(FotoExecucao, foto_id)
     if not foto or not Path(foto.arquivo_path).exists():

@@ -18,7 +18,8 @@ from app.models.pedido import (
     OrigemPedido,
     StatusPedido,
 )
-from app.models.usuario import Usuario, PapelUsuario
+from app.models.perfil import Perfil
+from app.models.usuario import Usuario
 
 __all__ = [
     "Base",
@@ -48,6 +49,6 @@ __all__ = [
     "OrigemPedido",
     "StatusPedido",
     "Usuario",
-    "PapelUsuario",
+    "Perfil",
 ]
 from app.models.designacao import DesignacaoReclamacao

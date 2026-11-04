@@ -5,7 +5,7 @@ from pydantic import BaseModel, field_validator
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.acesso import requer_acesso, requer_superadmin
+from app.core.permissoes import exigir
 from app.core.crud_simples import _mensagem_duplicidade
 from app.core.database import get_db
 from app.models.categoria_material import CategoriaMaterial
@@ -52,7 +52,7 @@ router = APIRouter(prefix="/api/categorias-material", tags=["categorias-material
 # Listagem fica em nível "materiais" (uso) — continua alimentando o combo do
 # cadastro de materiais para qualquer usuário que já acessa materiais.
 # Criar/editar/excluir é só SUPERADMIN (ver MODULOS_SOMENTE_SUPERADMIN).
-@router.get("", response_model=list[CategoriaMaterialOut], dependencies=[Depends(requer_acesso("materiais", "use"))])
+@router.get("", response_model=list[CategoriaMaterialOut], dependencies=[Depends(exigir("materiais.acesso"))])
 def listar(db: Session = Depends(get_db)):
     return db.query(CategoriaMaterial).order_by(CategoriaMaterial.nome).all()
 
@@ -60,7 +60,7 @@ def listar(db: Session = Depends(get_db)):
 @router.get(
     "/{item_id}",
     response_model=CategoriaMaterialOut,
-    dependencies=[Depends(requer_acesso("materiais", "use"))],
+    dependencies=[Depends(exigir("materiais.acesso"))],
 )
 def obter(item_id: uuid.UUID, db: Session = Depends(get_db)):
     obj = db.get(CategoriaMaterial, item_id)
@@ -69,7 +69,7 @@ def obter(item_id: uuid.UUID, db: Session = Depends(get_db)):
     return obj
 
 
-@router.post("", response_model=CategoriaMaterialOut, dependencies=[Depends(requer_superadmin)])
+@router.post("", response_model=CategoriaMaterialOut, dependencies=[Depends(exigir("categorias_material.criar"))])
 def criar(req: CategoriaMaterialCreate, db: Session = Depends(get_db)):
     obj = CategoriaMaterial(**req.model_dump())
     db.add(obj)
@@ -82,7 +82,7 @@ def criar(req: CategoriaMaterialCreate, db: Session = Depends(get_db)):
     return obj
 
 
-@router.put("/{item_id}", response_model=CategoriaMaterialOut, dependencies=[Depends(requer_superadmin)])
+@router.put("/{item_id}", response_model=CategoriaMaterialOut, dependencies=[Depends(exigir("categorias_material.editar"))])
 def atualizar(item_id: uuid.UUID, req: CategoriaMaterialUpdate, db: Session = Depends(get_db)):
     obj = db.get(CategoriaMaterial, item_id)
     if not obj:
@@ -98,7 +98,7 @@ def atualizar(item_id: uuid.UUID, req: CategoriaMaterialUpdate, db: Session = De
     return obj
 
 
-@router.delete("/{item_id}", status_code=204, dependencies=[Depends(requer_superadmin)])
+@router.delete("/{item_id}", status_code=204, dependencies=[Depends(exigir("categorias_material.excluir"))])
 def excluir(item_id: uuid.UUID, db: Session = Depends(get_db)):
     obj = db.get(CategoriaMaterial, item_id)
     if not obj:

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.core.acesso import requer_acesso
+from app.core.permissoes import exigir
 from app.core.crud_simples import crud_simples
 from app.core.database import get_db
 from app.models.material import Material
@@ -47,7 +47,7 @@ class MaterialUpdate(BaseModel):
 router_extra = APIRouter(prefix="/api/materiais", tags=["materiais"])
 
 
-@router_extra.get("/proximo-codigo", dependencies=[Depends(requer_acesso("materiais", "use"))])
+@router_extra.get("/proximo-codigo", dependencies=[Depends(exigir("materiais.acesso"))])
 def proximo_codigo(db: Session = Depends(get_db)):
     """Sugere o próximo código no padrão SELxxxx, com base no maior número
     já usado nos códigos existentes que seguem esse padrão."""
