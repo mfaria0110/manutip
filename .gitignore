@@ -14,3 +14,6 @@ app-campo/dev*.log
 backend/backend.log
 backend/backend*.log
 imagens/
+
+# Cache do vite (pode aparecer se o dev server rodar fora de frontend/)
+.vite/
