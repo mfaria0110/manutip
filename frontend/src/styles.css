@@ -82,7 +82,7 @@ textarea {
 
 input,
 select {
-  height: 30px;
+  height: 29px;
 }
 
 textarea {
@@ -643,7 +643,7 @@ tbody tr:hover {
 
 .linha-item-material input,
 .linha-item-material select {
-  height: 28px;
+  height: 29px;
   font-size: 11px;
 }
 
@@ -1073,7 +1073,7 @@ tbody tr:hover {
 
 .modal-compacto .form-field input,
 .modal-compacto .form-field select {
-  height: 28px;
+  height: 29px;
 }
 
 .modal-compacto th,
@@ -1272,4 +1272,19 @@ label.check input {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 14px;
+}
+
+/* Selo de reclamação urgente na lista. */
+.badge-urgente {
+  background: #fef2f2;
+  color: var(--danger);
+  border: 1px solid #fecaca;
+  margin-left: 6px;
+  font-size: 10.5px;
+  padding: 1px 6px;
+}
+
+/* Select Sim/Não estreito (ex.: Urgente na reclamação): menos espaço interno. */
+.form-field select.select-simnao {
+  padding: 0 2px 0 6px;
 }

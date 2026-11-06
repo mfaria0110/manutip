@@ -35,6 +35,9 @@ class ReclamacaoOut(BaseModel):
     cidade_id: uuid.UUID | None
     prefeitura_id: uuid.UUID | None
     observacoes: str | None
+    urgente: bool = False
+    pedido_de: str | None = None
+    foto_reclamante: bool = False
     status: str
     # True se já existe ao menos uma execução lançada (tipicamente pelo app
     # de campo) — a reclamação pode ter sido atendida sem alguém lembrar de
@@ -63,6 +66,9 @@ class ReclamacaoCreate(BaseModel):
     cidade_id: uuid.UUID | None = None
     prefeitura_id: uuid.UUID | None = None
     observacoes: str | None = None
+    urgente: bool = False
+    pedido_de: str | None = None
+    foto_reclamante: bool = False
     status: str = "ABERTA"
 
 
@@ -79,7 +85,21 @@ class ReclamacaoUpdate(BaseModel):
     cidade_id: uuid.UUID | None = None
     prefeitura_id: uuid.UUID | None = None
     observacoes: str | None = None
+    urgente: bool | None = None
+    pedido_de: str | None = None
+    foto_reclamante: bool | None = None
     status: str | None = None
+
+
+def _validar_urgencia(obj: Reclamacao) -> None:
+    """Urgente pede "Pedido de" (de quem é o pedido); sem urgência o campo fica vazio."""
+    obj.pedido_de = (obj.pedido_de or "").strip() or None
+    if not obj.urgente:
+        obj.pedido_de = None
+    elif not obj.pedido_de:
+        raise HTTPException(status_code=400, detail='Pedido urgente: informe de quem é o pedido (campo "Pedido de").')
+    if obj.foto_reclamante and not (obj.telefone or "").strip():
+        raise HTTPException(status_code=400, detail="Tem foto: informe o telefone do reclamante.")
 
 
 def _proximo_codigo(prefeitura_id: uuid.UUID | None, db: Session) -> str:
@@ -195,6 +215,7 @@ def obter(item_id: uuid.UUID, db: Session = Depends(get_db)):
 def criar(req: ReclamacaoCreate, db: Session = Depends(get_db)):
     codigo = _proximo_codigo(req.prefeitura_id, db)
     obj = Reclamacao(codigo=codigo, **req.model_dump())
+    _validar_urgencia(obj)
     db.add(obj)
     try:
         db.commit()
@@ -211,7 +232,10 @@ def atualizar(item_id: uuid.UUID, req: ReclamacaoUpdate, db: Session = Depends(g
     if not obj:
         raise HTTPException(status_code=404, detail="Não encontrado.")
     for campo, valor in req.model_dump(exclude_unset=True).items():
+        if campo in ("urgente", "foto_reclamante") and valor is None:
+            continue
         setattr(obj, campo, valor)
+    _validar_urgencia(obj)
     try:
         db.commit()
     except IntegrityError as erro:

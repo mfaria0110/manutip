@@ -138,6 +138,8 @@ export default function Reclamacoes() {
         cidade_id: prefeituras.find((p) => p.id === prefeituraConfirmada)?.cidade_id || "",
       }}
       queryExtra={`?prefeitura_id=${prefeituraConfirmada}`}
+      // Mais largo para caberem Telefone, Canal, Data, Urgente e Pedido de na mesma linha.
+      larguraModal={900}
       classeTabela="tabela-compacta cabecalho-35"
       exigirSenhaParaExcluir
       mensagemExclusao={(item) =>
@@ -176,7 +178,22 @@ export default function Reclamacoes() {
         </>
       )}
       colunas={[
-        { key: "codigo", label: "Código", width: 130 },
+        {
+          key: "codigo",
+          label: "Código",
+          width: 130,
+          // Pedido urgente: selo vermelho com "de quem é o pedido" no título.
+          render: (item) => (
+            <>
+              {item.codigo}
+              {item.urgente && (
+                <span className="badge badge-urgente" title={item.pedido_de ? `Pedido de: ${item.pedido_de}` : "Urgente"}>
+                  Urgente
+                </span>
+              )}
+            </>
+          ),
+        },
         { key: "data_reclamacao", label: "Data_Rec", render: (item) => formatarData(item.data_reclamacao) },
         { key: "nome_reclamante", label: "Reclamante" },
         { key: "logradouro", label: "Logradouro", width: 260, render: (item) => item.logradouro || "—" },
@@ -214,21 +231,41 @@ export default function Reclamacoes() {
       campos={[
         { name: "codigo", label: "Código", size: 4, disabled: true, placeholder: "Gerado ao salvar" },
         { name: "nome_reclamante", label: "Nome do reclamante", required: true, size: 8 },
-        { name: "telefone", label: "Telefone", mask: "telefone", center: true },
+        // Obrigatório quando o reclamante tem foto (a equipe pede a foto por esse telefone).
+        { name: "telefone", label: "Telefone", mask: "telefone", center: true, size: 2, required: (f) => !!f.foto_reclamante },
         {
           name: "tipo_reclamacao",
           label: "Canal (como chegou)",
           type: "select",
           required: true,
-          size: 4,
+          size: 2,
           options: TIPOS_RECLAMACAO,
         },
-        { name: "data_reclamacao", label: "Data", type: "date", required: true, size: 4, center: true },
+        { name: "data_reclamacao", label: "Data", type: "date", required: true, size: 2, center: true },
+        // Tem foto = Sim: o reclamante tem foto do problema; o telefone vira obrigatório.
+        { name: "foto_reclamante", label: "Tem foto", type: "simnao", size: 1 },
+        // Urgente = Sim abre o campo "Pedido de" (de quem é o pedido); Não limpa o campo.
+        {
+          name: "urgente",
+          label: "Urgente",
+          type: "simnao",
+          size: 1,
+          aoMudar: (sim, f) => (sim ? f : { ...f, pedido_de: "" }),
+        },
+        {
+          name: "pedido_de",
+          label: "Pedido de",
+          required: true,
+          size: 4,
+          placeholder: "De quem é o pedido",
+          visivel: (f) => !!f.urgente,
+          reservarEspaco: true, // oculto, mantém o lugar (as linhas de baixo não sobem)
+        },
         {
           name: "status",
           label: "Status",
           type: "select",
-          size: 4,
+          size: 3,
           options: STATUS_RECLAMACAO,
         },
         {
@@ -246,8 +283,8 @@ export default function Reclamacoes() {
           center: true,
           valorCalculado: (valores) => siglaPrefeitura(valores.prefeitura_id),
         },
-        { name: "cep", label: "CEP", mask: "cep", center: true, onBlur: aoSairDoCep },
-        { name: "logradouro", label: "Logradouro", size: 7 },
+        { name: "cep", label: "CEP", mask: "cep", center: true, size: 2, onBlur: aoSairDoCep },
+        { name: "logradouro", label: "Logradouro", size: 8 },
         { name: "numero", label: "Número", size: 2, center: true },
         {
           name: "cidade_id",

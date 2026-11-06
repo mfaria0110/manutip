@@ -185,7 +185,7 @@ export default function CadastroPage({
   function abrirNovo() {
     const base = {};
     campos.forEach((c) => {
-      base[c.name] = c.type === "checkbox" ? true : "";
+      base[c.name] = c.type === "checkbox" ? true : c.type === "simnao" ? false : "";
     });
     setForm(formatarCamposMoeda({ ...base, ...valoresPadrao }));
     setEditando({});
@@ -396,12 +396,28 @@ async function confirmarExclusao() {
             {notaModal && <p className="aviso-msg">{notaModal}</p>}
             <form onSubmit={salvar}>
               <div className="form-grid">
-              {campos.map((c) => (
+              {campos.filter((c) => !c.visivel || c.visivel(form) || c.reservarEspaco).map((c) =>
+                c.visivel && !c.visivel(form) ? (
+                  <div style={{ gridColumn: `span ${tamanhoDoCampo(c)}` }} key={c.name} aria-hidden="true" />
+                ) : (
                 <div className="form-field" style={{ "--span": tamanhoDoCampo(c) }} key={c.name}>
                   <label>{c.label}</label>
-                  {c.type === "select" ? (
+                  {c.type === "simnao" ? (
                     <select
-                      required={c.required}
+                      className="select-simnao"
+                      disabled={c.disabled}
+                      value={form[c.name] ? "S" : "N"}
+                      onChange={(e) => {
+                        const sim = e.target.value === "S";
+                        setForm((f) => (c.aoMudar ? c.aoMudar(sim, { ...f, [c.name]: sim }) : { ...f, [c.name]: sim }));
+                      }}
+                    >
+                      <option value="N">Não</option>
+                      <option value="S">Sim</option>
+                    </select>
+                  ) : c.type === "select" ? (
+                    <select
+                      required={typeof c.required === "function" ? c.required(form) : c.required}
                       disabled={c.disabled}
                       value={form[c.name] ?? ""}
                       onChange={(e) => setForm({ ...form, [c.name]: e.target.value })}
@@ -415,7 +431,7 @@ async function confirmarExclusao() {
                     </select>
                   ) : c.type === "combo" ? (
                     <ComboCriavel
-                      required={c.required}
+                      required={typeof c.required === "function" ? c.required(form) : c.required}
                       value={form[c.name] ?? ""}
                       onChange={(valor) =>
                         c.aoSelecionar
@@ -435,7 +451,7 @@ async function confirmarExclusao() {
                     />
                   ) : c.type === "textarea" ? (
                     <textarea
-                      required={c.required}
+                      required={typeof c.required === "function" ? c.required(form) : c.required}
                       rows={c.rows || 4}
                       value={form[c.name] ?? ""}
                       onChange={(e) => setForm({ ...form, [c.name]: e.target.value })}
@@ -444,7 +460,7 @@ async function confirmarExclusao() {
                     <input
                       type={c.type || "text"}
                       step={c.step}
-                      required={c.required}
+                      required={typeof c.required === "function" ? c.required(form) : c.required}
                       disabled={c.disabled}
                       placeholder={c.placeholder}
                       style={c.center ? { textAlign: "center" } : undefined}
@@ -463,7 +479,8 @@ async function confirmarExclusao() {
                     />
                   )}
                 </div>
-              ))}
+                )
+              )}
               </div>
               {erro && <p className="erro-msg">{erro}</p>}
               <div className="modal-actions">

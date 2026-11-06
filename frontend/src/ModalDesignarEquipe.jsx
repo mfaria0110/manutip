@@ -5,6 +5,9 @@ import ModalNovaEquipe from "./ModalNovaEquipe";
 import { formatarData, hojeLocal } from "./formatos";
 import { ABREVIACOES, colunasDoRelatorio } from "./relatorioColunas";
 
+// Botão Imprimir do roteiro fica oculto (o roteiro é impresso pelo Excel).
+const MOSTRAR_IMPRIMIR = false;
+
 // Reclamações que ainda podem ser designadas (espelha STATUS_DESIGNAVEIS do backend).
 const STATUS_DESIGNAVEIS = ["ABERTA", "EM_ANDAMENTO"];
 
@@ -513,23 +516,26 @@ export default function ModalDesignarEquipe({ prefeitura, nomeBairro, nomeCidade
           }}
         />
         <div style={{ marginTop: 16, display: "flex", justifyContent: "flex-end", gap: 8 }}>
-          <button
-            type="button"
-            className="btn"
-            onClick={() => aoExportar(imprimir)}
-            aria-disabled={!podeExportar}
-            title={motivoSemExportar || "Imprimir ou salvar em PDF a lista da equipe"}
-            style={{ opacity: podeExportar ? 1 : 0.55 }}
-          >
-            <i className="ti ti-printer" aria-hidden="true" style={{ marginRight: 6 }} />
-            Imprimir
-          </button>
+          {/* Botão Imprimir oculto a pedido do usuário (o roteiro sai pelo Excel); a função continua aqui. */}
+          {MOSTRAR_IMPRIMIR && (
+            <button
+              type="button"
+              className="btn"
+              onClick={() => aoExportar(imprimir)}
+              aria-disabled={!podeExportar}
+              title={motivoSemExportar || "Imprimir ou salvar em PDF a lista da equipe"}
+              style={{ opacity: podeExportar ? 1 : 0.55 }}
+            >
+              <i className="ti ti-printer" aria-hidden="true" style={{ marginRight: 6 }} />
+              Imprimir
+            </button>
+          )}
           <button
             type="button"
             className="btn"
             onClick={() => aoExportar(exportarExcel)}
             aria-disabled={!podeExportar}
-            title={motivoSemExportar || "Exportar para Excel a lista da equipe, no modelo do Imprimir"}
+            title={motivoSemExportar || "Exportar para Excel o roteiro da equipe"}
             style={{ marginRight: "auto", opacity: podeExportar ? 1 : 0.55 }}
           >
             <i className="ti ti-file-spreadsheet" aria-hidden="true" style={{ marginRight: 6 }} />

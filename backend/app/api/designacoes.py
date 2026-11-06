@@ -120,16 +120,18 @@ class ExcelRoteiro(BaseModel):
 
 @router.post("/excel", dependencies=[Depends(exigir("reclamacoes.acesso"))])
 def exportar_excel(req: ExcelRoteiro, db: Session = Depends(get_db)):
-    """Roteiro da equipe em planilha .xlsx, no mesmo modelo do Imprimir:
-    cidade e título no topo, quadro com equipe/viatura/componentes e a tabela
-    Código, Data_Rec, Bairro, Logradouro, Lamp, Pot.(W) e as categorias de
-    material (Lamp até Refletor em branco e com borda, pra preencher em campo)."""
-    from openpyxl import Workbook
-    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
-    from openpyxl.utils import get_column_letter
+    """Roteiro da equipe em planilha .xlsx, no modelo usado em campo: logo da
+    Selles, nome da cidade, funcionários da equipe e a tabela Data_Rec, Bairro,
+    Logradouro + colunas em branco (Luminária, Relê e, em "Outros", Base,
+    Perfurante, Conex e Pontos) com borda, pra preencher em campo."""
+    import math
+    from pathlib import Path
 
-    from app.api.relatorios import _ABREVIACOES, _MESCLADAS_EM_OUTROS, _ORDEM_CATEGORIAS
-    from app.models.categoria_material import CategoriaMaterial
+    from openpyxl import Workbook
+    from openpyxl.cell.rich_text import CellRichText, TextBlock
+    from openpyxl.cell.text import InlineFont
+    from openpyxl.styles import Alignment, Border, Font, Side
+
     from app.models.localidade import Cidade
 
     prefeitura = db.get(Prefeitura, req.prefeitura_id)
@@ -149,60 +151,143 @@ def exportar_excel(req: ExcelRoteiro, db: Session = Depends(get_db)):
         else []
     )
 
-    categorias = db.query(CategoriaMaterial).all()
-    tem_lampada = any(c.codigo == "LAMPADA" for c in categorias)
-    visiveis = sorted(
-        (c for c in categorias if c.codigo not in _MESCLADAS_EM_OUTROS and c.codigo != "LAMPADA"),
-        key=lambda c: _ORDEM_CATEGORIAS.index(c.codigo) if c.codigo in _ORDEM_CATEGORIAS else -1,
-    )
+    fino = Side(style="thin", color="000000")
+    cinza = Side(style="thin", color="BFBFBF")
+    caixa = Border(left=fino, right=fino, top=fino, bottom=fino)
+    centro = Alignment(horizontal="center", vertical="center")
+    esquerda = Alignment(horizontal="left", vertical="center", indent=1)
 
-    fino = Side(style="thin", color="444444")
-    borda = Border(left=fino, right=fino, top=fino, bottom=fino)
     wb = Workbook()
     ws = wb.active
     ws.title = "Roteiro"
-    ws["A1"] = cidade.nome if cidade else (prefeitura.nome if prefeitura else "")
-    ws["A1"].font = Font(bold=True, size=16)
-    ws["A2"] = f"ROTEIRO DO DIA: {req.data:%d/%m/%Y}"
-    ws["A2"].font = Font(bold=True, size=12)
+    ws.sheet_view.showGridLines = False
 
-    veiculo = f"{equipe.veiculo.placa} {equipe.veiculo.modelo}" if equipe.veiculo else "sem veículo"
-    membros = ", ".join(m.funcionario.nome for m in equipe.membros if m.funcionario) or "sem membros"
-    for linha, (rotulo, valor) in enumerate(
-        (("Equipe:", equipe.nome or "Equipe"), ("Viatura:", veiculo), ("Componentes:", membros)), start=4
-    ):
-        ws.cell(row=linha, column=1, value=rotulo).font = Font(bold=True)
-        ws.cell(row=linha, column=2, value=valor)
+    # Colunas: A Data_Rec | B Bairro | C Logradouro | D Luminária | E Relê | F..I Outros
+    larguras = {"A": 11, "B": 18, "C": 44, "D": 14, "E": 7, "F": 7, "G": 11, "H": 7, "I": 7}
+    for col, larg in larguras.items():
+        ws.column_dimensions[col].width = larg
+    ws.row_dimensions[1].height = 20
+    ws.row_dimensions[2].height = 22
+    ws.row_dimensions[3].height = 22
+    ws.row_dimensions[4].height = 24
 
-    cabecalho = ["Código", "Data_Rec", "Bairro", "Logradouro"]
-    if tem_lampada:
-        cabecalho.append("Lamp")
-    cabecalho.append("Pot.(W)")
-    cabecalho += [_ABREVIACOES.get(c.codigo, c.nome) for c in visiveis]
-    linha_cab = 8
+    # Logo da Selles no canto (se o Pillow não estiver disponível, segue sem logo).
+    try:
+        from openpyxl.drawing.image import Image as ImagemXL
+
+        from openpyxl.drawing.spreadsheet_drawing import AnchorMarker, OneCellAnchor
+        from openpyxl.drawing.xdr import XDRPositiveSize2D
+        from openpyxl.utils.units import pixels_to_EMU
+
+        logo = ImagemXL(str(Path(__file__).resolve().parent.parent / "assets" / "logo-selles.png"))
+        logo.width = 150
+        logo.height = round(150 * 104 / 400)
+        # Centraliza o logo na área das colunas Data_Rec + Bairro (A:B) e das linhas 1 a 3.
+        area_larg = sum(round(larguras[c] * 7 + 5) for c in ("A", "B"))
+        area_alt = round(sum(ws.row_dimensions[n].height for n in (1, 2, 3)) * 4 / 3)
+        dx, dy = max(0, (area_larg - logo.width) // 2), max(0, (area_alt - logo.height) // 2)
+        logo.anchor = OneCellAnchor(
+            _from=AnchorMarker(col=0, colOff=pixels_to_EMU(dx), row=0, rowOff=pixels_to_EMU(dy)),
+            ext=XDRPositiveSize2D(pixels_to_EMU(logo.width), pixels_to_EMU(logo.height)),
+        )
+        ws.add_image(logo)
+    except Exception:
+        pass
+
+    # Dia da semana e data do roteiro (linha 1, de D a I).
+    dias = ["SEGUNDA-FEIRA", "TERÇA-FEIRA", "QUARTA-FEIRA", "QUINTA-FEIRA", "SEXTA-FEIRA", "SÁBADO", "DOMINGO"]
+    ws.merge_cells("D1:I1")
+    ws["D1"] = f"{dias[req.data.weekday()]}, {req.data:%d/%m/%Y}"
+    ws["D1"].font = Font(bold=True, size=11)
+    ws["D1"].alignment = centro
+
+    # Funcionários da equipe (linha 2, de D a I).
+    nomes = ", ".join(
+        (m.funcionario.nome or "").split()[0] for m in equipe.membros if m.funcionario and m.funcionario.nome
+    ) or "—"
+    ws["D2"] = "Funcionários"
+    ws["D2"].font = Font(bold=True, size=11)
+    ws["D2"].alignment = esquerda
+    ws.merge_cells("E2:I2")
+    ws["E2"] = nomes
+    ws["E2"].font = Font(size=11)
+    ws["E2"].alignment = esquerda
+
+    # Cidade (sobre Logradouro) e o grupo "OUTROS" (sobre Base..Pontos).
+    ws["C3"] = cidade.nome if cidade else (prefeitura.nome if prefeitura else "")
+    ws["C3"].font = Font(bold=True, size=16)
+    ws["C3"].alignment = centro
+    ws.merge_cells("F3:I3")
+    ws["F3"] = "OUTROS"
+    ws["F3"].font = Font(bold=True, size=11)
+    ws["F3"].alignment = centro
+
+    cabecalho = ["Data_Rec", "Bairro", "Logradouro", "LUMINÁRIA", "RELÊ", "BASE", "PERFURANTE", "CONEX", "PONTOS"]
     for col, titulo in enumerate(cabecalho, start=1):
-        c = ws.cell(row=linha_cab, column=col, value=titulo)
-        c.font = Font(bold=True)
-        c.fill = PatternFill("solid", fgColor="E5EBF7")
-        c.alignment = Alignment(horizontal="left" if col <= 4 else "center")
-        if col >= 5:
-            c.border = borda
-    linha = linha_cab + 1
+        c = ws.cell(row=4, column=col, value=titulo)
+        # Colunas de preenchimento estreitas (folha em retrato): título menor.
+        c.font = Font(bold=True, size=11 if col <= 4 else 9)
+        c.alignment = esquerda if col <= 3 else centro
+
+    # Bordas do quadro de cima: data, funcionários, cidade e colunas de preenchimento.
+    for linha in (1, 2, 3, 4):
+        for col in range(4, 10):
+            ws.cell(row=linha, column=col).border = caixa
+    ws["C3"].border = caixa
+    for col in range(1, 4):
+        ws.cell(row=4, column=col).border = caixa
+
+    linha = 5
     for r in reclamacoes:
         logradouro = ", ".join(p for p in (r.logradouro or "—", f"Nº {r.numero}" if r.numero else "") if p)
-        valores = [r.codigo, r.data_reclamacao, r.bairro.nome if r.bairro else "—", logradouro]
+        # Reclamação urgente: "Logradouro / Pedido de: Fulano", com o "Pedido de" em negrito.
+        # Reclamante com foto: "/ Tem foto: (telefone)", também em negrito.
+        destaques = []
+        if r.urgente and r.pedido_de:
+            destaques.append(f"Pedido de: {r.pedido_de}")
+        if r.foto_reclamante:
+            destaques.append(f"Tem foto: {r.telefone or 'sem telefone'}")
+        pedido = " / ".join(destaques)
+        texto_logradouro = f"{logradouro} / {pedido}" if pedido else logradouro
+        if pedido:
+            partes = [f"{logradouro} / "]
+            for n, d in enumerate(destaques):
+                if n:
+                    partes.append(" / ")
+                partes.append(TextBlock(InlineFont(b=True, sz=10), d))
+            valor_logradouro = CellRichText(*partes)
+        else:
+            valor_logradouro = logradouro
+        valores = [r.data_reclamacao, r.bairro.nome if r.bairro else "—", valor_logradouro]
         for col, v in enumerate(valores, start=1):
             c = ws.cell(row=linha, column=col, value=v)
-            if col == 2:
+            c.font = Font(size=10)
+            c.alignment = centro if col == 1 else esquerda
+            c.border = Border(left=fino, right=fino, bottom=cinza)
+            if col == 1:
                 c.number_format = "DD/MM/YYYY"
-                c.alignment = Alignment(horizontal="center")
-        for col in range(5, len(cabecalho) + 1):
-            ws.cell(row=linha, column=col).border = borda
-        ws.row_dimensions[linha].height = 22
+        for col in range(4, 10):
+            ws.cell(row=linha, column=col).border = caixa
+        # Linha baixa; só cresce quando bairro/logradouro precisam quebrar em 2+ linhas.
+        ws.cell(row=linha, column=2).alignment = Alignment(horizontal="left", vertical="center", indent=1, wrap_text=True)
+        ws.cell(row=linha, column=3).alignment = Alignment(horizontal="left", vertical="center", indent=1, wrap_text=True)
+        # Estimativa de quebra: ~1,2-1,25 caractere (fonte 10) por unidade de largura; negrito ocupa ~5% a mais.
+        tamanho_logradouro = len(texto_logradouro) + 0.05 * len(pedido)
+        qtd_linhas = max(
+            math.ceil(len(str(valores[1])) / (larguras["B"] * 1.2)) or 1,
+            math.ceil(tamanho_logradouro / (larguras["C"] * 1.25)) or 1,
+        )
+        ws.row_dimensions[linha].height = 18 + 13 * (qtd_linhas - 1)
         linha += 1
-    larguras = [20, 12, 24, 38] + ([12] if tem_lampada else []) + [12] + [11] * len(visiveis)
-    for col, largura in enumerate(larguras, start=1):
-        ws.column_dimensions[get_column_letter(col)].width = largura
+
+    # Impressão: retrato, cabeçalho repetido, ajusta à largura da folha.
+    ws.page_setup.orientation = "portrait"
+    ws.page_setup.paperSize = ws.PAPERSIZE_A4
+    ws.page_setup.fitToWidth = 1
+    ws.page_setup.fitToHeight = 0
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
+    ws.print_title_rows = "1:4"
+    ws.page_margins.left = ws.page_margins.right = 0.3
 
     buffer = io.BytesIO()
     wb.save(buffer)

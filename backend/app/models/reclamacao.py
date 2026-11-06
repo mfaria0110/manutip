@@ -1,7 +1,7 @@
 import uuid
 from datetime import date
 
-from sqlalchemy import Date, ForeignKey, String, Text
+from sqlalchemy import Boolean, Date, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -38,6 +38,12 @@ class Reclamacao(TimestampMixin, Base):
     cidade_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("cidades.id"))
     prefeitura_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("prefeituras.id"))
     observacoes: Mapped[str | None] = mapped_column(Text)
+    # Pedido urgente: "pedido_de" diz de quem é o pedido (obrigatório quando urgente).
+    urgente: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    pedido_de: Mapped[str | None] = mapped_column(String(200))
+    # O reclamante tem foto do problema (o telefone dele passa a ser obrigatório,
+    # pra equipe pedir a foto). Diferente das fotos da execução.
+    foto_reclamante: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     status: Mapped[str] = mapped_column(String(20), default="ABERTA")  # ABERTA, EM_ANDAMENTO, CONCLUIDA
 
     bairro: Mapped["object"] = relationship("Bairro")
