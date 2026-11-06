@@ -83,6 +83,7 @@ textarea {
 input,
 select {
   height: 29px;
+  font-size: 12px;
 }
 
 textarea {

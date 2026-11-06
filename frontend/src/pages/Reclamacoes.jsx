@@ -231,11 +231,9 @@ export default function Reclamacoes() {
       campos={[
         { name: "codigo", label: "Código", size: 4, disabled: true, placeholder: "Gerado ao salvar" },
         { name: "nome_reclamante", label: "Nome do reclamante", required: true, size: 8 },
-        // Obrigatório quando o reclamante tem foto (a equipe pede a foto por esse telefone).
-        { name: "telefone", label: "Telefone", mask: "telefone", center: true, size: 2, required: (f) => !!f.foto_reclamante },
         {
           name: "tipo_reclamacao",
-          label: "Canal (como chegou)",
+          label: "Como chegou",
           type: "select",
           required: true,
           size: 2,
@@ -244,6 +242,8 @@ export default function Reclamacoes() {
         { name: "data_reclamacao", label: "Data", type: "date", required: true, size: 2, center: true },
         // Tem foto = Sim: o reclamante tem foto do problema; o telefone vira obrigatório.
         { name: "foto_reclamante", label: "Tem foto", type: "simnao", size: 1 },
+        // Obrigatório quando o reclamante tem foto (a equipe pede a foto por esse telefone).
+        { name: "telefone", label: "Telefone", mask: "telefone", center: true, size: 2, required: (f) => !!f.foto_reclamante },
         // Urgente = Sim abre o campo "Pedido de" (de quem é o pedido); Não limpa o campo.
         {
           name: "urgente",
