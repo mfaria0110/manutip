@@ -263,7 +263,7 @@ def _reabrir_se_sem_itens(reclamacao_id: uuid.UUID, db: Session) -> None:
     )
     if qtd_itens == 0:
         reclamacao = db.get(Reclamacao, reclamacao_id)
-        if reclamacao and reclamacao.status == "CONCLUIDA":
+        if reclamacao and reclamacao.status == "CONCLUIDA" and not reclamacao.validada_em:
             reclamacao.status = "ABERTA"
 
 

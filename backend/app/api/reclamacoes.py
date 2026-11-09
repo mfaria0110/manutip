@@ -1,6 +1,6 @@
 import re
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -39,12 +39,15 @@ class ReclamacaoOut(BaseModel):
     pedido_de: str | None = None
     foto_reclamante: bool = False
     status: str
+    validada_em: datetime | None = None
     # True se já existe ao menos uma execução lançada (tipicamente pelo app
     # de campo) — a reclamação pode ter sido atendida sem alguém lembrar de
     # marcar como Concluída, daí o aviso + atalho na lista (ver listar()).
     tem_execucao: bool = False
     # Tem foto anexada em alguma execução (a foto é da reclamação, não do material).
     tem_foto: bool = False
+    # Data da execução mais recente (com material lançado) — coluna Data_Exec da lista.
+    data_execucao: date | None = None
     # True se está designada a uma equipe para hoje ou para um dia futuro
     # (roteiro vigente — designações de dias passados não contam).
     designada: bool = False
@@ -159,6 +162,9 @@ router = APIRouter(prefix="/api/reclamacoes", tags=["reclamacoes"])
 def listar(
     prefeitura_id: uuid.UUID | None = Query(default=None),
     status: str | None = Query(default=None),
+    # Tela de Reclamações: abertas sempre; Validada, Já atendida e Concluída só
+    # se a execução (ou, sem ela, a validação/última alteração) tiver até N dias.
+    dias_finalizadas: int | None = Query(default=None, ge=0),
     db: Session = Depends(get_db),
 ):
     query = db.query(Reclamacao)
@@ -171,13 +177,34 @@ def listar(
     ids = [r.id for r in reclamacoes]
     # "Já atendida": só conta execução com material lançado — execução vazia
     # (todos os itens excluídos) não atende a reclamação.
-    ids_com_execucao = {
-        rid
-        for (rid,) in db.query(ExecucaoReclamacao.reclamacao_id)
+    from sqlalchemy import func
+
+    data_execucao_por_reclamacao = dict(
+        db.query(ExecucaoReclamacao.reclamacao_id, func.max(ExecucaoReclamacao.data_execucao))
         .join(ItemExecucaoMaterial, ItemExecucaoMaterial.execucao_id == ExecucaoReclamacao.id)
         .filter(ExecucaoReclamacao.reclamacao_id.in_(ids))
-        .distinct()
-    }
+        .group_by(ExecucaoReclamacao.reclamacao_id)
+        .all()
+    )
+    ids_com_execucao = set(data_execucao_por_reclamacao)
+
+    if dias_finalizadas is not None:
+        limite = _hoje_brasil() - timedelta(days=dias_finalizadas)
+        fuso = ZoneInfo("America/Sao_Paulo")
+
+        def _manter(r: Reclamacao) -> bool:
+            aberta = r.status in ("ABERTA", "EM_ANDAMENTO") and r.id not in ids_com_execucao
+            if aberta:
+                return True
+            referencia = data_execucao_por_reclamacao.get(r.id)
+            if referencia is None:
+                marca = r.validada_em or r.atualizado_em
+                referencia = marca.astimezone(fuso).date() if marca else r.data_reclamacao
+            return referencia >= limite
+
+        reclamacoes = [r for r in reclamacoes if _manter(r)]
+        ids = [r.id for r in reclamacoes]
+
     ids_designadas = {
         rid
         for (rid,) in db.query(DesignacaoReclamacao.reclamacao_id)
@@ -197,10 +224,26 @@ def listar(
     for r in reclamacoes:
         item = ReclamacaoOut.model_validate(r)
         item.tem_execucao = r.id in ids_com_execucao
+        item.data_execucao = data_execucao_por_reclamacao.get(r.id)
         item.tem_foto = r.id in ids_com_foto
         item.designada = r.id in ids_designadas
         saida.append(item)
     return saida
+
+
+@router.get("/abertas-por-prefeitura", dependencies=[Depends(exigir("reclamacoes.acesso"))])
+def abertas_por_prefeitura(db: Session = Depends(get_db)):
+    """Quantidade de reclamações abertas (Aberta ou Em andamento) de cada
+    prefeitura — usada nos cards da tela de escolha da prefeitura."""
+    from sqlalchemy import func
+
+    linhas = (
+        db.query(Reclamacao.prefeitura_id, func.count(Reclamacao.id))
+        .filter(Reclamacao.prefeitura_id.isnot(None), Reclamacao.status.in_(("ABERTA", "EM_ANDAMENTO")))
+        .group_by(Reclamacao.prefeitura_id)
+        .all()
+    )
+    return {str(pid): n for pid, n in linhas}
 
 
 @router.get("/{item_id}", response_model=ReclamacaoOut, dependencies=[Depends(exigir("reclamacoes.acesso"))])
@@ -231,6 +274,20 @@ def atualizar(item_id: uuid.UUID, req: ReclamacaoUpdate, db: Session = Depends(g
     obj = db.get(Reclamacao, item_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Não encontrado.")
+    novo_status = req.model_dump(exclude_unset=True).get("status")
+    if novo_status and novo_status != obj.status:
+        if obj.validada_em:
+            # Já validada: só pode passar a Concluída. Validar de novo ou voltar
+            # para Aberta/Em andamento só pela reabertura com senha.
+            if novo_status == "VALIDADA":
+                raise HTTPException(status_code=400, detail="Esta reclamação já foi validada.")
+            if novo_status != "CONCLUIDA":
+                raise HTTPException(
+                    status_code=400,
+                    detail="Reclamação validada: para alterar o status, reabra com a senha de quem autoriza.",
+                )
+        elif novo_status == "VALIDADA":
+            obj.validada_em = datetime.now(ZoneInfo("UTC"))
     for campo, valor in req.model_dump(exclude_unset=True).items():
         if campo in ("urgente", "foto_reclamante") and valor is None:
             continue
@@ -295,6 +352,7 @@ def reabrir(reclamacao_id: uuid.UUID, req: ReabrirRequest, db: Session = Depends
     ):
         raise HTTPException(status_code=401, detail="Usuário ou senha de quem autoriza a reabertura inválidos.")
     reclamacao.status = "ABERTA"
+    reclamacao.validada_em = None
     db.commit()
     db.refresh(reclamacao)
     return reclamacao

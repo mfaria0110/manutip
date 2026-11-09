@@ -24,6 +24,9 @@ const STATUS_RECLAMACAO = [
   { value: "CONCLUIDA", label: "Concluída" },
 ];
 
+// Validada, Já atendida e Concluída só aparecem na lista até este nº de dias.
+const DIAS_FINALIZADAS = 45;
+
 export default function Reclamacoes() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -35,6 +38,7 @@ export default function Reclamacoes() {
   const [bairros, setBairros] = useState([]);
   const [prefeituras, setPrefeituras] = useState([]);
   const [prefeituraEscolhida, setPrefeituraEscolhida] = useState("");
+  const [abertasPorPrefeitura, setAbertasPorPrefeitura] = useState(null);
   // Guardada na URL (não em estado solto) pra sobreviver a navegar pra
   // execução/ocorrência e voltar — o botão Voltar dessas telas devolve pra
   // cá com o mesmo ?prefeitura_id=, sem precisar escolher de novo.
@@ -45,6 +49,15 @@ export default function Reclamacoes() {
     apiBairros.listar().then(setBairros);
     apiPrefeituras.listar().then(setPrefeituras);
   }, []);
+
+  // Contagem de abertas por prefeitura: recarrega sempre que volta pra tela de escolha.
+  useEffect(() => {
+    if (prefeituraConfirmada) return;
+    apiReclamacoes
+      .abertasPorPrefeitura()
+      .then(setAbertasPorPrefeitura)
+      .catch(() => setAbertasPorPrefeitura({}));
+  }, [prefeituraConfirmada]);
 
   const nomeCidade = (id) => cidades.find((c) => c.id === id)?.nome || "—";
   const nomeBairro = (id) => bairros.find((b) => b.id === id)?.nome || "—";
@@ -120,6 +133,37 @@ export default function Reclamacoes() {
               Continuar
             </button>
           </div>
+          <h3 className="titulo-cards-prefeituras">Reclamações abertas por prefeitura</h3>
+          {/* Um card por prefeitura cadastrada, com a quantidade de reclamações abertas; clicar entra na lista dela. */}
+          <div className="cards-prefeituras">
+            {prefeituras.map((p) => {
+              const abertas = abertasPorPrefeitura ? abertasPorPrefeitura[p.id] || 0 : null;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  className={"card-prefeitura" + (p.ativo === false ? " inativa" : "")}
+                  onClick={() => setSearchParams({ prefeitura_id: p.id })}
+                  title={`Abrir as reclamações de ${p.nome}`}
+                >
+                  <div className="card-prefeitura-topo">
+                    <i className="ti ti-building-bank" aria-hidden="true" />
+                    <div className="card-prefeitura-nome">{p.nome}</div>
+                    {p.sigla && <span className="card-prefeitura-sigla">{p.sigla}</span>}
+                  </div>
+                  <div className={"card-prefeitura-abertas" + (abertas ? " tem" : "")}>
+                    <strong>{abertas ?? "…"}</strong>
+                    <span>{abertas === 1 ? "reclamação aberta" : "reclamações abertas"}</span>
+                  </div>
+                </button>
+              );
+            })}
+            {abertasPorPrefeitura && prefeituras.length === 0 && (
+              <div className="empty-state" style={{ gridColumn: "1 / -1" }}>
+                Nenhuma prefeitura cadastrada.
+              </div>
+            )}
+          </div>
         </div>
       </>
     );
@@ -137,7 +181,8 @@ export default function Reclamacoes() {
         prefeitura_id: prefeituraConfirmada,
         cidade_id: prefeituras.find((p) => p.id === prefeituraConfirmada)?.cidade_id || "",
       }}
-      queryExtra={`?prefeitura_id=${prefeituraConfirmada}`}
+      // Abertas sempre; Validada / Já atendida / Concluída só dos últimos 45 dias.
+      queryExtra={`?prefeitura_id=${prefeituraConfirmada}&dias_finalizadas=${DIAS_FINALIZADAS}`}
       // Mais largo para caberem Telefone, Canal, Data, Urgente e Pedido de na mesma linha.
       larguraModal={900}
       classeTabela="tabela-compacta cabecalho-35"
@@ -195,9 +240,19 @@ export default function Reclamacoes() {
           ),
         },
         { key: "data_reclamacao", label: "Data_Rec", render: (item) => formatarData(item.data_reclamacao) },
+        {
+          key: "data_execucao",
+          label: "Data_Exec",
+          render: (item) => (item.data_execucao ? formatarData(item.data_execucao) : "—"),
+        },
         { key: "nome_reclamante", label: "Reclamante" },
-        { key: "logradouro", label: "Logradouro", width: 260, render: (item) => item.logradouro || "—" },
-        { key: "numero", label: "Número", render: (item) => item.numero || "—" },
+        // Número junto do logradouro ("Rua X, 123"); sem coluna Número separada.
+        {
+          key: "logradouro",
+          label: "Logradouro",
+          width: 300,
+          render: (item) => [item.logradouro, item.numero].filter(Boolean).join(", ") || "—",
+        },
         { key: "bairro_id", label: "Bairro", render: (item) => nomeBairro(item.bairro_id) },
         { key: "cidade_id", label: "Cidade", width: 160, render: (item) => nomeCidade(item.cidade_id) },
         {

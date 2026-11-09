@@ -1,7 +1,7 @@
 import uuid
-from datetime import date
+from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, ForeignKey, String, Text
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -44,7 +44,11 @@ class Reclamacao(TimestampMixin, Base):
     # O reclamante tem foto do problema (o telefone dele passa a ser obrigatório,
     # pra equipe pedir a foto). Diferente das fotos da execução.
     foto_reclamante: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
-    status: Mapped[str] = mapped_column(String(20), default="ABERTA")  # ABERTA, EM_ANDAMENTO, CONCLUIDA
+    status: Mapped[str] = mapped_column(String(20), default="ABERTA")  # ABERTA, EM_ANDAMENTO, VALIDADA, CONCLUIDA
+    # Quando o lançamento foi validado. Fica gravado mesmo depois de passar para
+    # Concluída: validada continua travada (só reabre com senha de quem autoriza)
+    # e não pode ser validada de novo. A reabertura limpa este campo.
+    validada_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     bairro: Mapped["object"] = relationship("Bairro")
     cidade: Mapped["object"] = relationship("Cidade")

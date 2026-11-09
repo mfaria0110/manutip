@@ -3,6 +3,18 @@ import { useAcesso } from "./AcessoContext";
 import ComboCriavel from "./ComboCriavel";
 import ConfirmDialog from "./ConfirmDialog";
 
+// Texto visível de um valor renderizado (string, número ou elemento React com
+// filhos) — usado pela busca para achar também colunas com selos/badges.
+function textoDoNo(no) {
+  if (no == null || typeof no === "boolean") return "";
+  if (typeof no === "string" || typeof no === "number") return String(no);
+  if (Array.isArray(no)) return no.map(textoDoNo).join(" ");
+  if (typeof no === "object" && no.props) {
+    return textoDoNo(no.props.children);
+  }
+  return "";
+}
+
 // Máscaras simples de entrada — formata o texto enquanto o usuário digita.
 const MASCARAS = {
   cep: (v) =>
@@ -293,7 +305,8 @@ async function confirmarExclusao() {
     return itens.filter((item) =>
       colunasFinal.some((c) => {
         const valor = c.render ? c.render(item) : item[c.key];
-        return String(valor ?? "").toLowerCase().includes(termo);
+        // Colunas com selo/elemento (Código, Status...) entram pelo texto visível.
+        return textoDoNo(valor).toLowerCase().includes(termo);
       })
     );
   }, [itens, busca, colunasFinal]);
@@ -314,17 +327,25 @@ async function confirmarExclusao() {
         {erroLista && <p className="erro-msg">{erroLista}</p>}
         <div className="filtros-linha">
           {filtroTopo}
-          {itens.length > 0 && (
-            <div className="filtro-wrap">
-              <i className="ti ti-search" aria-hidden="true" />
-              <input
-                placeholder="Buscar..."
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-              />
-            </div>
-          )}
-          {acaoAposFiltro}
+          {/* Com ação após o filtro (ex.: Designar equipe), busca + ação vão para a direita. */}
+          <div
+            className={acaoAposFiltro ? "filtros-direita" : undefined}
+            style={
+              acaoAposFiltro ? { marginLeft: "auto", display: "flex", gap: 12, alignItems: "flex-start" } : { display: "contents" }
+            }
+          >
+            {itens.length > 0 && (
+              <div className="filtro-wrap">
+                <i className="ti ti-search" aria-hidden="true" />
+                <input
+                  placeholder="Buscar..."
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                />
+              </div>
+            )}
+            {acaoAposFiltro}
+          </div>
         </div>
         <div className="card">
           {carregando ? (

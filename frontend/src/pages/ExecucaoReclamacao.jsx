@@ -568,7 +568,9 @@ export default function ExecucaoReclamacao() {
   // um ADMIN reabrir com a própria senha. Concluída fica liberada pra
   // edição normal (é só uma marcação de "já terminou", não uma revisão
   // formal como a validação).
-  const bloqueado = reclamacao.status === "VALIDADA" || reclamacao.status === "EM_ANDAMENTO";
+  // Validada e depois Concluída continua travada (validada_em fica gravado).
+  const bloqueado =
+    reclamacao.status === "VALIDADA" || reclamacao.status === "EM_ANDAMENTO" || Boolean(reclamacao.validada_em);
 
   // Agrupa por data + equipe — só abre um card novo quando a data ou a
   // equipe mudam; a equipe fica no cabeçalho do card, não repetida linha a
@@ -648,7 +650,7 @@ export default function ExecucaoReclamacao() {
                   {LABEL_STATUS[reclamacao.status] || reclamacao.status}
                 </span>
               </div>
-              {["ABERTA", "CONCLUIDA"].includes(reclamacao.status) && execucoes.length > 0 && (
+              {["ABERTA", "CONCLUIDA"].includes(reclamacao.status) && !reclamacao.validada_em && execucoes.length > 0 && (
                 <button className="btn btn-primary" onClick={validarLancamento} disabled={validando}>
                   {validando ? "Validando..." : "Validar lançamento"}
                 </button>

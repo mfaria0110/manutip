@@ -116,6 +116,8 @@ export const apiReclamacoes = {
   ...crud("/reclamacoes"),
   // Exclusão definitiva pede a senha do usuário logado.
   excluir: (id, senha) => req(`/reclamacoes/${id}`, { method: "DELETE", body: JSON.stringify({ senha }) }),
+  // { prefeitura_id: quantidade de reclamações abertas } — cards da escolha de prefeitura.
+  abertasPorPrefeitura: () => req("/reclamacoes/abertas-por-prefeitura"),
 };
 export function reabrirReclamacao(id, username, senha) {
   return req(`/reclamacoes/${id}/reabrir`, { method: "POST", body: JSON.stringify({ username, senha }) });
