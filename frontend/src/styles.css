@@ -1376,6 +1376,16 @@ label.check input {
 .card-prefeitura-abertas.tem strong {
   color: var(--text-primary);
 }
+/* 2ª linha do card: designadas para hoje (azul quando há). */
+.card-prefeitura-abertas.card-prefeitura-hoje.tem {
+  color: #1d4ed8;
+}
+
+.modal-designadas-hoje {
+  width: 1150px;
+  max-width: 95vw;
+}
+
 .titulo-cards-prefeituras {
   margin: 22px 0 12px;
   font-size: 14px;

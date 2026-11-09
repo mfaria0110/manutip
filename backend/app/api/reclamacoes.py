@@ -286,6 +286,12 @@ def atualizar(item_id: uuid.UUID, req: ReclamacaoUpdate, db: Session = Depends(g
                     status_code=400,
                     detail="Reclamação validada: para alterar o status, reabra com a senha de quem autoriza.",
                 )
+        elif obj.status == "CONCLUIDA" and novo_status != "VALIDADA":
+            # Concluída só volta a ser alterada pela reabertura com senha do Administrador.
+            raise HTTPException(
+                status_code=400,
+                detail="Reclamação concluída: para alterar o status, reabra com a senha de quem autoriza.",
+            )
         elif novo_status == "VALIDADA":
             obj.validada_em = datetime.now(ZoneInfo("UTC"))
     for campo, valor in req.model_dump(exclude_unset=True).items():

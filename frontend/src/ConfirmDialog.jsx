@@ -10,6 +10,10 @@ export default function ConfirmDialog({
   senha,
   onSenhaChange,
   erro,
+  // Opcional: textos/cor do botão de confirmar (padrão: "Excluir", vermelho).
+  textoConfirmar = "Excluir",
+  textoConfirmando = "Excluindo...",
+  perigo = true,
 }) {
   if (!aberto) return null;
   const pedeSenha = onSenhaChange !== undefined;
@@ -41,11 +45,11 @@ export default function ConfirmDialog({
           <button
             type="button"
             className="btn btn-primary"
-            style={{ background: "var(--danger)", borderColor: "var(--danger)" }}
+            style={perigo ? { background: "var(--danger)", borderColor: "var(--danger)" } : undefined}
             onClick={onConfirmar}
             disabled={confirmando || (pedeSenha && !senha)}
           >
-            {confirmando ? "Excluindo..." : "Excluir"}
+            {confirmando ? textoConfirmando : textoConfirmar}
           </button>
         </div>
       </div>

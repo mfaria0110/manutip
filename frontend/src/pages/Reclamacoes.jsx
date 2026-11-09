@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import CadastroPage from "../CadastroPage";
-import { apiBairros, apiCidades, apiPrefeituras, apiReclamacoes } from "../api";
+import ConfirmDialog from "../ConfirmDialog";
+import { apiBairros, apiCidades, apiDesignacoes, apiPrefeituras, apiReclamacoes } from "../api";
 import ModalDesignarEquipe from "../ModalDesignarEquipe";
+import ModalDesignadasHoje from "../ModalDesignadasHoje";
 import { formatarData } from "../formatos";
 import { buscarEnderecoPorCep } from "../viacep";
 
@@ -31,6 +33,9 @@ export default function Reclamacoes() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [concluindoId, setConcluindoId] = useState(null);
+  // Reclamação aguardando confirmação de "Concluir execução" (modal).
+  const [concluirItem, setConcluirItem] = useState(null);
+  const [erroConcluir, setErroConcluir] = useState("");
   const [designando, setDesignando] = useState(false);
   // Muda ao salvar designações, remontando a lista pra recarregar a coluna "Designado".
   const [versaoLista, setVersaoLista] = useState(0);
@@ -39,6 +44,9 @@ export default function Reclamacoes() {
   const [prefeituras, setPrefeituras] = useState([]);
   const [prefeituraEscolhida, setPrefeituraEscolhida] = useState("");
   const [abertasPorPrefeitura, setAbertasPorPrefeitura] = useState(null);
+  const [designadasHoje, setDesignadasHoje] = useState(null);
+  // Prefeitura cujo card foi clicado: abre a lista das designadas para hoje.
+  const [cardAberto, setCardAberto] = useState(null);
   // Guardada na URL (não em estado solto) pra sobreviver a navegar pra
   // execução/ocorrência e voltar — o botão Voltar dessas telas devolve pra
   // cá com o mesmo ?prefeitura_id=, sem precisar escolher de novo.
@@ -57,6 +65,10 @@ export default function Reclamacoes() {
       .abertasPorPrefeitura()
       .then(setAbertasPorPrefeitura)
       .catch(() => setAbertasPorPrefeitura({}));
+    apiDesignacoes
+      .hojePorPrefeitura()
+      .then(setDesignadasHoje)
+      .catch(() => setDesignadasHoje({}));
   }, [prefeituraConfirmada]);
 
   const nomeCidade = (id) => cidades.find((c) => c.id === id)?.nome || "—";
@@ -64,13 +76,20 @@ export default function Reclamacoes() {
   const siglaPrefeitura = (id) => prefeituras.find((p) => p.id === id)?.sigla || "—";
   const labelStatus = (v) => STATUS_RECLAMACAO.find((s) => s.value === v)?.label || v;
 
-  async function marcarConcluida(item) {
-    setConcluindoId(item.id);
+  // O ✓ da lista só pede confirmação; concluir de fato é em confirmarConclusao().
+  function marcarConcluida(item) {
+    setErroConcluir("");
+    setConcluirItem(item);
+  }
+
+  async function confirmarConclusao() {
+    setConcluindoId(concluirItem.id);
+    setErroConcluir("");
     try {
-      await apiReclamacoes.atualizar(item.id, { status: "CONCLUIDA" });
+      await apiReclamacoes.atualizar(concluirItem.id, { status: "CONCLUIDA" });
       window.location.reload();
     } catch (e) {
-      alert(e.message);
+      setErroConcluir(e.message);
       setConcluindoId(null);
     }
   }
@@ -133,38 +152,54 @@ export default function Reclamacoes() {
               Continuar
             </button>
           </div>
+          {/* Dois grupos de cards por prefeitura: abertas (clicar entra na lista) e
+              designadas para hoje (clicar abre o roteiro do dia com equipe e status). */}
           <h3 className="titulo-cards-prefeituras">Reclamações abertas por prefeitura</h3>
-          {/* Um card por prefeitura cadastrada, com a quantidade de reclamações abertas; clicar entra na lista dela. */}
           <div className="cards-prefeituras">
-            {prefeituras.map((p) => {
-              const abertas = abertasPorPrefeitura ? abertasPorPrefeitura[p.id] || 0 : null;
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  className={"card-prefeitura" + (p.ativo === false ? " inativa" : "")}
-                  onClick={() => setSearchParams({ prefeitura_id: p.id })}
-                  title={`Abrir as reclamações de ${p.nome}`}
-                >
-                  <div className="card-prefeitura-topo">
-                    <i className="ti ti-building-bank" aria-hidden="true" />
-                    <div className="card-prefeitura-nome">{p.nome}</div>
-                    {p.sigla && <span className="card-prefeitura-sigla">{p.sigla}</span>}
-                  </div>
-                  <div className={"card-prefeitura-abertas" + (abertas ? " tem" : "")}>
-                    <strong>{abertas ?? "…"}</strong>
-                    <span>{abertas === 1 ? "reclamação aberta" : "reclamações abertas"}</span>
-                  </div>
-                </button>
-              );
-            })}
+            {prefeituras.map((p) => (
+              <CardPrefeitura
+                key={p.id}
+                prefeitura={p}
+                quantidade={abertasPorPrefeitura ? abertasPorPrefeitura[p.id] || 0 : null}
+                singular="reclamação aberta"
+                plural="reclamações abertas"
+                titulo={`Abrir as reclamações de ${p.nome}`}
+                onClick={() => setSearchParams({ prefeitura_id: p.id })}
+              />
+            ))}
             {abertasPorPrefeitura && prefeituras.length === 0 && (
               <div className="empty-state" style={{ gridColumn: "1 / -1" }}>
                 Nenhuma prefeitura cadastrada.
               </div>
             )}
           </div>
+          <h3 className="titulo-cards-prefeituras">Reclamações designadas para hoje por prefeitura</h3>
+          <div className="cards-prefeituras">
+            {prefeituras.map((p) => (
+              <CardPrefeitura
+                key={p.id}
+                prefeitura={p}
+                quantidade={designadasHoje ? designadasHoje[p.id] || 0 : null}
+                singular="designada para hoje"
+                plural="designadas para hoje"
+                classeExtra="card-prefeitura-hoje"
+                titulo={`Ver as reclamações designadas para hoje de ${p.nome}`}
+                onClick={() => setCardAberto(p)}
+              />
+            ))}
+          </div>
         </div>
+        {cardAberto && (
+          <ModalDesignadasHoje
+            prefeitura={cardAberto}
+            onFechar={() => setCardAberto(null)}
+            onAbrirLista={() => {
+              const id = cardAberto.id;
+              setCardAberto(null); // fecha o modal (senão reabre ao voltar para a escolha)
+              setSearchParams({ prefeitura_id: id });
+            }}
+          />
+        )}
       </>
     );
   }
@@ -386,6 +421,22 @@ export default function Reclamacoes() {
               }}
             />
           )}
+          <ConfirmDialog
+            aberto={Boolean(concluirItem)}
+            titulo="Concluir execução"
+            mensagem={
+              concluirItem &&
+              `Deseja realmente concluir a execução da reclamação ${concluirItem.codigo}? ` +
+                "Depois de concluída, ela só poderá ser alterada com a autorização (senha) do Administrador."
+            }
+            confirmando={concluindoId === concluirItem?.id}
+            erro={erroConcluir}
+            textoConfirmar="Concluir"
+            textoConfirmando="Concluindo..."
+            perigo={false}
+            onConfirmar={confirmarConclusao}
+            onCancelar={() => setConcluirItem(null)}
+          />
         </>
       }
       filtroTopo={
@@ -408,5 +459,27 @@ export default function Reclamacoes() {
         </div>
       }
     />
+  );
+}
+
+// Card de uma prefeitura com uma quantidade (abertas ou designadas para hoje).
+function CardPrefeitura({ prefeitura: p, quantidade, singular, plural, classeExtra = "", titulo, onClick }) {
+  return (
+    <button
+      type="button"
+      className={"card-prefeitura" + (p.ativo === false ? " inativa" : "")}
+      onClick={onClick}
+      title={titulo}
+    >
+      <div className="card-prefeitura-topo">
+        <i className="ti ti-building-bank" aria-hidden="true" />
+        <div className="card-prefeitura-nome">{p.nome}</div>
+        {p.sigla && <span className="card-prefeitura-sigla">{p.sigla}</span>}
+      </div>
+      <div className={`card-prefeitura-abertas ${classeExtra}` + (quantidade ? " tem" : "")}>
+        <strong>{quantidade ?? "…"}</strong>
+        <span>{quantidade === 1 ? singular : plural}</span>
+      </div>
+    </button>
   );
 }

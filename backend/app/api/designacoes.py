@@ -64,6 +64,121 @@ def listar(
     return query.all()
 
 
+def _hoje_brasil() -> date:
+    """Hoje no fuso de Brasília (o servidor roda em UTC: à noite já seria amanhã)."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    return datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+
+
+@router.get("/hoje-por-prefeitura", dependencies=[Depends(exigir("reclamacoes.acesso"))])
+def hoje_por_prefeitura(db: Session = Depends(get_db)):
+    """Quantidade de reclamações designadas para hoje em cada prefeitura (cards)."""
+    from sqlalchemy import func
+
+    linhas = (
+        db.query(Reclamacao.prefeitura_id, func.count(DesignacaoReclamacao.id))
+        .join(Reclamacao, Reclamacao.id == DesignacaoReclamacao.reclamacao_id)
+        .filter(DesignacaoReclamacao.data == _hoje_brasil(), Reclamacao.prefeitura_id.isnot(None))
+        .group_by(Reclamacao.prefeitura_id)
+        .all()
+    )
+    return {str(pid): n for pid, n in linhas}
+
+
+@router.get("/hoje", dependencies=[Depends(exigir("reclamacoes.acesso"))])
+def designadas_hoje(prefeitura_id: uuid.UUID = Query(...), db: Session = Depends(get_db)):
+    """Reclamações da prefeitura designadas para hoje: local completo, equipe
+    que vai executar e, se já houve execução hoje (com material lançado), a
+    equipe que atendeu — além do status atual da reclamação."""
+    from app.models.execucao_reclamacao import ExecucaoReclamacao, ItemExecucaoMaterial
+    from zoneinfo import ZoneInfo
+
+    from app.models.localidade import Bairro, Cidade
+
+    hoje = _hoje_brasil()
+    designacoes = (
+        db.query(DesignacaoReclamacao, Reclamacao)
+        .join(Reclamacao, Reclamacao.id == DesignacaoReclamacao.reclamacao_id)
+        .filter(DesignacaoReclamacao.data == hoje, Reclamacao.prefeitura_id == prefeitura_id)
+        .all()
+    )
+    if not designacoes:
+        return []
+
+    equipe_ids = {d.equipe_dia_id for d, _ in designacoes}
+    rec_ids = [r.id for _, r in designacoes]
+
+    # Executadas hoje (só conta execução com material lançado).
+    exec_hoje = {}
+    for rid, eid in (
+        db.query(ExecucaoReclamacao.reclamacao_id, ExecucaoReclamacao.equipe_dia_id)
+        .join(ItemExecucaoMaterial, ItemExecucaoMaterial.execucao_id == ExecucaoReclamacao.id)
+        .filter(ExecucaoReclamacao.reclamacao_id.in_(rec_ids), ExecucaoReclamacao.data_execucao == hoje)
+        .distinct()
+    ):
+        exec_hoje.setdefault(rid, eid)
+        if eid:
+            equipe_ids.add(eid)
+
+    equipes = {
+        e.id: e
+        for e in db.query(EquipeDia)
+        .options(selectinload(EquipeDia.membros).selectinload(EquipeMembro.funcionario))
+        .filter(EquipeDia.id.in_([i for i in equipe_ids if i]))
+    }
+
+    def nome_equipe(eid):
+        e = equipes.get(eid)
+        if not e:
+            return None
+        membros = ", ".join(m.funcionario.nome.split()[0].title() for m in e.membros if m.funcionario)
+        return f"{e.nome} ({membros})" if e.nome and membros else (e.nome or membros or None)
+
+    bairros = {b.id: b.nome for b in db.query(Bairro).filter(Bairro.id.in_({r.bairro_id for _, r in designacoes if r.bairro_id}))}
+    cidades = {
+        c.id: f"{c.nome}/{c.uf}"
+        for c in db.query(Cidade).filter(Cidade.id.in_({r.cidade_id for _, r in designacoes if r.cidade_id}))
+    }
+
+    saida = []
+    for d, r in designacoes:
+        local = ", ".join(
+            p
+            for p in (
+                r.logradouro,
+                r.numero,
+                bairros.get(r.bairro_id),
+                cidades.get(r.cidade_id),
+                f"CEP {r.cep}" if r.cep else None,
+            )
+            if p
+        )
+        atendida = r.id in exec_hoje
+        saida.append(
+            {
+                "reclamacao_id": str(r.id),
+                "codigo": r.codigo,
+                "urgente": r.urgente,
+                "data_reclamacao": r.data_reclamacao.isoformat() if r.data_reclamacao else None,
+                # Dia em que a designação foi feita (pode ter sido programada antes de hoje).
+                "data_designacao": (
+                    d.criado_em.astimezone(ZoneInfo("America/Sao_Paulo")).date().isoformat() if d.criado_em else hoje.isoformat()
+                ),
+                "local": local or "—",
+                "ponto_referencia": r.ponto_referencia,
+                "equipe": nome_equipe(d.equipe_dia_id),
+                "status": r.status,
+                "validada": bool(r.validada_em),
+                "atendida_hoje": atendida,
+                "equipe_execucao": nome_equipe(exec_hoje.get(r.id)) if atendida else None,
+            }
+        )
+    saida.sort(key=lambda x: (x["atendida_hoje"], x["equipe"] or "", x["codigo"]))
+    return saida
+
+
 @router.put(
     "/dia",
     response_model=list[DesignacaoOut],

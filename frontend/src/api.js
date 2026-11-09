@@ -124,6 +124,8 @@ export function reabrirReclamacao(id, username, senha) {
 }
 export const apiDesignacoes = {
   listar: (query = "") => req(`/designacoes${query}`),
+  hojePorPrefeitura: () => req("/designacoes/hoje-por-prefeitura"),
+  hoje: (prefeituraId) => req(`/designacoes/hoje?prefeitura_id=${prefeituraId}`),
   salvarDoDia: (prefeituraId, data, itens) =>
     req("/designacoes/dia", {
       method: "PUT",

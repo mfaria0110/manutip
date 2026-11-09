@@ -568,9 +568,10 @@ export default function ExecucaoReclamacao() {
   // um ADMIN reabrir com a própria senha. Concluída fica liberada pra
   // edição normal (é só uma marcação de "já terminou", não uma revisão
   // formal como a validação).
-  // Validada e depois Concluída continua travada (validada_em fica gravado).
+  // Validada ou Concluída fica travada: só reabre com a senha de quem autoriza
+  // (Administrador). Validada e depois Concluída idem (validada_em fica gravado).
   const bloqueado =
-    reclamacao.status === "VALIDADA" || reclamacao.status === "EM_ANDAMENTO" || Boolean(reclamacao.validada_em);
+    ["VALIDADA", "EM_ANDAMENTO", "CONCLUIDA"].includes(reclamacao.status) || Boolean(reclamacao.validada_em);
 
   // Agrupa por data + equipe — só abre um card novo quando a data ou a
   // equipe mudam; a equipe fica no cabeçalho do card, não repetida linha a
