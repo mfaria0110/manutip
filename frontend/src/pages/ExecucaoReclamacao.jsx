@@ -218,7 +218,8 @@ export default function ExecucaoReclamacao() {
     setExecucaoEditando(null);
     setFotosModal([]);
     setIdsParaMesclar([]);
-    setDataExecucao(hojeLocal());
+    // Em branco de propósito: o campo é obrigatório e obriga a informar a data real.
+    setDataExecucao("");
     setHoraExecucao("00:00");
     setEquipeId("");
     setObservacoes("");
@@ -842,13 +843,20 @@ export default function ExecucaoReclamacao() {
               <div className="form-grid">
                 <div className="form-field" style={{ "--span": 2 }}>
                   <label>Data da execução</label>
-                  <input type="date" required value={dataExecucao} onChange={(e) => setDataExecucao(e.target.value)} />
+                  <input
+                    type="date"
+                    required
+                    style={{ textAlign: "center" }}
+                    value={dataExecucao}
+                    onChange={(e) => setDataExecucao(e.target.value)}
+                  />
                 </div>
                 <div className="form-field" style={{ "--span": 2 }}>
                   <label>Hora</label>
                   <input
                     type="time"
                     required
+                    style={{ textAlign: "center" }}
                     value={horaExecucao}
                     onChange={(e) => setHoraExecucao(e.target.value)}
                     title="Fica 00:00 nos lançamentos pelo sistema; o app de campo grava a hora real"
