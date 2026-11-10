@@ -1,7 +1,7 @@
 import uuid
 from datetime import date
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from app.core.crud_simples import crud_simples
 from app.models.contrato import CategoriaPreco, Contrato, PrecoPonto, TipoContrato
@@ -21,6 +21,15 @@ class ContratoOut(BaseModel):
         from_attributes = True
 
 
+def _normalizar_numero(valor: str | None) -> str | None:
+    """Número do contrato sem espaços nas pontas e em maiúsculas; vazio = sem
+    número. Assim "pmp-001 " e "PMP-001" contam como o mesmo (número é único)."""
+    if valor is None:
+        return None
+    valor = valor.strip().upper()
+    return valor or None
+
+
 class ContratoCreate(BaseModel):
     prefeitura_id: uuid.UUID
     numero_contrato: str | None = None
@@ -28,6 +37,8 @@ class ContratoCreate(BaseModel):
     data_inicio: date
     data_fim: date | None = None
     observacoes: str | None = None
+
+    _numero = field_validator("numero_contrato")(_normalizar_numero)
 
 
 class ContratoUpdate(BaseModel):
@@ -37,6 +48,8 @@ class ContratoUpdate(BaseModel):
     data_fim: date | None = None
     ativo: bool | None = None
     observacoes: str | None = None
+
+    _numero = field_validator("numero_contrato")(_normalizar_numero)
 
 
 router = crud_simples(

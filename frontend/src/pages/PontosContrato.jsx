@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { apiContratos, apiPontosMaterialContrato, apiPrefeituras } from "../api";
+import { useAcesso } from "../AcessoContext";
+import ConfirmDialog from "../ConfirmDialog";
 
 export default function PontosContrato() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { ehAdmin, ehSuperadmin, carregando: carregandoAcesso } = useAcesso();
   const [contrato, setContrato] = useState(null);
   const [prefeituras, setPrefeituras] = useState([]);
   const [linhas, setLinhas] = useState([]);
@@ -12,23 +15,48 @@ export default function PontosContrato() {
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
   const [sucesso, setSucesso] = useState(false);
+  // Linha aguardando confirmação de "Remover pontos".
+  const [removendo, setRemovendo] = useState(null);
+  const [apagando, setApagando] = useState(false);
+  const [erroRemover, setErroRemover] = useState("");
 
   useEffect(() => {
-    Promise.all([apiContratos.obter(id), apiPrefeituras.listar(), apiPontosMaterialContrato.matriz(id)])
-      .then(([c, prefs, matriz]) => {
+    // Contrato primeiro: Por ponto só o Superadmin vê a tabela (o backend também barra).
+    Promise.all([apiContratos.obter(id), apiPrefeituras.listar()])
+      .then(async ([c, prefs]) => {
         setContrato(c);
         setPrefeituras(prefs);
-        setLinhas(matriz);
+        if (c.tipo_contrato === "POR_PONTO" && !ehSuperadmin) return;
+        setLinhas(await apiPontosMaterialContrato.matriz(id));
       })
       .catch((e) => setErro(e.message))
       .finally(() => setCarregando(false));
-  }, [id]);
+  }, [id, ehSuperadmin]);
 
   const nomePrefeitura = (prefeituraId) => prefeituras.find((p) => p.id === prefeituraId)?.nome || "—";
 
   function atualizarLinha(idx, patch) {
     setLinhas((prev) => prev.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
     setSucesso(false);
+  }
+
+  async function confirmarRemocao() {
+    setApagando(true);
+    setErroRemover("");
+    try {
+      const atualizado = await apiPontosMaterialContrato.remover(id, removendo.material_id);
+      // Mantém o que foi digitado (e não salvo) nas outras linhas.
+      setLinhas((prev) =>
+        atualizado.map((nova) =>
+          nova.material_id === removendo.material_id ? nova : prev.find((l) => l.material_id === nova.material_id) || nova
+        )
+      );
+      setRemovendo(null);
+    } catch (e) {
+      setErroRemover(e.message);
+    } finally {
+      setApagando(false);
+    }
   }
 
   async function salvar() {
@@ -43,6 +71,26 @@ export default function PontosContrato() {
     } finally {
       setSalvando(false);
     }
+  }
+
+  // Pontos de materiais: só Superadmin e Administrador (inclusive por endereço direto).
+  const restrito =
+    !carregandoAcesso && (!ehAdmin || (contrato?.tipo_contrato === "POR_PONTO" && !ehSuperadmin));
+  if (restrito) {
+    return (
+      <>
+        <header className="topbar">
+          <h1>Pontos de materiais do contrato</h1>
+        </header>
+        <div className="content">
+          <div className="card empty-state">
+            {ehAdmin
+              ? "Contrato Por ponto: os pontos de materiais só podem ser vistos pelo Superadmin."
+              : "Acesso restrito a Superadmin e Administrador."}
+          </div>
+        </div>
+      </>
+    );
   }
 
   if (carregando) {
@@ -77,6 +125,14 @@ export default function PontosContrato() {
             </p>
           )}
 
+          {contrato?.tipo_contrato === "POR_PONTO" && (
+            <p className="aviso-msg">
+              <i className="ti ti-info-circle" aria-hidden="true" style={{ marginRight: 6 }} />
+              Este contrato é <strong>Por ponto</strong>: cada atendimento vale 1 ponto e esta tabela não entra no
+              cálculo. Os pontos cadastrados aqui podem ser removidos (é preciso removê-los para excluir um material).
+            </p>
+          )}
+
           {erro && <p className="erro-msg">{erro}</p>}
           {sucesso && <span className="badge badge-success">Pontos salvos.</span>}
 
@@ -88,6 +144,7 @@ export default function PontosContrato() {
                 <th style={{ padding: "6px 12px" }}>Pts Retirada</th>
                 <th style={{ padding: "6px 12px" }}>Pts Substituição</th>
                 <th style={{ padding: "6px 12px" }}>Situação</th>
+                <th style={{ padding: "6px 12px", width: 60 }}></th>
               </tr>
             </thead>
             <tbody>
@@ -130,6 +187,22 @@ export default function PontosContrato() {
                       </span>
                     )}
                   </td>
+                  <td style={{ padding: "2px 12px", textAlign: "center" }}>
+                    {linha.cadastrado && (
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        style={{ color: "var(--danger)" }}
+                        title="Remover os pontos deste material neste contrato"
+                        onClick={() => {
+                          setErroRemover("");
+                          setRemovendo(linha);
+                        }}
+                      >
+                        <i className="ti ti-trash" aria-hidden="true" />
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -142,6 +215,20 @@ export default function PontosContrato() {
           </div>
         </div>
       </div>
+      <ConfirmDialog
+        aberto={Boolean(removendo)}
+        titulo="Remover pontos do material"
+        mensagem={
+          removendo &&
+          `Remover os pontos de "${removendo.material_nome}" neste contrato? A linha volta a ficar como "Faltando".`
+        }
+        confirmando={apagando}
+        erro={erroRemover}
+        textoConfirmar="Remover"
+        textoConfirmando="Removendo..."
+        onConfirmar={confirmarRemocao}
+        onCancelar={() => setRemovendo(null)}
+      />
     </>
   );
 }

@@ -31,6 +31,15 @@ export default function Materiais() {
             <span style={{ display: "block", textAlign: "center", fontSize: 12 }}>{item.custo_unitario}</span>
           ),
         },
+        {
+          key: "ativo",
+          label: "Situação",
+          render: (item) => (
+            <span className={`badge ${item.ativo ? "badge-success" : "badge-muted"}`}>
+              {item.ativo ? "Ativo" : "Desativado"}
+            </span>
+          ),
+        },
       ]}
       campos={[
         { name: "codigo", label: "Código", required: true, size: 3 },
@@ -45,8 +54,10 @@ export default function Materiais() {
           options: categorias,
         },
         { name: "custo_unitario", label: "Custo unitário (R$)", mask: "moeda", center: true, required: true, size: 3 },
+        // Desativado = não aparece para novos lançamentos (material com histórico não é apagado).
+        { name: "ativo", label: "Ativo", type: "simnao", size: 2 },
       ]}
-      valoresPadrao={{ custo_unitario: 0 }}
+      valoresPadrao={{ custo_unitario: 0, ativo: true }}
       obterValoresPadrao={() => proximoCodigoMaterial()}
       larguraModal={880}
       classeTabela="tabela-compacta"

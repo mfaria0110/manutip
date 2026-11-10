@@ -159,6 +159,7 @@ export default function CadastroPage({
   // Com exigirSenhaParaExcluir, o diálogo pede a senha do admin logado e fica aberto se ela estiver errada.
   const [senhaExclusao, setSenhaExclusao] = useState("");
   const [erroExclusao, setErroExclusao] = useState("");
+  const [avisoLista, setAvisoLista] = useState("");
   const [busca, setBusca] = useState("");
 
   const podeCriar = pode(`${modulo}.criar`);
@@ -249,23 +250,35 @@ async function confirmarExclusao() {
     setErroLista("");
     setErroExclusao("");
     try {
-      await (exigirSenhaParaExcluir ? api.excluir(excluindo[idKey], senhaExclusao) : api.excluir(excluindo[idKey]));
+      const resposta = await (exigirSenhaParaExcluir
+        ? api.excluir(excluindo[idKey], senhaExclusao)
+        : api.excluir(excluindo[idKey]));
       cancelarExclusao();
+      // O backend pode recusar apagar e só desativar (ex.: material com histórico) — avisa.
+      setAvisoLista(resposta?.mensagem || "");
       carregar();
     } catch (err) {
-      if (exigirSenhaParaExcluir) {
-        setErroExclusao(err.message); // senha errada etc.: mantém o diálogo aberto
-      } else {
-        setErroLista(err.message);
-        setExcluindo(null);
-      }
+      // Mantém o diálogo aberto mostrando o motivo (senha errada, registro em uso...).
+      setErroExclusao(err.message);
     } finally {
       setApagando(false);
     }
   }
 
+  // Campos com `unico: true`: avisa já no formulário se o valor (sem espaços,
+  // maiúsculas) repete o de outro registro da lista — o backend também barra.
+  const normalizarUnico = (v) => String(v ?? "").trim().toUpperCase();
+  const duplicadoDe = (c) => {
+    if (!c.unico || !editando) return null;
+    const valor = normalizarUnico(form[c.name]);
+    if (!valor) return null;
+    return itens.find((it) => it[idKey] !== editando[idKey] && normalizarUnico(it[c.name]) === valor) || null;
+  };
+  const camposDuplicados = campos.filter((c) => duplicadoDe(c));
+
   async function salvar(e) {
     e.preventDefault();
+    if (camposDuplicados.length) return;
     setSalvando(true);
     setErro("");
     try {
@@ -325,6 +338,15 @@ async function confirmarExclusao() {
 
       <div className="content">
         {erroLista && <p className="erro-msg">{erroLista}</p>}
+        {avisoLista && (
+          <p className="aviso-msg">
+            <i className="ti ti-info-circle" aria-hidden="true" style={{ marginRight: 6 }} />
+            {avisoLista}
+            <button type="button" className="btn btn-ghost" onClick={() => setAvisoLista("")} title="Fechar aviso">
+              <i className="ti ti-x" aria-hidden="true" />
+            </button>
+          </p>
+        )}
         <div className="filtros-linha">
           {filtroTopo}
           {/* Com ação após o filtro (ex.: Designar equipe), busca + ação vão para a direita. */}
@@ -423,6 +445,11 @@ async function confirmarExclusao() {
                 ) : (
                 <div className="form-field" style={{ "--span": tamanhoDoCampo(c) }} key={c.name}>
                   <label>{c.label}</label>
+                  {duplicadoDe(c) && (
+                    <span className="erro-campo-unico">
+                      Já existe {c.rotuloUnico || "um registro"} com este valor. Não pode repetir.
+                    </span>
+                  )}
                   {c.type === "simnao" ? (
                     <select
                       className="select-simnao"
@@ -508,7 +535,12 @@ async function confirmarExclusao() {
                 <button type="button" className="btn" onClick={fechar}>
                   Cancelar
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={salvando}>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={salvando || camposDuplicados.length > 0}
+                  title={camposDuplicados.length ? "Corrija o campo repetido para salvar" : undefined}
+                >
                   {salvando ? "Salvando..." : "Salvar"}
                 </button>
               </div>

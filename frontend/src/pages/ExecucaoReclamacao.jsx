@@ -942,11 +942,14 @@ export default function ExecucaoReclamacao() {
                           onChange={(e) => selecionarMaterial(idx, e.target.value)}
                         >
                           <option value="">Material...</option>
-                          {materiais.map((m) => (
-                            <option key={m.id} value={m.id}>
-                              {m.nome}
-                            </option>
-                          ))}
+                          {/* Material desativado só aparece se já é o desta linha (edição). */}
+                          {materiais
+                            .filter((m) => m.ativo !== false || m.id === item.material_id)
+                            .map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.nome}
+                              </option>
+                            ))}
                         </select>
                       </div>
                       {ehLampada && (

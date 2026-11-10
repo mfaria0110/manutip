@@ -5,10 +5,11 @@ execução bloqueia se faltar (ver app/core/pontos_material.py)."""
 import uuid
 from datetime import date
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.core.acesso import usuario_atual
 from app.core.permissoes import exigir
 from app.core.database import get_db
 from app.core.pontos_material import contrato_vigente
@@ -16,6 +17,22 @@ from app.models.material import Material
 from app.models.ponto_material_contrato import PontoMaterialContrato
 
 router = APIRouter(prefix="/api/pontos-material-contrato", tags=["pontos_material_contrato"])
+
+
+def _somente_admin(contrato_id: uuid.UUID, usuario=Depends(usuario_atual), db: Session = Depends(get_db)):
+    """Tabela de pontos de materiais (ver/editar/remover): só Superadmin e
+    Administrador; em contrato Por ponto (tabela fora do cálculo), só o
+    Superadmin. Os endpoints usados no lançamento (/vigente) ficam livres."""
+    from app.models.contrato import Contrato, TipoContrato
+
+    if usuario.perfil not in ("superadmin", "admin"):
+        raise HTTPException(status_code=403, detail="Acesso restrito a Superadmin e Administrador.")
+    contrato = db.get(Contrato, contrato_id)
+    if contrato and contrato.tipo_contrato == TipoContrato.POR_PONTO and usuario.perfil != "superadmin":
+        raise HTTPException(
+            status_code=403, detail="Contrato Por ponto: os pontos de materiais só podem ser vistos pelo Superadmin."
+        )
+    return usuario
 
 
 class PontoMaterialOut(BaseModel):
@@ -39,11 +56,17 @@ class SalvarMatrizIn(BaseModel):
 
 
 def _matriz(contrato_id: uuid.UUID, db: Session) -> list[PontoMaterialOut]:
-    materiais = db.query(Material).filter(Material.ativo.is_(True)).order_by(Material.nome).all()
     existentes = {
         p.material_id: p
         for p in db.query(PontoMaterialContrato).filter(PontoMaterialContrato.contrato_id == contrato_id).all()
     }
+    # Ativos + desativados que ainda têm pontos aqui (pra poder vê-los e removê-los).
+    materiais = (
+        db.query(Material)
+        .filter((Material.ativo.is_(True)) | (Material.id.in_(list(existentes))))
+        .order_by(Material.nome)
+        .all()
+    )
     saida = []
     for m in materiais:
         p = existentes.get(m.id)
@@ -60,12 +83,12 @@ def _matriz(contrato_id: uuid.UUID, db: Session) -> list[PontoMaterialOut]:
     return saida
 
 
-@router.get("/matriz", response_model=list[PontoMaterialOut], dependencies=[Depends(exigir("contratos.acesso"))])
+@router.get("/matriz", response_model=list[PontoMaterialOut], dependencies=[Depends(exigir("contratos.acesso")), Depends(_somente_admin)])
 def obter_matriz(contrato_id: uuid.UUID, db: Session = Depends(get_db)):
     return _matriz(contrato_id, db)
 
 
-@router.put("/matriz", response_model=list[PontoMaterialOut], dependencies=[Depends(exigir("contratos.editar"))])
+@router.put("/matriz", response_model=list[PontoMaterialOut], dependencies=[Depends(exigir("contratos.editar")), Depends(_somente_admin)])
 def salvar_matriz(contrato_id: uuid.UUID, req: SalvarMatrizIn, db: Session = Depends(get_db)):
     existentes = {
         p.material_id: p
@@ -87,6 +110,17 @@ def salvar_matriz(contrato_id: uuid.UUID, req: SalvarMatrizIn, db: Session = Dep
                     qde_pontos_subst=item.qde_pontos_subst,
                 )
             )
+    db.commit()
+    return _matriz(contrato_id, db)
+
+
+@router.delete("", response_model=list[PontoMaterialOut], dependencies=[Depends(exigir("contratos.editar")), Depends(_somente_admin)])
+def remover(contrato_id: uuid.UUID, material_id: uuid.UUID, db: Session = Depends(get_db)):
+    """Remove os pontos de um material neste contrato (a linha volta a
+    "Faltando"). Necessário, por exemplo, para poder excluir o material."""
+    db.query(PontoMaterialContrato).filter(
+        PontoMaterialContrato.contrato_id == contrato_id, PontoMaterialContrato.material_id == material_id
+    ).delete(synchronize_session=False)
     db.commit()
     return _matriz(contrato_id, db)
 

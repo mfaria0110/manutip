@@ -1391,3 +1391,13 @@ label.check input {
   font-size: 14px;
   color: var(--text-secondary);
 }
+
+/* Aviso de valor repetido em campo único (ex.: número do contrato), abaixo do campo. */
+.form-field { position: relative; }
+.erro-campo-unico {
+  order: 99;
+  color: var(--danger);
+  font-size: 11.5px;
+  font-weight: 600;
+  margin-top: 2px;
+}

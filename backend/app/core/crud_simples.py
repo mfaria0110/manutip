@@ -29,6 +29,7 @@ _ROTULOS_CAMPOS_UNICOS = {
     "nome": "o nome",
     "username": "o login",
     "sigla": "a sigla",
+    "numero_contrato": "o número de contrato",
 }
 
 

@@ -39,6 +39,8 @@ export function AcessoProvider({ children }) {
       carregando,
       recarregar: carregarPerfil,
       ehSuperadmin,
+      // Superadmin ou Administrador (perfis padrão) — ex.: pontos de materiais dos contratos.
+      ehAdmin: ehSuperadmin || perfil?.perfil === "admin",
       ehOperacional: !!perfil?.operacional,
       pode,
     };

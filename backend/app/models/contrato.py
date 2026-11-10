@@ -37,7 +37,8 @@ class Contrato(TimestampMixin, Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     prefeitura_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("prefeituras.id"), nullable=False)
-    numero_contrato: Mapped[str | None] = mapped_column(String(50))
+    # Único entre todos os contratos (normalizado em maiúsculas; sem número é permitido).
+    numero_contrato: Mapped[str | None] = mapped_column(String(50), unique=True)
     tipo_contrato: Mapped[TipoContrato] = mapped_column(
         Enum(TipoContrato), nullable=False, default=TipoContrato.POR_ITEM, server_default=TipoContrato.POR_ITEM.value
     )

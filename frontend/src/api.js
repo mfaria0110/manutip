@@ -108,6 +108,8 @@ export const apiPontosMaterialContrato = {
       method: "PUT",
       body: JSON.stringify({ itens }),
     }),
+  remover: (contratoId, materialId) =>
+    req(`/pontos-material-contrato?contrato_id=${contratoId}&material_id=${materialId}`, { method: "DELETE" }),
   vigente: (prefeituraId, data) => req(`/pontos-material-contrato/vigente?prefeitura_id=${prefeituraId}&data=${data}`),
   contratoVigente: (prefeituraId, data) =>
     req(`/pontos-material-contrato/contrato-vigente?prefeitura_id=${prefeituraId}&data=${data}`),
