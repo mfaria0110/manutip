@@ -4,7 +4,7 @@ from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.permissoes import exigir
@@ -231,6 +231,9 @@ class ExcelRoteiro(BaseModel):
     data: date
     equipe_dia_id: uuid.UUID
     reclamacao_ids: list[uuid.UUID] = []
+    # "Planilha limpa": só cabeçalho + N linhas em branco com borda, pra equipe
+    # preencher à mão em campo (ignora reclamacao_ids).
+    linhas_em_branco: int = Field(default=0, ge=0, le=200)
 
 
 @router.post("/excel", dependencies=[Depends(exigir("reclamacoes.acesso"))])
@@ -262,7 +265,7 @@ def exportar_excel(req: ExcelRoteiro, db: Session = Depends(get_db)):
     ordem = {rid: n for n, rid in enumerate(req.reclamacao_ids)}
     reclamacoes = (
         sorted(db.query(Reclamacao).filter(Reclamacao.id.in_(req.reclamacao_ids)).all(), key=lambda r: ordem[r.id])
-        if req.reclamacao_ids
+        if req.reclamacao_ids and not req.linhas_em_branco
         else []
     )
 
@@ -395,6 +398,13 @@ def exportar_excel(req: ExcelRoteiro, db: Session = Depends(get_db)):
         ws.row_dimensions[linha].height = 18 + 13 * (qtd_linhas - 1)
         linha += 1
 
+    # Planilha limpa: linhas vazias com borda em todas as colunas, altura boa pra escrever à mão.
+    for _ in range(req.linhas_em_branco):
+        for col in range(1, 10):
+            ws.cell(row=linha, column=col).border = caixa
+        ws.row_dimensions[linha].height = 20
+        linha += 1
+
     # Impressão: retrato, cabeçalho repetido, ajusta à largura da folha.
     ws.page_setup.orientation = "portrait"
     ws.page_setup.paperSize = ws.PAPERSIZE_A4
@@ -410,5 +420,11 @@ def exportar_excel(req: ExcelRoteiro, db: Session = Depends(get_db)):
     return StreamingResponse(
         buffer,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": 'attachment; filename="roteiro.xlsx"'},
+        headers={
+            "Content-Disposition": (
+                'attachment; filename="planilha-limpa.xlsx"'
+                if req.linhas_em_branco
+                else 'attachment; filename="roteiro.xlsx"'
+            )
+        },
     )

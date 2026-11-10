@@ -337,6 +337,28 @@ export default function ModalDesignarEquipe({ prefeitura, nomeBairro, nomeCidade
     }
   }
 
+  // Planilha limpa: mesmo modelo do roteiro (logo, data, funcionários, cidade e
+  // colunas), sem reclamações e com 40 linhas em branco com borda, pra equipe
+  // anotar à mão em campo. Basta escolher a equipe.
+  const LINHAS_PLANILHA_LIMPA = 40;
+  async function exportarPlanilhaLimpa() {
+    if (!equipeId) {
+      setAviso("");
+      setErro("Selecione a equipe para gerar a planilha limpa.");
+      return;
+    }
+    setErro("");
+    try {
+      const eq = detalhesEquipe(equipeId);
+      const nomeArquivo = `Planilha_limpa_${eq.nome}_${formatarData(data).replace(/\//g, "-")}.xlsx`
+        .replace(/[\\/:*?"<>|]/g, "")
+        .replace(/\s+/g, "_");
+      await baixarRoteiroExcel(prefeitura.id, data, equipeId, [], nomeArquivo, LINHAS_PLANILHA_LIMPA);
+    } catch (e) {
+      setErro(e.message);
+    }
+  }
+
   async function salvar() {
     setSalvando(true);
     setErro("");
@@ -536,10 +558,25 @@ export default function ModalDesignarEquipe({ prefeitura, nomeBairro, nomeCidade
             onClick={() => aoExportar(exportarExcel)}
             aria-disabled={!podeExportar}
             title={motivoSemExportar || "Exportar para Excel o roteiro da equipe"}
-            style={{ marginRight: "auto", opacity: podeExportar ? 1 : 0.55 }}
+            style={{ opacity: podeExportar ? 1 : 0.55 }}
           >
             <i className="ti ti-file-spreadsheet" aria-hidden="true" style={{ marginRight: 6 }} />
             Exportar Excel
+          </button>
+          <button
+            type="button"
+            className="btn"
+            onClick={exportarPlanilhaLimpa}
+            disabled={!equipeId}
+            title={
+              equipeId
+                ? `Planilha sem reclamações, com ${LINHAS_PLANILHA_LIMPA} linhas em branco para preencher em campo`
+                : "Selecione a equipe para gerar a planilha limpa"
+            }
+            style={{ marginRight: "auto" }}
+          >
+            <i className="ti ti-file" aria-hidden="true" style={{ marginRight: 6 }} />
+            Planilha limpa
           </button>
           <button
             type="button"

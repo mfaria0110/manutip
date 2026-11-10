@@ -135,7 +135,8 @@ export const apiDesignacoes = {
     }),
 };
 // Planilha .xlsx do roteiro (o que está listado no formulário de designação).
-export async function baixarRoteiroExcel(prefeituraId, data, equipeDiaId, reclamacaoIds, nomeArquivo) {
+// linhasEmBranco > 0: "Planilha limpa" (só cabeçalho + linhas vazias com borda).
+export async function baixarRoteiroExcel(prefeituraId, data, equipeDiaId, reclamacaoIds, nomeArquivo, linhasEmBranco = 0) {
   const t = token();
   const resp = await fetch(`${BASE}/designacoes/excel`, {
     method: "POST",
@@ -145,6 +146,7 @@ export async function baixarRoteiroExcel(prefeituraId, data, equipeDiaId, reclam
       data,
       equipe_dia_id: equipeDiaId,
       reclamacao_ids: reclamacaoIds,
+      linhas_em_branco: linhasEmBranco,
     }),
   });
   if (!resp.ok) throw new Error("Não foi possível gerar a planilha. Tente novamente.");
