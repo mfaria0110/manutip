@@ -92,6 +92,9 @@ export default function ExecucaoReclamacao() {
   const [erroLista, setErroLista] = useState("");
 
   const [formAberto, setFormAberto] = useState(false);
+  // Contrato por ponto: pontos informados à mão ("" = padrão 1). Edita com duplo clique.
+  const [pontosManual, setPontosManual] = useState("");
+  const [editandoPontos, setEditandoPontos] = useState(false);
   const [execucaoEditando, setExecucaoEditando] = useState(null); // null = criando nova
   // ids de outras execuções da mesma equipe+data, mescladas no formulário —
   // ao salvar, tudo vira uma execução só e essas são excluídas.
@@ -220,6 +223,8 @@ export default function ExecucaoReclamacao() {
     setEquipeId("");
     setObservacoes("");
     setItens([novoItem()]);
+    setPontosManual("");
+    setEditandoPontos(false);
     setErro("");
     setFormAberto(true);
   }
@@ -282,6 +287,8 @@ export default function ExecucaoReclamacao() {
     setHoraExecucao(formatarHora(principal.hora_execucao) || "00:00");
     setEquipeId(principal.equipe_dia_id || "");
     setObservacoes(grupo.map((g) => g.observacoes).filter(Boolean).join(" / "));
+    setPontosManual(principal.pontos_manual != null ? String(principal.pontos_manual) : "");
+    setEditandoPontos(false);
     const todosItens = grupo.flatMap((g) => g.itens);
     setItens(
       todosItens.length > 0
@@ -371,6 +378,13 @@ export default function ExecucaoReclamacao() {
       setErro(erroValidacao);
       return;
     }
+    const valorPontos = String(pontosManual).trim().replace(",", ".");
+    if (porPonto && valorPontos !== "" && (Number.isNaN(Number(valorPontos)) || Number(valorPontos) < 0)) {
+      setErro("Informe uma quantidade de pontos válida (número maior ou igual a zero).");
+      return;
+    }
+    // Contrato por ponto: vazio = padrão (1 ponto por atendimento).
+    const pontosPayload = porPonto && valorPontos !== "" ? Number(valorPontos) : null;
     setSalvando(true);
     setErro("");
     try {
@@ -393,6 +407,7 @@ export default function ExecucaoReclamacao() {
           hora_execucao: horaExecucao || "00:00",
           equipe_dia_id: equipeId || null,
           observacoes: observacoes || null,
+          pontos_manual: pontosPayload,
           itens: itensPayload,
         });
         for (const extraId of idsParaMesclar) {
@@ -422,6 +437,8 @@ export default function ExecucaoReclamacao() {
             hora_execucao: horaExecucao && horaExecucao !== "00:00" ? horaExecucao : horaAlvo,
             equipe_dia_id: equipeId || null,
             observacoes: [alvo.observacoes, observacoes].filter(Boolean).join(" / ") || null,
+            // Só troca os pontos da execução existente se foram informados agora.
+            ...(pontosPayload != null ? { pontos_manual: pontosPayload } : {}),
             itens: [...itensExistentes, ...itensPayload],
           });
           for (const extra of extras) {
@@ -434,6 +451,7 @@ export default function ExecucaoReclamacao() {
             hora_execucao: horaExecucao || "00:00",
             equipe_dia_id: equipeId || null,
             observacoes: observacoes || null,
+            pontos_manual: pontosPayload,
             itens: itensPayload,
           });
         }
@@ -593,7 +611,9 @@ export default function ExecucaoReclamacao() {
 
   // Contrato por ponto: cada atendimento vale 1 ponto, sem olhar os materiais.
   const totalPontosFormulario = porPonto
-    ? 1
+    ? pontosManual !== ""
+      ? pontosManual
+      : 1
     : itens.reduce((acc, it) => acc + totalPontosItem(it, pontosVigentes[it.material_id]), 0);
 
   return (
@@ -846,13 +866,43 @@ export default function ExecucaoReclamacao() {
                 </div>
                 <div className="form-field" style={{ "--span": 1 }}>
                   <label>Pontos</label>
-                  <input
-                    type="text"
-                    disabled
-                    title="Calculado automaticamente a partir dos materiais lançados"
-                    style={{ textAlign: "center", background: "var(--bg-page)" }}
-                    value={totalPontosFormulario}
-                  />
+                  {porPonto ? (
+                    // Por ponto: vale 1 por atendimento; duplo clique libera outra quantidade.
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      readOnly={!editandoPontos}
+                      title={
+                        editandoPontos
+                          ? "Informe a quantidade de pontos deste atendimento (apague para voltar a 1)"
+                          : "Clique 2 vezes para alterar a quantidade de pontos"
+                      }
+                      style={{
+                        textAlign: "center",
+                        background: editandoPontos ? undefined : "var(--bg-page)",
+                        cursor: editandoPontos ? "text" : "pointer",
+                        fontWeight: pontosManual !== "" ? 700 : undefined,
+                      }}
+                      value={editandoPontos ? pontosManual : totalPontosFormulario}
+                      onDoubleClick={(e) => {
+                        if (bloqueado || editandoPontos) return;
+                        setEditandoPontos(true);
+                        if (pontosManual === "") setPontosManual("1");
+                        const el = e.currentTarget;
+                        setTimeout(() => el.select(), 0);
+                      }}
+                      onChange={(e) => setPontosManual(e.target.value.replace(/[^0-9.,]/g, ""))}
+                      onBlur={() => setEditandoPontos(false)}
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      disabled
+                      title="Calculado automaticamente a partir dos materiais lançados"
+                      style={{ textAlign: "center", background: "var(--bg-page)" }}
+                      value={totalPontosFormulario}
+                    />
+                  )}
                 </div>
                 <div className="form-field" style={{ "--span": 5 }}>
                   <label>Equipe</label>

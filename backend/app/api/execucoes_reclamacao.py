@@ -5,7 +5,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 
@@ -63,6 +63,7 @@ class ExecucaoOut(BaseModel):
     equipe_dia_id: uuid.UUID | None
     observacoes: str | None
     pontos: float
+    pontos_manual: float | None = None
     # Tipo do contrato vigente na data da execução — o front usa pra
     # esconder as colunas de pontos por material nos contratos "por ponto".
     tipo_contrato: TipoContrato | None = None
@@ -88,6 +89,8 @@ class ExecucaoCreate(BaseModel):
     # execução com o mesmo uuid_local, atualiza em vez de duplicar (reenvio
     # seguro depois de uma sincronização offline que falhou no meio).
     uuid_local: uuid.UUID | None = None
+    # Contrato por ponto: quantidade de pontos informada à mão (vazio = 1).
+    pontos_manual: float | None = Field(default=None, ge=0)
     itens: list[ItemIn] = []
 
 
@@ -98,6 +101,7 @@ class ExecucaoUpdate(BaseModel):
     observacoes: str | None = None
     latitude: float | None = None
     longitude: float | None = None
+    pontos_manual: float | None = Field(default=None, ge=0)
     itens: list[ItemIn] | None = None
 
 
@@ -116,6 +120,7 @@ def _para_saida(obj: ExecucaoReclamacao, db: Session) -> ExecucaoOut:
         equipe_dia_id=obj.equipe_dia_id,
         observacoes=obj.observacoes,
         pontos=float(obj.pontos),
+        pontos_manual=float(obj.pontos_manual) if obj.pontos_manual is not None else None,
         tipo_contrato=_tipo_contrato_da_execucao(obj, db),
         latitude=float(obj.latitude) if obj.latitude is not None else None,
         longitude=float(obj.longitude) if obj.longitude is not None else None,
@@ -192,7 +197,8 @@ def _recalcular_pontos_execucao(execucao_id: uuid.UUID, db: Session) -> None:
     # Contrato "por ponto": cada atendimento (execução) vale sempre 1 ponto,
     # independente dos materiais lançados.
     if _tipo_contrato_da_execucao(execucao, db) == TipoContrato.POR_PONTO:
-        execucao.pontos = 1
+        # Quantidade informada à mão no escritório (duplo clique em Pontos) ou 1.
+        execucao.pontos = float(execucao.pontos_manual) if execucao.pontos_manual is not None else 1
         return
     total = (
         db.query(func.coalesce(func.sum(ItemExecucaoMaterial.total_pontos), 0))
@@ -299,6 +305,8 @@ def criar(req: ExecucaoCreate, db: Session = Depends(get_db)):
         obj.observacoes = req.observacoes
         obj.latitude = req.latitude
         obj.longitude = req.longitude
+        if "pontos_manual" in req.model_fields_set:
+            obj.pontos_manual = req.pontos_manual
         db.query(ItemExecucaoMaterial).filter(ItemExecucaoMaterial.execucao_id == obj.id).delete()
     else:
         obj = ExecucaoReclamacao(
@@ -310,6 +318,7 @@ def criar(req: ExecucaoCreate, db: Session = Depends(get_db)):
             latitude=req.latitude,
             longitude=req.longitude,
             uuid_local=req.uuid_local,
+            pontos_manual=req.pontos_manual,
         )
         db.add(obj)
     db.flush()
@@ -345,6 +354,9 @@ def atualizar(execucao_id: uuid.UUID, req: ExecucaoUpdate, db: Session = Depends
         db.flush()
         _recalcular_pontos_execucao(execucao_id, db)
         _reabrir_se_sem_itens(obj.reclamacao_id, db)
+    elif "pontos_manual" in dados:
+        db.flush()
+        _recalcular_pontos_execucao(execucao_id, db)
     db.commit()
     return _para_saida(_com_itens(db.query(ExecucaoReclamacao)).filter(ExecucaoReclamacao.id == execucao_id).first(), db)
 

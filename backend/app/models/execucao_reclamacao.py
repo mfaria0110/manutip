@@ -31,6 +31,9 @@ class ExecucaoReclamacao(TimestampMixin, Base):
     # total_pontos de cada item lançado (instalação/retirada/substituição x
     # peso em pontos do material), recalculado a cada alteração dos itens.
     pontos: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0, server_default="0")
+    # Contrato "por ponto": vale 1 ponto por atendimento, mas o escritório pode
+    # informar outra quantidade (duplo clique em Pontos). Vazio = 1.
+    pontos_manual: Mapped[float | None] = mapped_column(Numeric(12, 2))
     # GPS do poste, capturado pelo app de campo no momento do lançamento —
     # fica vazio em lançamentos feitos pelo escritório.
     latitude: Mapped[float | None] = mapped_column(Numeric(10, 7))
