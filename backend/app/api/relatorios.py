@@ -530,11 +530,12 @@ def pontos_atendidos_mod02_excel(
         "Nº Atend.", "Etiqueta", "Endereço", "Tipo Ocorrência", "Atendimento", "Motivo", "Solução", "Conclusão", "Área",
     ]
     for col, titulo in enumerate(cabecalho, start=1):
-        c = ws.cell(row=4, column=col, value=titulo)
+        c = ws.cell(row=4, column=col, value=titulo.upper())
         c.font = Font(bold=True, size=10)
         c.fill = PatternFill("solid", fgColor="E5EBF7")
         c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
         c.border = borda
+    ws.row_dimensions[4].height = 24  # cabeçalho um pouco mais alto
     for i, l in enumerate(linhas, start=5):
         valores = [
             l.n_atend, l.etiqueta, l.endereco, l.tipo_ocorrencia, l.atendimento, l.motivo, l.solucao, l.conclusao, l.area,
