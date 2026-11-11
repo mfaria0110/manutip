@@ -520,7 +520,8 @@ def pontos_atendidos_mod02_excel(
     ws["A1"] = prefeitura.nome if prefeitura else ""
     ws["A1"].font = Font(bold=True, size=11)
     ws["A2"] = f"Período: {data_inicio:%d/%m/%Y} a {data_fim:%d/%m/%Y}"
-    ws["A3"] = f"Tipo Ocorrência: Todos      Atendimento: {atendidos}      Solução: Todos"
+    rotulo = "Atendimento" if atendidos == 1 else "Atendimentos"
+    ws["A3"] = f"Tipo Ocorrência: Todos      {rotulo}: {atendidos}      Solução: Todos"
     ws["A3"].font = Font(bold=True)
 
     fino = Side(style="thin", color="999999")

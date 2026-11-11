@@ -138,7 +138,7 @@ export default function RelatorioPontosMod02() {
                     <strong>Tipo Ocorrência:</strong> Todos
                   </span>
                   <span>
-                    <strong>Atendimento:</strong> {atendidos}
+                    <strong>{atendidos === 1 ? "Atendimento" : "Atendimentos"}:</strong> {atendidos}
                   </span>
                   <span>
                     <strong>Solução:</strong> Todos
