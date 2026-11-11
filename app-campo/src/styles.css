@@ -307,3 +307,10 @@ select option {
   font-size: 13px;
   text-align: center;
 }
+
+/* Card da equipe (topo da lista): fundo azul-claro e faixa à esquerda, para não confundir com as reclamações. */
+.cartao-equipe {
+  background: var(--accent-soft);
+  border-color: #c7dafc;
+  border-left: 4px solid var(--accent);
+}

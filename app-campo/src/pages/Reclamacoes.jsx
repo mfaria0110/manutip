@@ -71,7 +71,7 @@ export default function Reclamacoes() {
       <div className="conteudo">
         {erro && <p className="erro-msg">{erro}</p>}
         {equipe && (
-          <div className="cartao" style={{ marginBottom: 12, padding: 12 }}>
+          <div className="cartao cartao-equipe" style={{ marginBottom: 12, padding: 12 }}>
             <div className="cartao-titulo">Equipe {equipe.nome}</div>
             <div className="cartao-sub">
               <strong>Viatura:</strong>{" "}
