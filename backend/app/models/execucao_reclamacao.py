@@ -25,6 +25,9 @@ class ExecucaoReclamacao(TimestampMixin, Base):
     # Hora do atendimento — o app de campo grava a hora real; lançamentos
     # feitos pelo sistema ficam 00:00 (editável).
     hora_execucao: Mapped[time] = mapped_column(Time, nullable=False, default=time(0, 0), server_default="00:00:00")
+    # Término do atendimento (data_execucao/hora_execucao são o início).
+    data_execucao_term: Mapped[date | None] = mapped_column(Date)
+    hora_execucao_term: Mapped[time | None] = mapped_column(Time)
     equipe_dia_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("equipes_dia.id"))
     observacoes: Mapped[str | None] = mapped_column(Text)
     # Total de pontos da execução — calculado automaticamente como a soma de

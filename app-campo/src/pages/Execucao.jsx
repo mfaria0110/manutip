@@ -384,8 +384,10 @@ export default function Execucao() {
                     {materiais
                       .filter((m) => m.ativo !== false || m.id === item.material_id)
                       .map((m) => (
-                        <option key={m.id} value={m.id}>
+                        // Desativado já lançado: só como valor da linha, escondido da lista.
+                        <option key={m.id} value={m.id} hidden={m.ativo === false}>
                           {m.nome}
+                          {m.ativo === false ? " (desativado)" : ""}
                         </option>
                       ))}
                   </select>

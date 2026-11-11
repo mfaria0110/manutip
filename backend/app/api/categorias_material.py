@@ -19,6 +19,7 @@ class CategoriaMaterialOut(BaseModel):
     id: uuid.UUID
     codigo: str
     nome: str
+    motivo: str | None = None
     ativo: bool
 
     class Config:
@@ -28,6 +29,7 @@ class CategoriaMaterialOut(BaseModel):
 class CategoriaMaterialCreate(BaseModel):
     codigo: str
     nome: str
+    motivo: str | None = None
 
     @field_validator("codigo")
     @classmethod
@@ -38,6 +40,7 @@ class CategoriaMaterialCreate(BaseModel):
 class CategoriaMaterialUpdate(BaseModel):
     codigo: str | None = None
     nome: str | None = None
+    motivo: str | None = None
     ativo: bool | None = None
 
     @field_validator("codigo")

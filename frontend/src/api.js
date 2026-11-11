@@ -215,6 +215,11 @@ export function proximoCodigoMaterial() {
   return req("/materiais/proximo-codigo");
 }
 
+// Pontos atendidos - Mod-02 (modelo do sistema da prefeitura).
+export function relatorioPontosMod02(prefeituraId, dataInicio, dataFim) {
+  const params = new URLSearchParams({ prefeitura_id: prefeituraId, data_inicio: dataInicio, data_fim: dataFim });
+  return req(`/relatorios/pontos-atendidos-mod02?${params}`);
+}
 export function relatorioPontosAtendidos(prefeituraId, dataInicio, dataFim) {
   const params = new URLSearchParams({
     prefeitura_id: prefeituraId,

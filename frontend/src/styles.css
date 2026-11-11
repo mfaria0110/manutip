@@ -1401,3 +1401,150 @@ label.check input {
   font-weight: 600;
   margin-top: 2px;
 }
+
+/* Execução: 1ª linha do formulário (datas/horas estreitas, Equipe ocupa o resto). */
+.linha-execucao-topo {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 12px;
+  align-items: flex-end;
+}
+
+/* Pontos atendidos - Mod-02: linha de resumo e linhas zebradas (modelo da prefeitura). */
+.mod02-resumo {
+  display: flex;
+  gap: 28px;
+  margin: 6px 0 10px;
+  font-size: 13px;
+}
+.tabela-mod02 td,
+.tabela-mod02 th {
+  white-space: normal;
+  word-break: break-word;
+  vertical-align: middle;
+}
+.tabela-mod02 tbody tr:nth-child(even) td {
+  background: #fff8e1;
+}
+@media print {
+  .tabela-mod02 tbody tr:nth-child(even) td {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+.linha-execucao-topo input[type="date"],
+.linha-execucao-topo input[type="time"] {
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+/* SelectLista: campo com o visual de select; lista com largura própria (mais estreita). */
+.select-lista {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+.select-lista-campo {
+  width: 100%;
+  height: 29px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text-primary);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  text-align: left;
+}
+.select-lista-campo:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+.select-lista-campo span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.select-lista-campo.vazio span {
+  color: var(--text-secondary);
+}
+.select-lista-campo i {
+  font-size: 14px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.select-lista-validacao {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  border: 0;
+  padding: 0;
+}
+.select-lista-pop {
+  position: fixed;
+  z-index: 2000;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+.select-lista-opt {
+  display: block;
+  width: 100%;
+  padding: 4px 9px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 11.5px;
+  line-height: 1.35;
+  text-align: left;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.select-lista-opt.destaque {
+  background: var(--bg-page);
+}
+.select-lista-opt.selecionada {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.select-lista-busca {
+  position: relative;
+  margin-bottom: 4px;
+}
+.select-lista-busca i {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+.select-lista-busca input {
+  width: 100%;
+  height: 27px;
+  padding-left: 26px;
+  font-size: 11.5px;
+}
+.select-lista-itens {
+  overflow-y: auto;
+}
+.select-lista-vazio {
+  padding: 6px 9px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}

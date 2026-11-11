@@ -319,8 +319,10 @@ export default function Reclamacoes() {
         },
       ]}
       campos={[
-        { name: "codigo", label: "Código", size: 4, disabled: true, placeholder: "Gerado ao salvar" },
-        { name: "nome_reclamante", label: "Nome do reclamante", required: true, size: 8 },
+        { name: "codigo", label: "Código", size: 3, disabled: true, placeholder: "Gerado ao salvar" },
+        // Etiqueta (plaqueta) do ponto de iluminação — vai no relatório Pontos atendidos Mod-02.
+        { name: "etiqueta", label: "Etiqueta", size: 3, center: true },
+        { name: "nome_reclamante", label: "Nome do reclamante", required: true, size: 6 },
         {
           name: "tipo_reclamacao",
           label: "Como chegou",

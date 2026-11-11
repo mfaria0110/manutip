@@ -44,6 +44,8 @@ class Reclamacao(TimestampMixin, Base):
     # O reclamante tem foto do problema (o telefone dele passa a ser obrigatório,
     # pra equipe pedir a foto). Diferente das fotos da execução.
     foto_reclamante: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    # Etiqueta da plaqueta do ponto de iluminação (relatório Pontos atendidos Mod-02).
+    etiqueta: Mapped[str | None] = mapped_column(String(50))
     status: Mapped[str] = mapped_column(String(20), default="ABERTA")  # ABERTA, EM_ANDAMENTO, VALIDADA, CONCLUIDA
     # Quando o lançamento foi validado. Fica gravado mesmo depois de passar para
     # Concluída: validada continua travada (só reabre com senha de quem autoriza)

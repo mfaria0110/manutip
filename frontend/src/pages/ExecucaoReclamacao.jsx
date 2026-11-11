@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAcesso } from "../AcessoContext";
 import ComboCriavel from "../ComboCriavel";
+import SelectLista from "../SelectLista";
 import ConfirmDialog from "../ConfirmDialog";
 import ModalNovaEquipe from "../ModalNovaEquipe";
 import ModalNovoMaterial from "../ModalNovoMaterial";
@@ -102,6 +103,11 @@ export default function ExecucaoReclamacao() {
   const [dataExecucao, setDataExecucao] = useState("");
   // Lançado pelo sistema fica 00:00 (o app de campo grava a hora real); editável.
   const [horaExecucao, setHoraExecucao] = useState("00:00");
+  // Término do atendimento (opcional; data/hora acima são o início).
+  const [dataTermino, setDataTermino] = useState("");
+  const [horaTermino, setHoraTermino] = useState("00:00");
+  // Etiqueta (plaqueta) do ponto — fica na reclamação; padrão 0 (= "Descon." no relatório Mod-02).
+  const [etiqueta, setEtiqueta] = useState("0");
   const [equipeId, setEquipeId] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [itens, setItens] = useState([novoItem()]);
@@ -156,18 +162,21 @@ export default function ExecucaoReclamacao() {
   // (que não tem mais peso fixo). Sem prefeitura/data ainda escolhidas, ou
   // sem contrato vigente para elas, o mapa fica vazio (bloqueia ao salvar).
   useEffect(() => {
-    if (!reclamacao?.prefeitura_id || !dataExecucao) {
+    if (!reclamacao?.prefeitura_id) {
       setPontosVigentes({});
       setTipoContrato("");
       return;
     }
+    // Nova execução abre com a data em branco: até escolher, usa o contrato
+    // vigente hoje (senão o tipo fica "—" e aparecem as colunas de pontos por item).
+    const dataRef = dataExecucao || hojeLocal();
     setErroPontosVigentes("");
     apiPontosMaterialContrato
-      .contratoVigente(reclamacao.prefeitura_id, dataExecucao)
+      .contratoVigente(reclamacao.prefeitura_id, dataRef)
       .then((c) => setTipoContrato(c.tipo_contrato))
       .catch(() => setTipoContrato(""));
     apiPontosMaterialContrato
-      .vigente(reclamacao.prefeitura_id, dataExecucao)
+      .vigente(reclamacao.prefeitura_id, dataRef)
       .then(setPontosVigentes)
       .catch((e) => {
         setPontosVigentes({});
@@ -176,6 +185,8 @@ export default function ExecucaoReclamacao() {
   }, [reclamacao?.prefeitura_id, dataExecucao]);
 
   const porPonto = tipoContrato === "POR_PONTO";
+  // Colunas de pontos por material só em contrato Por item confirmado (tipo desconhecido não mostra).
+  const mostrarPontosItem = tipoContrato === "POR_ITEM";
 
   useEffect(() => {
     if (!reclamacao?.prefeitura_id) {
@@ -221,6 +232,9 @@ export default function ExecucaoReclamacao() {
     // Em branco de propósito: o campo é obrigatório e obriga a informar a data real.
     setDataExecucao("");
     setHoraExecucao("00:00");
+    setDataTermino("");
+    setHoraTermino("00:00");
+    setEtiqueta(reclamacao?.etiqueta || "0");
     setEquipeId("");
     setObservacoes("");
     setItens([novoItem()]);
@@ -286,6 +300,10 @@ export default function ExecucaoReclamacao() {
     setIdsParaMesclar(outras.map((o) => o.id));
     setDataExecucao(principal.data_execucao);
     setHoraExecucao(formatarHora(principal.hora_execucao) || "00:00");
+    // Execução antiga sem término: assume a data de início (campo agora é obrigatório).
+    setDataTermino(principal.data_execucao_term || principal.data_execucao || "");
+    setHoraTermino(formatarHora(principal.hora_execucao_term) || "00:00");
+    setEtiqueta(reclamacao?.etiqueta || "0");
     setEquipeId(principal.equipe_dia_id || "");
     setObservacoes(grupo.map((g) => g.observacoes).filter(Boolean).join(" / "));
     setPontosManual(principal.pontos_manual != null ? String(principal.pontos_manual) : "");
@@ -379,6 +397,27 @@ export default function ExecucaoReclamacao() {
       setErro(erroValidacao);
       return;
     }
+    // Término (opcional) não pode ser antes do início.
+    if (horaTermino && !dataTermino) {
+      setErro("Informe a data de término junto com a hora de término.");
+      return;
+    }
+    if (!dataTermino) {
+      setErro("Informe a data de término da execução.");
+      return;
+    }
+    if (dataTermino) {
+      const inicio = `${dataExecucao}T${horaExecucao || "00:00"}`;
+      const termino = `${dataTermino}T${horaTermino || "23:59"}`;
+      if (termino < inicio) {
+        setErro("A data/hora de término não pode ser anterior à de início.");
+        return;
+      }
+    }
+    const termoPayload = {
+      data_execucao_term: dataTermino || null,
+      hora_execucao_term: dataTermino && horaTermino ? horaTermino : null,
+    };
     const valorPontos = String(pontosManual).trim().replace(",", ".");
     if (porPonto && valorPontos !== "" && (Number.isNaN(Number(valorPontos)) || Number(valorPontos) < 0)) {
       setErro("Informe uma quantidade de pontos válida (número maior ou igual a zero).");
@@ -409,6 +448,7 @@ export default function ExecucaoReclamacao() {
           equipe_dia_id: equipeId || null,
           observacoes: observacoes || null,
           pontos_manual: pontosPayload,
+          ...termoPayload,
           itens: itensPayload,
         });
         for (const extraId of idsParaMesclar) {
@@ -440,6 +480,7 @@ export default function ExecucaoReclamacao() {
             observacoes: [alvo.observacoes, observacoes].filter(Boolean).join(" / ") || null,
             // Só troca os pontos da execução existente se foram informados agora.
             ...(pontosPayload != null ? { pontos_manual: pontosPayload } : {}),
+            ...(dataTermino ? termoPayload : {}),
             itens: [...itensExistentes, ...itensPayload],
           });
           for (const extra of extras) {
@@ -453,9 +494,14 @@ export default function ExecucaoReclamacao() {
             equipe_dia_id: equipeId || null,
             observacoes: observacoes || null,
             pontos_manual: pontosPayload,
+            ...termoPayload,
             itens: itensPayload,
           });
         }
+      }
+      const etiquetaFinal = String(etiqueta || "").trim() || "0";
+      if (etiquetaFinal !== (reclamacao?.etiqueta || "0")) {
+        setReclamacao(await apiReclamacoes.atualizar(id, { etiqueta: etiquetaFinal }));
       }
       setFormAberto(false);
       carregar();
@@ -841,18 +887,27 @@ export default function ExecucaoReclamacao() {
             </div>
             <form onSubmit={salvar}>
               <div className="form-grid">
-                <div className="form-field" style={{ "--span": 2 }}>
-                  <label>Data da execução</label>
+                {/* 1ª linha com larguras fixas (datas/horas não precisam de mais), Equipe ocupa o resto. */}
+                <div className="linha-execucao-topo">
+                <div className="form-field" style={{ width: 104 }}>
+                  <label>Data início</label>
                   <input
                     type="date"
                     required
                     style={{ textAlign: "center" }}
                     value={dataExecucao}
-                    onChange={(e) => setDataExecucao(e.target.value)}
+                    onChange={(e) => {
+                      // Término acompanha o início (mesma data), editável depois.
+                      const nova = e.target.value;
+                      if (!dataTermino || dataTermino === dataExecucao || (nova && dataTermino < nova)) {
+                        setDataTermino(nova);
+                      }
+                      setDataExecucao(nova);
+                    }}
                   />
                 </div>
-                <div className="form-field" style={{ "--span": 2 }}>
-                  <label>Hora</label>
+                <div className="form-field" style={{ width: 80 }}>
+                  <label>Hora início</label>
                   <input
                     type="time"
                     required
@@ -862,7 +917,27 @@ export default function ExecucaoReclamacao() {
                     title="Fica 00:00 nos lançamentos pelo sistema; o app de campo grava a hora real"
                   />
                 </div>
-                <div className="form-field" style={{ "--span": 2 }}>
+                <div className="form-field" style={{ width: 104 }}>
+                  <label>Data término</label>
+                  <input
+                    type="date"
+                    required
+                    style={{ textAlign: "center" }}
+                    min={dataExecucao || undefined}
+                    value={dataTermino}
+                    onChange={(e) => setDataTermino(e.target.value)}
+                  />
+                </div>
+                <div className="form-field" style={{ width: 80 }}>
+                  <label>Hora término</label>
+                  <input
+                    type="time"
+                    style={{ textAlign: "center" }}
+                    value={horaTermino}
+                    onChange={(e) => setHoraTermino(e.target.value)}
+                  />
+                </div>
+                <div className="form-field" style={{ width: 110 }}>
                   <label>Tipo de contrato</label>
                   <input
                     type="text"
@@ -872,7 +947,7 @@ export default function ExecucaoReclamacao() {
                     value={porPonto ? "Por ponto" : tipoContrato === "POR_ITEM" ? "Por item" : "—"}
                   />
                 </div>
-                <div className="form-field" style={{ "--span": 1 }}>
+                <div className="form-field" style={{ width: 52 }}>
                   <label>Pontos</label>
                   {porPonto ? (
                     // Por ponto: vale 1 por atendimento; duplo clique libera outra quantidade.
@@ -912,7 +987,17 @@ export default function ExecucaoReclamacao() {
                     />
                   )}
                 </div>
-                <div className="form-field" style={{ "--span": 5 }}>
+                <div className="form-field" style={{ width: 120 }}>
+                  <label>Etiqueta</label>
+                  <input
+                    type="text"
+                    style={{ textAlign: "center" }}
+                    title='Etiqueta (plaqueta) do ponto. 0 = sem etiqueta ("Descon." no relatório Mod-02)'
+                    value={etiqueta}
+                    onChange={(e) => setEtiqueta(e.target.value)}
+                  />
+                </div>
+                <div className="form-field" style={{ flex: 1, minWidth: 260 }}>
                   <label>Equipe</label>
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                     <select
@@ -930,16 +1015,20 @@ export default function ExecucaoReclamacao() {
                         </option>
                       ))}
                     </select>
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={() => setModalEquipeAberto(true)}
-                      title="Cadastrar nova equipe"
-                      style={{ fontWeight: 700, fontSize: 15, padding: "4px 10px", flexShrink: 0 }}
-                    >
-                      <i className="ti ti-plus" aria-hidden="true" />
-                    </button>
+                    {/* Nova equipe só para quem pode inserir equipes. */}
+                    {pode("equipes.criar") && (
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={() => setModalEquipeAberto(true)}
+                        title="Cadastrar nova equipe"
+                        style={{ fontWeight: 700, fontSize: 15, padding: "4px 10px", flexShrink: 0 }}
+                      >
+                        <i className="ti ti-plus" aria-hidden="true" />
+                      </button>
+                    )}
                   </div>
+                </div>
                 </div>
                 <div className="form-field" style={{ "--span": 12 }}>
                   <label>Observações</label>
@@ -979,7 +1068,7 @@ export default function ExecucaoReclamacao() {
                       className="linha-item-material"
                       style={{
                         display: "grid",
-                        gridTemplateColumns: porPonto
+                        gridTemplateColumns: !mostrarPontosItem
                           ? ehLampada
                             ? "1fr 110px 80px 180px 68px"
                             : "1fr 180px 68px"
@@ -993,22 +1082,21 @@ export default function ExecucaoReclamacao() {
                     >
                       <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
                         {idx === 0 && <label style={rotuloCampo}>Material</label>}
-                        <select
+                        {/* Lista só com materiais ativos e mais estreita que o campo. Um material
+                            desativado já lançado nesta linha aparece só como valor, fora da lista. */}
+                        <SelectLista
                           required
-                          style={{ width: "100%", minWidth: 0 }}
+                          placeholder="Material..."
+                          larguraLista={500}
                           value={item.material_id}
-                          onChange={(e) => selecionarMaterial(idx, e.target.value)}
-                        >
-                          <option value="">Material...</option>
-                          {/* Material desativado só aparece se já é o desta linha (edição). */}
-                          {materiais
-                            .filter((m) => m.ativo !== false || m.id === item.material_id)
-                            .map((m) => (
-                              <option key={m.id} value={m.id}>
-                                {m.nome}
-                              </option>
-                            ))}
-                        </select>
+                          onChange={(v) => selecionarMaterial(idx, v)}
+                          options={materiais.filter((m) => m.ativo !== false).map((m) => ({ value: m.id, label: m.nome }))}
+                          rotuloAtual={
+                            item.material_id
+                              ? `${materiais.find((m) => m.id === item.material_id)?.nome || "Material"} (desativado)`
+                              : ""
+                          }
+                        />
                       </div>
                       {ehLampada && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
@@ -1079,7 +1167,7 @@ export default function ExecucaoReclamacao() {
                           />
                         </div>
                       </div>
-                      {!porPonto && (
+                      {mostrarPontosItem && (
                         <>
                       <div style={{ display: "flex", gap: 0 }}>
                         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>

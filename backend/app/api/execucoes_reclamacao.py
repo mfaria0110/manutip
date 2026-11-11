@@ -60,6 +60,8 @@ class ExecucaoOut(BaseModel):
     reclamacao_id: uuid.UUID
     data_execucao: date
     hora_execucao: time
+    data_execucao_term: date | None = None
+    hora_execucao_term: time | None = None
     equipe_dia_id: uuid.UUID | None
     observacoes: str | None
     pontos: float
@@ -81,6 +83,8 @@ class ExecucaoCreate(BaseModel):
     data_execucao: date
     # Sem hora informada (lançamento pelo sistema) fica 00:00.
     hora_execucao: time | None = None
+    data_execucao_term: date | None = None
+    hora_execucao_term: time | None = None
     equipe_dia_id: uuid.UUID | None = None
     observacoes: str | None = None
     latitude: float | None = None
@@ -97,6 +101,8 @@ class ExecucaoCreate(BaseModel):
 class ExecucaoUpdate(BaseModel):
     data_execucao: date | None = None
     hora_execucao: time | None = None
+    data_execucao_term: date | None = None
+    hora_execucao_term: time | None = None
     equipe_dia_id: uuid.UUID | None = None
     observacoes: str | None = None
     latitude: float | None = None
@@ -117,6 +123,8 @@ def _para_saida(obj: ExecucaoReclamacao, db: Session) -> ExecucaoOut:
         reclamacao_id=obj.reclamacao_id,
         data_execucao=obj.data_execucao,
         hora_execucao=obj.hora_execucao or time(0, 0),
+        data_execucao_term=obj.data_execucao_term,
+        hora_execucao_term=obj.hora_execucao_term,
         equipe_dia_id=obj.equipe_dia_id,
         observacoes=obj.observacoes,
         pontos=float(obj.pontos),
@@ -301,6 +309,8 @@ def criar(req: ExecucaoCreate, db: Session = Depends(get_db)):
         obj.data_execucao = req.data_execucao
         if req.hora_execucao is not None:
             obj.hora_execucao = req.hora_execucao
+        obj.data_execucao_term = req.data_execucao_term
+        obj.hora_execucao_term = req.hora_execucao_term
         obj.equipe_dia_id = req.equipe_dia_id
         obj.observacoes = req.observacoes
         obj.latitude = req.latitude
@@ -313,6 +323,8 @@ def criar(req: ExecucaoCreate, db: Session = Depends(get_db)):
             reclamacao_id=req.reclamacao_id,
             data_execucao=req.data_execucao,
             hora_execucao=req.hora_execucao or time(0, 0),
+            data_execucao_term=req.data_execucao_term,
+            hora_execucao_term=req.hora_execucao_term,
             equipe_dia_id=req.equipe_dia_id,
             observacoes=req.observacoes,
             latitude=req.latitude,

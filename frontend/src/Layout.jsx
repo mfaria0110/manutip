@@ -37,6 +37,7 @@ const GRUPOS = [
     label: "Relatórios",
     itens: [
       { to: "/relatorios/pontos-atendidos", icon: "ti-report", label: "Pontos atendidos", modulo: "relatorios" },
+      { to: "/relatorios/pontos-atendidos-mod02", icon: "ti-report-analytics", label: "Atendimentos", modulo: "relatorios" },
       { to: "/relatorios/materiais-gastos", icon: "ti-package", label: "Materiais gastos", modulo: "relatorios" },
     ],
   },

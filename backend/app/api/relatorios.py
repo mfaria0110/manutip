@@ -394,3 +394,183 @@ def pontos_atendidos_excel(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": 'attachment; filename="pontos_atendidos.xlsx"'},
     )
+
+
+# ---------------------------------------------------------------------------
+# Pontos atendidos - Mod-02: uma linha por execução, no modelo do sistema da
+# prefeitura (Nº Atend., Etiqueta, Endereço, Tipo Ocorrência, Atendimento,
+# Motivo, Solução, Conclusão, Área).
+# ---------------------------------------------------------------------------
+
+_ACOES_MOD02 = (
+    # (campo de quantidade, prefixo do Tipo Ocorrência, Solução)
+    ("quantidade_instalada", "Instalar", "Instala itens"),
+    ("quantidade_retirada", "Retirado", "Retira itens"),
+    ("quantidade_substituida", "Troca de", "Troca itens"),
+)
+_STATUS_ATENDIDO = ("CONCLUIDA", "VALIDADA")
+_LABEL_STATUS = {"ABERTA": "Aberta", "EM_ANDAMENTO": "Em andamento", "VALIDADA": "Atendido", "CONCLUIDA": "Atendido"}
+
+
+class LinhaPontosMod02(BaseModel):
+    n_atend: str
+    etiqueta: str
+    endereco: str
+    tipo_ocorrencia: str
+    atendimento: str
+    motivo: str
+    solucao: str
+    conclusao: str
+    area: str = ""
+
+
+def _unicos(valores: list[str]) -> str:
+    vistos = []
+    for v in valores:
+        if v and v not in vistos:
+            vistos.append(v)
+    return " / ".join(vistos)
+
+
+def _linhas_mod02(prefeitura_id: uuid.UUID, data_inicio: date, data_fim: date, db: Session) -> list[LinhaPontosMod02]:
+    categorias = {c.codigo: c for c in db.query(CategoriaMaterial).all()}
+    execucoes = (
+        _com_dados(
+            db.query(ExecucaoReclamacao)
+            .join(Reclamacao, ExecucaoReclamacao.reclamacao_id == Reclamacao.id)
+            .filter(
+                Reclamacao.prefeitura_id == prefeitura_id,
+                ExecucaoReclamacao.data_execucao >= data_inicio,
+                ExecucaoReclamacao.data_execucao <= data_fim,
+            )
+        )
+        .order_by(ExecucaoReclamacao.data_execucao, ExecucaoReclamacao.hora_execucao, Reclamacao.codigo)
+        .all()
+    )
+    linhas = []
+    for ex in execucoes:
+        r = ex.reclamacao
+        tipos, motivos, solucoes = [], [], []
+        for item in ex.itens:
+            cat = categorias.get(item.material.categoria) if item.material else None
+            nome_cat = (cat.nome if cat else (item.material.nome if item.material else "item")).strip()
+            for campo, prefixo, solucao in _ACOES_MOD02:
+                if float(getattr(item, campo) or 0) > 0:
+                    tipos.append(f"{prefixo} {nome_cat.lower()}")
+                    solucoes.append(solucao)
+            if cat and cat.motivo:
+                motivos.append(f"{nome_cat} {cat.motivo}")
+        data_fim_ex = ex.data_execucao_term or ex.data_execucao
+        hora_fim_ex = ex.hora_execucao_term if ex.data_execucao_term else ex.hora_execucao
+        conclusao = f"{data_fim_ex:%d/%m/%Y}" + (f"-{hora_fim_ex:%H:%M}" if hora_fim_ex else "")
+        endereco = ", ".join(
+            p for p in (r.logradouro, r.numero, r.bairro.nome if r.bairro else None) if p
+        )
+        linhas.append(
+            LinhaPontosMod02(
+                n_atend=(r.codigo or "")[-5:],
+                # Sem etiqueta (vazia ou 0, o padrão do lançamento) = "Descon.".
+                etiqueta=(r.etiqueta or "").strip() if (r.etiqueta or "").strip() not in ("", "0") else "Descon.",
+                endereco=endereco or "—",
+                tipo_ocorrencia=_unicos(tipos) or "—",
+                # Aberta/Em andamento com material já lançado = "Já atendida" (como o selo da lista).
+                atendimento=(
+                    "Já atendida"
+                    if r.status not in _STATUS_ATENDIDO and ex.itens
+                    else _LABEL_STATUS.get(r.status, r.status)
+                ),
+                motivo=_unicos(motivos) or "—",
+                solucao=_unicos(solucoes) or "—",
+                conclusao=conclusao,
+            )
+        )
+    return linhas
+
+
+@router.get(
+    "/pontos-atendidos-mod02",
+    response_model=list[LinhaPontosMod02],
+    dependencies=[Depends(exigir("relatorios.acesso"))],
+)
+def pontos_atendidos_mod02(prefeitura_id: uuid.UUID, data_inicio: date, data_fim: date, db: Session = Depends(get_db)):
+    return _linhas_mod02(prefeitura_id, data_inicio, data_fim, db)
+
+
+@router.get(
+    "/pontos-atendidos-mod02/excel",
+    dependencies=[Depends(exigir("relatorios.acesso"))],
+)
+def pontos_atendidos_mod02_excel(
+    prefeitura_id: uuid.UUID, data_inicio: date, data_fim: date, db: Session = Depends(get_db)
+):
+    """Pontos atendidos - Mod-02 em planilha .xlsx (mesmas colunas da tela)."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+    from openpyxl.utils import get_column_letter
+
+    prefeitura = db.get(Prefeitura, prefeitura_id)
+    linhas = _linhas_mod02(prefeitura_id, data_inicio, data_fim, db)
+    # Conta Atendido + Já atendida (material lançado).
+    atendidos = sum(1 for l in linhas if l.atendimento in ("Atendido", "Já atendida"))
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Pontos atendidos Mod-02"
+    # Sem título: prefeitura, período e resumo no topo.
+    ws["A1"] = prefeitura.nome if prefeitura else ""
+    ws["A1"].font = Font(bold=True, size=11)
+    ws["A2"] = f"Período: {data_inicio:%d/%m/%Y} a {data_fim:%d/%m/%Y}"
+    ws["A3"] = f"Tipo Ocorrência: Todos      Atendimento: {atendidos}      Solução: Todos"
+    ws["A3"].font = Font(bold=True)
+
+    fino = Side(style="thin", color="999999")
+    borda = Border(left=fino, right=fino, top=fino, bottom=fino)
+    cabecalho = [
+        "Nº Atend.", "Etiqueta", "Endereço", "Tipo Ocorrência", "Atendimento", "Motivo", "Solução", "Conclusão", "Área",
+    ]
+    for col, titulo in enumerate(cabecalho, start=1):
+        c = ws.cell(row=5, column=col, value=titulo)
+        c.font = Font(bold=True, size=10)
+        c.fill = PatternFill("solid", fgColor="E5EBF7")
+        c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        c.border = borda
+    for i, l in enumerate(linhas, start=6):
+        valores = [
+            l.n_atend, l.etiqueta, l.endereco, l.tipo_ocorrencia, l.atendimento, l.motivo, l.solucao, l.conclusao, l.area,
+        ]
+        for col, v in enumerate(valores, start=1):
+            # Nº Atend. como número com zeros à esquerda (evita o aviso de "número como texto").
+            if col == 1 and str(v).isdigit():
+                v = int(v)
+            c = ws.cell(row=i, column=col, value=v)
+            if col == 1 and isinstance(v, int):
+                c.number_format = "00000"
+            c.font = Font(size=10)
+            c.alignment = Alignment(
+                horizontal="left" if col in (3, 4, 6, 7) else "center", vertical="center", wrap_text=True
+            )
+            c.border = borda
+            if i % 2 == 1:
+                c.fill = PatternFill("solid", fgColor="FFF8E1")
+    # Endereço mais largo (evita quebra), Motivo mais estreito.
+    for k, largura in enumerate([11, 10, 50, 26, 13, 17, 14, 20, 8], start=1):
+        ws.column_dimensions[get_column_letter(k)].width = largura
+    ws.page_setup.orientation = "landscape"
+    ws.page_setup.paperSize = ws.PAPERSIZE_A4
+    ws.page_setup.fitToWidth = 1
+    ws.page_setup.fitToHeight = 0
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
+    ws.print_title_rows = "5:5"
+    # Margens estreitas (polegadas): esquerda, direita e topo.
+    ws.page_margins.left = ws.page_margins.right = 0.2
+    ws.page_margins.top = 0.3
+    ws.page_margins.header = 0.1
+
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="pontos_atendidos_mod02.xlsx"'},
+    )

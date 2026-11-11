@@ -22,4 +22,6 @@ class CategoriaMaterial(TimestampMixin, Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     codigo: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
     nome: Mapped[str] = mapped_column(String(50), nullable=False)
+    # Motivo da ocorrência (ex.: RELE → "queimado") — relatório Pontos atendidos Mod-02.
+    motivo: Mapped[str | None] = mapped_column(String(60))
     ativo: Mapped[bool] = mapped_column(default=True)

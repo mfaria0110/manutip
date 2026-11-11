@@ -38,6 +38,7 @@ class ReclamacaoOut(BaseModel):
     urgente: bool = False
     pedido_de: str | None = None
     foto_reclamante: bool = False
+    etiqueta: str | None = None
     status: str
     validada_em: datetime | None = None
     # True se já existe ao menos uma execução lançada (tipicamente pelo app
@@ -72,6 +73,7 @@ class ReclamacaoCreate(BaseModel):
     urgente: bool = False
     pedido_de: str | None = None
     foto_reclamante: bool = False
+    etiqueta: str | None = None
     status: str = "ABERTA"
 
 
@@ -91,6 +93,7 @@ class ReclamacaoUpdate(BaseModel):
     urgente: bool | None = None
     pedido_de: str | None = None
     foto_reclamante: bool | None = None
+    etiqueta: str | None = None
     status: str | None = None
 
 

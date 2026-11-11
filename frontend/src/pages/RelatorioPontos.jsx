@@ -52,7 +52,7 @@ export default function RelatorioPontos() {
 
   const { categoriaLampada, categoriasVisiveis } = colunasDoRelatorio(categorias);
 
-  // Nome sugerido ao salvar (PDF ou Excel): Pontos_atendidos_<prefeitura>_<início>_a_<fim>.
+  // Nome sugerido ao salvar o Excel: Pontos_atendidos_<prefeitura>_<início>_a_<fim>.
   const nomeBase = `Pontos_atendidos_${(prefeitura?.sigla || prefeitura?.nome || "").replace(/[\\/:*?"<>|]/g, "").replace(/\s+/g, "_")}_${formatarData(dataInicio).replace(/\//g, "-")}_a_${formatarData(dataFim).replace(/\//g, "-")}`;
 
   async function exportarExcel() {
@@ -65,18 +65,6 @@ export default function RelatorioPontos() {
     } finally {
       setExportando(false);
     }
-  }
-
-  // Imprimir/PDF: o navegador sugere o título da página como nome do arquivo.
-  function imprimir() {
-    const tituloOriginal = document.title;
-    document.title = nomeBase;
-    const restaurar = () => {
-      document.title = tituloOriginal;
-      window.removeEventListener("afterprint", restaurar);
-    };
-    window.addEventListener("afterprint", restaurar);
-    window.print();
   }
 
   // Outros soma com as categorias mescladas; as demais usam o próprio valor.
@@ -113,7 +101,7 @@ export default function RelatorioPontos() {
       <div className="content">
         <div className="card no-print">
           <form onSubmit={gerar} className="form-grid">
-            <div className="form-field" style={{ "--span": 6 }}>
+            <div className="form-field" style={{ "--span": 4 }}>
               <label>Prefeitura</label>
               <select required value={prefeituraId} onChange={(e) => setPrefeituraId(e.target.value)}>
                 <option value="">Selecione...</option>
@@ -124,7 +112,9 @@ export default function RelatorioPontos() {
                 ))}
               </select>
             </div>
-            <div className="form-field" style={{ "--span": 2 }}>
+            {/* Data início e Data fim lado a lado (sem o vão das colunas da grade). */}
+            <div style={{ gridColumn: "span 4", display: "flex", gap: 12 }}>
+              <div className="form-field">
               <label>Data início</label>
               <input
                 type="date"
@@ -134,7 +124,7 @@ export default function RelatorioPontos() {
                 onChange={(e) => setDataInicio(e.target.value)}
               />
             </div>
-            <div className="form-field" style={{ "--span": 2 }}>
+              <div className="form-field">
               <label>Data fim</label>
               <input
                 type="date"
@@ -143,6 +133,7 @@ export default function RelatorioPontos() {
                 value={dataFim}
                 onChange={(e) => setDataFim(e.target.value)}
               />
+            </div>
             </div>
             <div className="form-field" style={{ "--span": 2, display: "flex", alignItems: "flex-end", paddingTop: 14 }}>
               <button type="submit" className="btn btn-primary" disabled={carregando} style={{ width: "100%" }}>
@@ -157,11 +148,7 @@ export default function RelatorioPontos() {
           <div className="card" style={{ marginTop: 16 }}>
             {linhas.length > 0 && (
               <div className="no-print" style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-                <button type="button" className="btn btn-primary" onClick={imprimir}>
-                  <i className="ti ti-printer" aria-hidden="true" style={{ marginRight: 6 }} />
-                  Imprimir
-                </button>
-                <button type="button" className="btn" onClick={exportarExcel} disabled={exportando}>
+                <button type="button" className="btn btn-primary" onClick={exportarExcel} disabled={exportando}>
                   <i className="ti ti-file-spreadsheet" aria-hidden="true" style={{ marginRight: 6 }} />
                   {exportando ? "Gerando..." : "Exportar Excel"}
                 </button>
