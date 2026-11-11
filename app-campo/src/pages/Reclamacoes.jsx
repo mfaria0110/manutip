@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiBairros, apiCidades, apiDesignacoes, apiEquipesDia, apiReclamacoes, apiVeiculos } from "../api";
-import { hojeLocal } from "../datas";
+import { hojeLocal, horaAgoraLocal } from "../datas";
 import { useFluxo } from "../FluxoContext";
-import { comCache } from "../offline/cache";
+import { comCache, lerCache, salvarCache } from "../offline/cache";
 import Topo from "../Topo";
 
 export default function Reclamacoes() {
@@ -16,6 +16,16 @@ export default function Reclamacoes() {
   const [veiculos, setVeiculos] = useState([]);
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(true);
+
+  // Início do atendimento = quando a equipe toca em "Ir para execução" (vale o
+  // primeiro toque; voltar e entrar de novo não muda). Fica no aparelho até salvar.
+  async function irParaExecucao(r) {
+    const chave = `inicioExecucao:${r.id}:${equipeDiaId}`;
+    if (!(await lerCache(chave))) {
+      await salvarCache(chave, { data: hojeLocal(), hora: horaAgoraLocal() });
+    }
+    navigate(`/execucao/${r.id}`);
+  }
 
   useEffect(() => {
     if (!equipeDiaId) {
@@ -82,7 +92,7 @@ export default function Reclamacoes() {
             key={r.id}
             className="cartao cartao-toque"
             style={{ alignItems: "center" }}
-            onClick={() => navigate(`/execucao/${r.id}`)}
+            onClick={() => irParaExecucao(r)}
           >
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="cartao-titulo">{r.codigo}</div>

@@ -1,22 +1,26 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiBairros, apiCidades, apiReclamacoes } from "../api";
+import { apiBairros, apiCidades, apiPrefeituras, apiReclamacoes } from "../api";
 import { buscarEnderecoPorCep } from "../viacep";
 import { useFluxo } from "../FluxoContext";
 import { hojeLocal } from "../datas";
 import { useOffline } from "../offline/OfflineContext";
-import { comCache } from "../offline/cache";
+import { comCache, salvarCache } from "../offline/cache";
 import Topo from "../Topo";
 
 const hoje = hojeLocal;
 
 export default function NovaReclamacao() {
   const navigate = useNavigate();
-  const { prefeituraId } = useFluxo();
+  const { prefeituraId, equipeDiaId } = useFluxo();
   const { online } = useOffline();
 
   const [cidades, setCidades] = useState([]);
   const [bairros, setBairros] = useState([]);
+  const [prefeituras, setPrefeituras] = useState([]);
+  // Cadastro de bairro novo (opção "+ Cadastrar novo bairro…" no select).
+  const [novoBairro, setNovoBairro] = useState(null); // null = fechado; string = texto digitado
+  const [criandoBairro, setCriandoBairro] = useState(false);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
@@ -29,6 +33,7 @@ export default function NovaReclamacao() {
     numero: "",
     ponto_referencia: "",
     observacoes: "",
+    prefeitura_id: "",
     cidade_id: "",
     bairro_id: "",
   });
@@ -38,10 +43,18 @@ export default function NovaReclamacao() {
       navigate("/prefeitura", { replace: true });
       return;
     }
-    Promise.all([comCache("cidades", () => apiCidades.listar()), comCache("bairros", () => apiBairros.listar())])
-      .then(([c, b]) => {
+    Promise.all([
+      comCache("cidades", () => apiCidades.listar()),
+      comCache("bairros", () => apiBairros.listar()),
+      comCache("prefeituras", () => apiPrefeituras.listar()),
+    ])
+      .then(([c, b, p]) => {
         setCidades(c.dados);
         setBairros(b.dados);
+        setPrefeituras(p.dados);
+        // Já abre com a prefeitura em que a equipe está trabalhando e a cidade dela.
+        const atual = p.dados.find((x) => x.id === prefeituraId);
+        setForm((f) => ({ ...f, prefeitura_id: prefeituraId, cidade_id: atual?.cidade_id || "" }));
       })
       .catch((e) => setErro(e.message))
       .finally(() => setCarregando(false));
@@ -63,7 +76,8 @@ export default function NovaReclamacao() {
       setForm((f) => ({
         ...f,
         logradouro: end.logradouro || f.logradouro,
-        cidade_id: cidade?.id || f.cidade_id,
+        // A cidade vem da prefeitura escolhida; o CEP só completa logradouro e bairro.
+        cidade_id: cidadesDaPrefeitura.some((c) => c.id === cidade?.id) ? cidade.id : f.cidade_id,
         bairro_id: bairro?.id || f.bairro_id,
       }));
     } catch {
@@ -71,10 +85,64 @@ export default function NovaReclamacao() {
     }
   }
 
-  const bairrosDaCidade = bairros.filter((b) => !form.cidade_id || b.cidade_id === form.cidade_id);
+  const bairrosDaCidade = bairros
+    .filter((b) => !form.cidade_id || b.cidade_id === form.cidade_id)
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+
+  // Cascata: Prefeitura -> Cidade(s) da prefeitura -> Bairros da cidade.
+  const prefeituraEscolhida = prefeituras.find((p) => p.id === form.prefeitura_id) || null;
+  const cidadesDaPrefeitura = cidades.filter((c) => c.id === prefeituraEscolhida?.cidade_id);
+
+  function escolherCidade(cidadeId) {
+    setForm((f) => ({ ...f, cidade_id: cidadeId, bairro_id: "" }));
+    setNovoBairro(null);
+  }
+
+  function escolherBairro(valor) {
+    if (valor === "__novo") {
+      setNovoBairro("");
+      return;
+    }
+    setNovoBairro(null);
+    campo("bairro_id", valor);
+  }
+
+  // Cria o bairro na cidade escolhida (ou usa o existente com o mesmo nome) e já seleciona.
+  async function cadastrarBairro() {
+    const nome = (novoBairro || "").trim();
+    if (!nome) return;
+    if (!form.cidade_id) {
+      setErro("Escolha a cidade antes de cadastrar o bairro.");
+      return;
+    }
+    const existente = bairrosDaCidade.find((b) => b.nome.toLowerCase() === nome.toLowerCase());
+    if (existente) {
+      campo("bairro_id", existente.id);
+      setNovoBairro(null);
+      return;
+    }
+    setCriandoBairro(true);
+    setErro("");
+    try {
+      const criado = await apiBairros.criar({ nome: nome.toUpperCase(), cidade_id: form.cidade_id });
+      const lista = [...bairros, criado];
+      setBairros(lista);
+      await salvarCache("bairros", lista);
+      campo("bairro_id", criado.id);
+      setNovoBairro(null);
+    } catch (e) {
+      setErro(e.message);
+    } finally {
+      setCriandoBairro(false);
+    }
+  }
 
   async function salvar(e) {
     e.preventDefault();
+    if (!form.prefeitura_id) {
+      setErro("Escolha a prefeitura.");
+      return;
+    }
     setSalvando(true);
     setErro("");
     try {
@@ -92,6 +160,8 @@ export default function NovaReclamacao() {
         prefeitura_id: prefeituraId,
         observacoes: form.observacoes || null,
         status: "ABERTA",
+        // Fica designada para a própria equipe, na data de hoje.
+        designar_equipe_id: equipeDiaId || null,
       });
       navigate(`/execucao/${nova.id}`, { replace: true });
     } catch (e) {
@@ -145,10 +215,15 @@ export default function NovaReclamacao() {
             </div>
           </div>
           <div className="campo">
+            <label>Prefeitura</label>
+            {/* Fixa: é a prefeitura escolhida na entrada do app (evita cadastrar na prefeitura errada). */}
+            <input value={prefeituraEscolhida?.nome || ""} disabled readOnly />
+          </div>
+          <div className="campo">
             <label>Cidade</label>
-            <select value={form.cidade_id} onChange={(e) => campo("cidade_id", e.target.value)}>
+            <select value={form.cidade_id} onChange={(e) => escolherCidade(e.target.value)} disabled={!form.prefeitura_id}>
               <option value="">Selecione...</option>
-              {cidades.map((c) => (
+              {cidadesDaPrefeitura.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.nome}
                 </option>
@@ -157,14 +232,41 @@ export default function NovaReclamacao() {
           </div>
           <div className="campo">
             <label>Bairro</label>
-            <select value={form.bairro_id} onChange={(e) => campo("bairro_id", e.target.value)}>
+            <select value={novoBairro !== null ? "__novo" : form.bairro_id} onChange={(e) => escolherBairro(e.target.value)}>
               <option value="">Selecione...</option>
               {bairrosDaCidade.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.nome}
                 </option>
               ))}
+              <option value="__novo">+ Cadastrar novo bairro…</option>
             </select>
+            {novoBairro !== null && (
+              <div className="linha" style={{ marginTop: 6, gap: 8 }}>
+                <input
+                  autoFocus
+                  style={{ flex: 1 }}
+                  placeholder="Nome do novo bairro"
+                  value={novoBairro}
+                  onChange={(e) => setNovoBairro(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      cadastrarBairro();
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  className="btn btn-secundario btn-pequeno"
+                  style={{ width: "auto" }}
+                  onClick={cadastrarBairro}
+                  disabled={criandoBairro || !novoBairro.trim() || !online}
+                >
+                  {criandoBairro ? "Salvando..." : "Adicionar"}
+                </button>
+              </div>
+            )}
           </div>
           <div className="campo">
             <label>Ponto de referência</label>

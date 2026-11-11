@@ -9,6 +9,7 @@ import { salvarCache } from "./cache";
 // - "validarEquipe": payload = { equipeId }
 // - "composicaoEquipe": payload = { equipeId, dados }
 // - "concluirReclamacao": payload = { reclamacaoId }
+// - "etiquetaReclamacao": payload = { reclamacaoId, etiqueta }
 export async function enfileirar(tipo, payload) {
   await comDB((db) => db.add("fila", { tipo, payload, criadoEm: Date.now() }));
 }
@@ -40,6 +41,10 @@ async function processarItem(item) {
   }
   if (tipo === "composicaoEquipe") {
     await apiEquipesDia.atualizar(payload.equipeId, payload.dados);
+    return;
+  }
+  if (tipo === "etiquetaReclamacao") {
+    await apiReclamacoes.atualizar(payload.reclamacaoId, { etiqueta: payload.etiqueta });
     return;
   }
   if (tipo === "concluirReclamacao") {

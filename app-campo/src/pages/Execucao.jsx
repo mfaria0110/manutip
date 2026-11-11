@@ -79,6 +79,11 @@ export default function Execucao() {
   const [capturandoGps, setCapturandoGps] = useState(false);
   const [fotosExistentes, setFotosExistentes] = useState([]); // [{id, url, previewUrl}]
   const [fotosNovas, setFotosNovas] = useState([]); // [{file, previewUrl}]
+  // Início do atendimento: da execução já salva ou do toque em "Ir para execução".
+  const [inicio, setInicio] = useState(null); // {data, hora}
+  const chaveInicio = `inicioExecucao:${reclamacaoId}:${equipeDiaId}`;
+  // Etiqueta (plaqueta) do ponto — gravada na reclamação; padrão 0 (= "Descon.").
+  const [etiqueta, setEtiqueta] = useState("0");
 
   useEffect(() => {
     if (!equipeDiaId) {
@@ -96,6 +101,9 @@ export default function Execucao() {
     ])
       .then(async ([rec, mats, tipos, potencias, execucoes]) => {
         setReclamacao(rec.dados);
+        setEtiqueta(rec.dados?.etiqueta || "0");
+        const inicioGravado = await lerCache(chaveInicio);
+        setInicio(inicioGravado || { data: hoje(), hora: horaAgoraLocal() });
         setMateriais(mats.dados);
         setTiposLampada(tipos.dados);
         setPotenciasLampada(potencias.dados);
@@ -103,6 +111,8 @@ export default function Execucao() {
         const existente = execucoes.dados.find((e) => e.equipe_dia_id === equipeDiaId && e.data_execucao === hoje());
         if (existente) {
           setExecucaoId(existente.id);
+          // Execução já salva: o início é o que ficou gravado nela.
+          setInicio({ data: existente.data_execucao, hora: existente.hora_execucao });
           setItens(
             existente.itens.length
               ? existente.itens.map((it) => ({
@@ -213,9 +223,11 @@ export default function Execucao() {
     return {
       ...(execucaoId ? { id: execucaoId } : {}),
       reclamacao_id: reclamacaoId,
-      data_execucao: hoje(),
-      // Hora do salvamento (a execução é lançada em campo, na hora do atendimento).
-      hora_execucao: horaAgoraLocal(),
+      // Início = toque em "Ir para execução"; término = momento de salvar.
+      data_execucao: inicio?.data || hoje(),
+      hora_execucao: inicio?.hora || horaAgoraLocal(),
+      data_execucao_term: hoje(),
+      hora_execucao_term: horaAgoraLocal(),
       equipe_dia_id: equipeDiaId,
       uuid_local: uuidLocal,
       observacoes: observacoes || null,
@@ -286,12 +298,15 @@ export default function Execucao() {
         );
         setFotosExistentes(comPreview);
         await salvarCache(chaveRascunho, null);
+        await salvarCache(chaveInicio, null);
+        await salvarEtiqueta();
         setSucesso("Execução salva.");
       } else {
         await enfileirar("execucao", {
           execucaoPayload: payload,
           fotos: fotosNovas.map((f) => f.file),
         });
+        await salvarEtiqueta();
         atualizarContagem();
         // Guarda um retrato do que foi lançado localmente — se o usuário
         // sair e voltar nessa reclamação antes de sincronizar, reabre do
@@ -314,6 +329,19 @@ export default function Execucao() {
       setErro(e.message);
     } finally {
       setSalvando(false);
+    }
+  }
+
+  // Etiqueta vai para a reclamação (online direto; offline entra na fila).
+  async function salvarEtiqueta() {
+    const valor = String(etiqueta || "").trim() || "0";
+    if (valor === (reclamacao?.etiqueta || "0")) return;
+    if (online) {
+      const atualizada = await apiReclamacoes.atualizar(reclamacaoId, { etiqueta: valor });
+      setReclamacao(atualizada);
+    } else {
+      await enfileirar("etiquetaReclamacao", { reclamacaoId, etiqueta: valor });
+      setReclamacao((r) => ({ ...r, etiqueta: valor }));
     }
   }
 
@@ -368,6 +396,21 @@ export default function Execucao() {
               {localizacao.lat.toFixed(6)}, {localizacao.lng.toFixed(6)}
             </p>
           )}
+        </div>
+
+        <div className="cartao">
+          <div className="linha-entre" style={{ gap: 12 }}>
+            <strong>Etiqueta</strong>
+            <input
+              inputMode="numeric"
+              style={{ maxWidth: 160, textAlign: "center" }}
+              value={etiqueta}
+              onFocus={(e) => e.target.select()}
+              onChange={(e) => setEtiqueta(e.target.value)}
+              aria-label="Número da etiqueta do poste"
+            />
+          </div>
+          <p className="cartao-sub" style={{ marginTop: 6 }}>Número da plaqueta do poste. Sem etiqueta, deixe 0.</p>
         </div>
 
         <label>Materiais</label>

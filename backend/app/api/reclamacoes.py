@@ -75,6 +75,9 @@ class ReclamacaoCreate(BaseModel):
     foto_reclamante: bool = False
     etiqueta: str | None = None
     status: str = "ABERTA"
+    # App de campo: a equipe que abriu a reclamação no local já fica designada
+    # a ela mesma na data de hoje (não é coluna da reclamação).
+    designar_equipe_id: uuid.UUID | None = None
 
 
 class ReclamacaoUpdate(BaseModel):
@@ -260,9 +263,16 @@ def obter(item_id: uuid.UUID, db: Session = Depends(get_db)):
 @router.post("", response_model=ReclamacaoOut, dependencies=[Depends(exigir("reclamacoes.criar"))])
 def criar(req: ReclamacaoCreate, db: Session = Depends(get_db)):
     codigo = _proximo_codigo(req.prefeitura_id, db)
-    obj = Reclamacao(codigo=codigo, **req.model_dump())
+    obj = Reclamacao(codigo=codigo, **req.model_dump(exclude={"designar_equipe_id"}))
     _validar_urgencia(obj)
     db.add(obj)
+    if req.designar_equipe_id:
+        from app.models.pessoal import EquipeDia
+
+        if not db.get(EquipeDia, req.designar_equipe_id):
+            raise HTTPException(status_code=404, detail="Equipe não encontrada para designar a reclamação.")
+        db.flush()
+        db.add(DesignacaoReclamacao(equipe_dia_id=req.designar_equipe_id, reclamacao_id=obj.id, data=_hoje_brasil()))
     try:
         db.commit()
     except IntegrityError as erro:
