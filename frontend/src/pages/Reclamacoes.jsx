@@ -293,17 +293,18 @@ export default function Reclamacoes() {
         {
           key: "designada",
           label: "Designado",
-          // "Sim" com o dia da designação embaixo (hoje ou dia futuro já programado).
+          centro: true,
+          // Sim/Não em 12px, centralizado; a data da designação (hoje ou futura) num selo embaixo.
           render: (item) =>
             item.designada ? (
               <>
-                Sim
+                <div style={{ fontSize: 12 }}>Sim</div>
                 {item.data_designacao && (
-                  <div style={{ fontSize: 11, color: "var(--text-secondary)" }}>{formatarData(item.data_designacao)}</div>
+                  <span className="badge badge-urgente selo-data-designacao">{formatarData(item.data_designacao)}</span>
                 )}
               </>
             ) : (
-              "Não"
+              <span style={{ fontSize: 12 }}>Não</span>
             ),
         },
         {

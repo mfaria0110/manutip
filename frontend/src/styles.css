@@ -1576,3 +1576,9 @@ label.check input {
 .tabela-reclamacoes td {
   font-size: 10px;
 }
+
+/* Selo da data de designação (mesmo formato do selo Urgente), sem a margem lateral dele. */
+.selo-data-designacao {
+  margin-left: 0;
+  margin-top: 2px;
+}

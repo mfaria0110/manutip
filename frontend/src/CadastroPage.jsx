@@ -383,7 +383,10 @@ async function confirmarExclusao() {
               <thead>
                 <tr>
                   {colunasFinal.map((c) => (
-                    <th key={c.key} style={c.width ? { width: c.width } : undefined}>
+                    <th
+                      key={c.key}
+                      style={{ ...(c.width ? { width: c.width } : {}), ...(c.centro ? { textAlign: "center" } : {}) }}
+                    >
                       {c.label}
                     </th>
                   ))}
@@ -394,7 +397,9 @@ async function confirmarExclusao() {
                 {itensFiltrados.map((item) => (
                   <tr key={item[idKey]}>
                     {colunasFinal.map((c) => (
-                      <td key={c.key}>{c.render ? c.render(item) : String(item[c.key] ?? "")}</td>
+                      <td key={c.key} style={c.centro ? { textAlign: "center" } : undefined}>
+                        {c.render ? c.render(item) : String(item[c.key] ?? "")}
+                      </td>
                     ))}
                     {(podeEditar || podeExcluir || acoesExtras) && (
                       <td>
