@@ -67,7 +67,7 @@ export default function RelatorioMateriais() {
       <div className="content">
         <div className="card no-print">
           <form onSubmit={gerar} className="form-grid form-filtro-relatorio">
-            <div className="form-field" style={{ "--span": 4 }}>
+            <div className="form-field" style={{ "--span": 5 }}>
               <label>Prefeitura</label>
               <select required value={prefeituraId} onChange={(e) => setPrefeituraId(e.target.value)}>
                 <option value="">Selecione...</option>
