@@ -1548,3 +1548,8 @@ label.check input {
   font-size: 11.5px;
   color: var(--text-secondary);
 }
+
+/* Filtro dos relatórios (Prefeitura, datas, Gerar): sem a margem de baixo dos campos. */
+.form-filtro-relatorio .form-field {
+  margin-bottom: 0;
+}
