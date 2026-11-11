@@ -1418,11 +1418,29 @@ label.check input {
   margin: 6px 0 10px;
   font-size: 13px;
 }
+.tabela-mod02 {
+  table-layout: fixed;
+  width: 100%;
+}
 .tabela-mod02 td,
 .tabela-mod02 th {
   white-space: normal;
-  word-break: break-word;
+  overflow-wrap: anywhere;
+  word-break: normal;
   vertical-align: middle;
+}
+/* Cabeçalho numa linha só e colunas curtas sem quebrar palavra. */
+.tabela-mod02 th,
+.tabela-mod02 td:nth-child(1),
+.tabela-mod02 td:nth-child(2),
+.tabela-mod02 td:nth-child(5),
+.tabela-mod02 td:nth-child(8) {
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+/* Solução quebra só entre os itens ("Troca itens / Instala itens"). */
+.tabela-mod02 td:nth-child(7) {
+  overflow-wrap: normal;
 }
 .tabela-mod02 tbody tr:nth-child(even) td {
   background: #fff8e1;

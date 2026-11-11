@@ -145,6 +145,18 @@ export default function RelatorioPontosMod02() {
                   </span>
                 </div>
                 <table className="tabela-relatorio tabela-mod02">
+                  {/* Larguras: colunas curtas não cortam; Endereço/Tipo/Motivo dividem o resto. */}
+                  <colgroup>
+                    <col style={{ width: 72 }} />
+                    <col style={{ width: 82 }} />
+                    <col />
+                    <col style={{ width: "15%" }} />
+                    <col style={{ width: 104 }} />
+                    <col style={{ width: "14%" }} />
+                    <col style={{ width: 100 }} />
+                    <col style={{ width: 122 }} />
+                    <col style={{ width: 50 }} />
+                  </colgroup>
                   <thead>
                     <tr>
                       <th>Nº Atend.</th>
