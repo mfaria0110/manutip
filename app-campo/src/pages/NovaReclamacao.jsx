@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiBairros, apiCidades, apiPrefeituras, apiReclamacoes } from "../api";
 import { buscarEnderecoPorCep } from "../viacep";
+import { enderecoPorPosicao, posicaoAtual } from "../geocodificacao";
 import { useFluxo } from "../FluxoContext";
 import { hojeLocal } from "../datas";
 import { useOffline } from "../offline/OfflineContext";
@@ -21,6 +22,9 @@ export default function NovaReclamacao() {
   // Cadastro de bairro novo (opção "+ Cadastrar novo bairro…" no select).
   const [novoBairro, setNovoBairro] = useState(null); // null = fechado; string = texto digitado
   const [criandoBairro, setCriandoBairro] = useState(false);
+  // Endereço pela posição do aparelho (GPS + mapa).
+  const [buscandoPosicao, setBuscandoPosicao] = useState(false);
+  const [avisoPosicao, setAvisoPosicao] = useState("");
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
@@ -62,6 +66,54 @@ export default function NovaReclamacao() {
 
   function campo(nome, valor) {
     setForm((f) => ({ ...f, [nome]: valor }));
+  }
+
+  // Preenche logradouro, número, CEP e bairro a partir de onde a equipe está.
+  async function buscarPelaPosicao() {
+    setBuscandoPosicao(true);
+    setErro("");
+    setAvisoPosicao("");
+    try {
+      const end = await enderecoPorPosicao(await posicaoAtual());
+      const semAcento = (t) => (t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+      const doCadastro = (nome) =>
+        bairros.find((b) => b.cidade_id === form.cidade_id && semAcento(b.nome) === semAcento(nome));
+      // Bairro só é escolhido sozinho quando os Correios dão UM bairro para a rua.
+      const unicoCorreios = end.bairrosCorreios.length === 1 ? end.bairrosCorreios[0] : null;
+      const bairro = unicoCorreios ? doCadastro(unicoCorreios) : null;
+      const cepDigitos = (end.cepCorreios || end.cep || "").replace(/\D/g, "");
+      setForm((f) => ({
+        ...f,
+        logradouro: end.logradouro,
+        numero: end.numero || f.numero,
+        cep: cepDigitos.length === 8 ? `${cepDigitos.slice(0, 5)}-${cepDigitos.slice(5)}` : f.cep,
+        bairro_id: bairro?.id || f.bairro_id,
+      }));
+      // Bairro dos Correios que ainda não existe no cadastro: abre o "novo bairro" já com o nome.
+      if (unicoCorreios && !bairro) setNovoBairro(unicoCorreios.toUpperCase());
+
+      const avisos = [];
+      if (unicoCorreios) {
+        avisos.push(`Bairro pelos Correios: ${unicoCorreios}.`);
+      } else if (end.bairrosCorreios.length > 1) {
+        avisos.push(`Esta rua passa por mais de um bairro (${end.bairrosCorreios.join(", ")}). Escolha o bairro.`);
+      } else {
+        avisos.push(
+          "Bairro não encontrado nos Correios para esta rua: escolha o bairro" +
+            (end.bairroMapa ? ` (o mapa sugere ${end.bairroMapa}, confira).` : ".")
+        );
+      }
+      const cidadeForm = cidades.find((c) => c.id === form.cidade_id)?.nome;
+      if (end.cidade && cidadeForm && semAcento(end.cidade) !== semAcento(cidadeForm)) {
+        avisos.unshift(`Atenção: pela localização, você está em ${end.cidade}, mas a prefeitura é de ${cidadeForm}.`);
+      }
+      avisos.push("Confira o número.");
+      setAvisoPosicao(avisos.join(" "));
+    } catch (e) {
+      setErro(e.message);
+    } finally {
+      setBuscandoPosicao(false);
+    }
   }
 
   async function aoSairDoCep() {
@@ -200,6 +252,21 @@ export default function NovaReclamacao() {
             <label>Telefone</label>
             <input value={form.telefone} onChange={(e) => campo("telefone", e.target.value)} />
           </div>
+          <button
+            type="button"
+            className="btn btn-secundario"
+            style={{ marginBottom: 6 }}
+            onClick={buscarPelaPosicao}
+            disabled={buscandoPosicao || !online}
+          >
+            <i className="ti ti-current-location" aria-hidden="true" />{" "}
+            {buscandoPosicao ? "Buscando endereço..." : "Buscar endereço pela minha localização"}
+          </button>
+          {avisoPosicao && (
+            <p className="cartao-sub" style={{ margin: "0 0 10px" }}>
+              {avisoPosicao}
+            </p>
+          )}
           <div className="campo">
             <label>CEP</label>
             <input value={form.cep} onChange={(e) => campo("cep", e.target.value)} onBlur={aoSairDoCep} />
