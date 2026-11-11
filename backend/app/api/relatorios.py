@@ -529,12 +529,12 @@ def pontos_atendidos_mod02_excel(
         "Nº Atend.", "Etiqueta", "Endereço", "Tipo Ocorrência", "Atendimento", "Motivo", "Solução", "Conclusão", "Área",
     ]
     for col, titulo in enumerate(cabecalho, start=1):
-        c = ws.cell(row=5, column=col, value=titulo)
+        c = ws.cell(row=4, column=col, value=titulo)
         c.font = Font(bold=True, size=10)
         c.fill = PatternFill("solid", fgColor="E5EBF7")
         c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
         c.border = borda
-    for i, l in enumerate(linhas, start=6):
+    for i, l in enumerate(linhas, start=5):
         valores = [
             l.n_atend, l.etiqueta, l.endereco, l.tipo_ocorrencia, l.atendimento, l.motivo, l.solucao, l.conclusao, l.area,
         ]
@@ -550,7 +550,7 @@ def pontos_atendidos_mod02_excel(
                 horizontal="left" if col in (3, 4, 6, 7) else "center", vertical="center", wrap_text=True
             )
             c.border = borda
-            if i % 2 == 1:
+            if i % 2 == 0:
                 c.fill = PatternFill("solid", fgColor="FFF8E1")
     # Endereço mais largo (evita quebra), Motivo mais estreito.
     for k, largura in enumerate([11, 10, 50, 26, 13, 17, 14, 20, 8], start=1):
@@ -560,7 +560,7 @@ def pontos_atendidos_mod02_excel(
     ws.page_setup.fitToWidth = 1
     ws.page_setup.fitToHeight = 0
     ws.sheet_properties.pageSetUpPr.fitToPage = True
-    ws.print_title_rows = "5:5"
+    ws.print_title_rows = "4:4"
     # Margens estreitas (polegadas): esquerda, direita e topo.
     ws.page_margins.left = ws.page_margins.right = 0.2
     ws.page_margins.top = 0.3
