@@ -52,6 +52,8 @@ class ReclamacaoOut(BaseModel):
     # True se está designada a uma equipe para hoje ou para um dia futuro
     # (roteiro vigente — designações de dias passados não contam).
     designada: bool = False
+    # Dia da designação vigente (hoje ou o próximo dia futuro) — aparece embaixo do "Sim".
+    data_designacao: date | None = None
 
     class Config:
         from_attributes = True
@@ -211,12 +213,13 @@ def listar(
         reclamacoes = [r for r in reclamacoes if _manter(r)]
         ids = [r.id for r in reclamacoes]
 
-    ids_designadas = {
-        rid
-        for (rid,) in db.query(DesignacaoReclamacao.reclamacao_id)
+    data_designacao_por_reclamacao = dict(
+        db.query(DesignacaoReclamacao.reclamacao_id, func.min(DesignacaoReclamacao.data))
         .filter(DesignacaoReclamacao.reclamacao_id.in_(ids), DesignacaoReclamacao.data >= _hoje_brasil())
-        .distinct()
-    }
+        .group_by(DesignacaoReclamacao.reclamacao_id)
+        .all()
+    )
+    ids_designadas = set(data_designacao_por_reclamacao)
 
     ids_com_foto = {
         rid
@@ -233,6 +236,7 @@ def listar(
         item.data_execucao = data_execucao_por_reclamacao.get(r.id)
         item.tem_foto = r.id in ids_com_foto
         item.designada = r.id in ids_designadas
+        item.data_designacao = data_designacao_por_reclamacao.get(r.id)
         saida.append(item)
     return saida
 

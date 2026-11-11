@@ -220,7 +220,7 @@ export default function Reclamacoes() {
       queryExtra={`?prefeitura_id=${prefeituraConfirmada}&dias_finalizadas=${DIAS_FINALIZADAS}`}
       // Mais largo para caberem Telefone, Canal, Data, Urgente e Pedido de na mesma linha.
       larguraModal={900}
-      classeTabela="tabela-compacta cabecalho-35"
+      classeTabela="tabela-compacta cabecalho-35 tabela-reclamacoes"
       exigirSenhaParaExcluir
       mensagemExclusao={(item) =>
         `Excluir a reclamação ${item.codigo}? Serão apagadas também as execuções, os materiais lançados, ` +
@@ -293,7 +293,18 @@ export default function Reclamacoes() {
         {
           key: "designada",
           label: "Designado",
-          render: (item) => (item.designada ? "Sim" : "Não"),
+          // "Sim" com o dia da designação embaixo (hoje ou dia futuro já programado).
+          render: (item) =>
+            item.designada ? (
+              <>
+                Sim
+                {item.data_designacao && (
+                  <div style={{ fontSize: 11, color: "var(--text-secondary)" }}>{formatarData(item.data_designacao)}</div>
+                )}
+              </>
+            ) : (
+              "Não"
+            ),
         },
         {
           key: "status",

@@ -1571,3 +1571,8 @@ label.check input {
 .form-filtro-relatorio .form-field {
   margin-bottom: 0;
 }
+
+/* Lista de Reclamações: linhas em 10px. */
+.tabela-reclamacoes td {
+  font-size: 10px;
+}
