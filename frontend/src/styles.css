@@ -1312,8 +1312,8 @@ label.check input {
 .cards-prefeituras {
   display: grid;
   /* Largura fixa e estreita (o card não estica); nome longo quebra em 2 linhas. */
-  grid-template-columns: repeat(auto-fill, 246px);
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, 226px);
+  gap: 8px;
 }
 .card-prefeitura {
   display: flex;
@@ -1323,7 +1323,7 @@ label.check input {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 8px 8px;
+  padding: 8px 6px;
   font: inherit;
   color: var(--text-primary);
   cursor: pointer;
@@ -1341,7 +1341,7 @@ label.check input {
 .card-prefeitura-topo {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
+  gap: 4px;
 }
 .card-prefeitura-topo .ti {
   font-size: 18px;
@@ -1354,7 +1354,7 @@ label.check input {
   color: var(--accent);
   background: var(--accent-soft);
   border-radius: 999px;
-  padding: 2px 8px;
+  padding: 2px 6px;
   flex-shrink: 0;
 }
 .card-prefeitura-nome {
@@ -1641,7 +1641,8 @@ label.check input {
 }
 /* Só a tela inicial de Reclamações (escolha da prefeitura + cards): margem esquerda maior. */
 .content-reclamacoes-inicio {
-  padding-left: 20px;
+  padding-left: 5px;
+  padding-right: 5px;
 }
 .card-prefeitura-cidade {
   font-size: 12px;   /* mesma fonte do .card-prefeitura-nome */
