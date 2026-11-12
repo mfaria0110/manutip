@@ -1641,8 +1641,8 @@ label.check input {
 }
 /* Só a tela inicial de Reclamações (escolha da prefeitura + cards): margem esquerda maior. */
 .content-reclamacoes-inicio {
-  padding-left: 11px;
-  padding-right: 5px;
+  padding-left: 12px;
+  padding-right: 4px;
 }
 .card-prefeitura-cidade {
   font-size: 12px;   /* mesma fonte do .card-prefeitura-nome */
