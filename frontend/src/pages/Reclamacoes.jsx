@@ -129,7 +129,7 @@ export default function Reclamacoes() {
         <header className="topbar">
           <h1>Reclamações</h1>
         </header>
-        <div className="content">
+        <div className="content content-reclamacoes-inicio">
           <div className="card" style={{ maxWidth: 640, padding: "14px 20px" }}>
             <h3 style={{ marginTop: 0 }}>De qual prefeitura é essa reclamação?</h3>
             <div className="form-field" style={{ marginBottom: 0 }}>
