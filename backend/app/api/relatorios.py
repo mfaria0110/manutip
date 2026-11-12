@@ -399,7 +399,7 @@ def pontos_atendidos_excel(
 # ---------------------------------------------------------------------------
 # Pontos atendidos - Mod-02: uma linha por execução, no modelo do sistema da
 # prefeitura (Nº Atend., Etiqueta, Endereço, Tipo Ocorrência, Atendimento,
-# Motivo, Solução, Conclusão, Área).
+# Motivo, Solução, Conclusão).
 # ---------------------------------------------------------------------------
 
 _ACOES_MOD02 = (
@@ -421,7 +421,6 @@ class LinhaPontosMod02(BaseModel):
     motivo: str
     solucao: str
     conclusao: str
-    area: str = ""
 
 
 def _unicos(valores: list[str]) -> str:
@@ -515,7 +514,7 @@ def pontos_atendidos_mod02_excel(
 
     wb = Workbook()
     ws = wb.active
-    ws.title = "Pontos atendidos Mod-02"
+    ws.title = "Pontos atendidos"
     # Sem título: prefeitura, período e resumo no topo.
     ws["A1"] = prefeitura.nome if prefeitura else ""
     ws["A1"].font = Font(bold=True, size=11)
@@ -527,7 +526,7 @@ def pontos_atendidos_mod02_excel(
     fino = Side(style="thin", color="999999")
     borda = Border(left=fino, right=fino, top=fino, bottom=fino)
     cabecalho = [
-        "Nº Atend.", "Etiqueta", "Endereço", "Tipo Ocorrência", "Atendimento", "Motivo", "Solução", "Conclusão", "Área",
+        "Nº Atend.", "Etiqueta", "Endereço", "Tipo Ocorrência", "Atendimento", "Motivo", "Solução", "Conclusão",
     ]
     for col, titulo in enumerate(cabecalho, start=1):
         c = ws.cell(row=4, column=col, value=titulo.upper())
@@ -538,7 +537,7 @@ def pontos_atendidos_mod02_excel(
     ws.row_dimensions[4].height = 24  # cabeçalho um pouco mais alto
     for i, l in enumerate(linhas, start=5):
         valores = [
-            l.n_atend, l.etiqueta, l.endereco, l.tipo_ocorrencia, l.atendimento, l.motivo, l.solucao, l.conclusao, l.area,
+            l.n_atend, l.etiqueta, l.endereco, l.tipo_ocorrencia, l.atendimento, l.motivo, l.solucao, l.conclusao,
         ]
         for col, v in enumerate(valores, start=1):
             # Nº Atend. como número com zeros à esquerda (evita o aviso de "número como texto").
@@ -555,7 +554,7 @@ def pontos_atendidos_mod02_excel(
             if i % 2 == 0:
                 c.fill = PatternFill("solid", fgColor="FFF8E1")
     # Endereço mais largo (evita quebra), Motivo mais estreito.
-    for k, largura in enumerate([11, 10, 50, 26, 13, 17, 14, 20, 8], start=1):
+    for k, largura in enumerate([11, 10, 50, 26, 13, 25, 14, 20], start=1):
         ws.column_dimensions[get_column_letter(k)].width = largura
     ws.page_setup.orientation = "landscape"
     ws.page_setup.paperSize = ws.PAPERSIZE_A4
@@ -574,5 +573,5 @@ def pontos_atendidos_mod02_excel(
     return StreamingResponse(
         buffer,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": 'attachment; filename="pontos_atendidos_mod02.xlsx"'},
+        headers={"Content-Disposition": 'attachment; filename="pontos_atendidos.xlsx"'},
     )

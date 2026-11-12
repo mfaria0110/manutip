@@ -595,7 +595,7 @@ export default function ModalDesignarEquipe({ prefeitura, nomeBairro, nomeCidade
             WhatsApp
           </button>
           <button type="button" className="btn" onClick={() => onFechar(salvouAlgo)} disabled={salvando}>
-            {salvouAlgo ? "Fechar" : "Cancelar"}
+            Fechar
           </button>
           <button type="button" className="btn btn-primary" onClick={salvar} disabled={salvando || carregando}>
             {salvando ? "Salvando..." : "Salvar"}

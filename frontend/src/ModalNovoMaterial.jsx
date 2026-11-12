@@ -105,7 +105,7 @@ export default function ModalNovoMaterial({ aberto, onFechar, onCriado }) {
           {erro && <p className="erro-msg">{erro}</p>}
           <div className="modal-actions">
             <button type="button" className="btn" onClick={onFechar}>
-              Cancelar
+              Fechar
             </button>
             <button type="submit" className="btn btn-primary" disabled={salvando}>
               {salvando ? "Salvando..." : "Salvar"}

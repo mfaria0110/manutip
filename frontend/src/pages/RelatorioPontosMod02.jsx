@@ -5,7 +5,7 @@ import { formatarData } from "../formatos";
 
 /** Pontos atendidos - Mod-02: modelo do sistema da prefeitura (uma linha por
  * execução: Nº Atend., Etiqueta, Endereço, Tipo Ocorrência, Atendimento,
- * Motivo, Solução, Conclusão e Área). */
+ * Motivo, Solução e Conclusão). */
 export default function RelatorioPontosMod02() {
   const [prefeituras, setPrefeituras] = useState([]);
   const [cidades, setCidades] = useState([]);
@@ -39,7 +39,7 @@ export default function RelatorioPontosMod02() {
     }
   }
 
-  const nomeBase = `Pontos_atendidos_Mod-02_${(prefeitura?.sigla || prefeitura?.nome || "")
+  const nomeBase = `Pontos_atendidos_${(prefeitura?.sigla || prefeitura?.nome || "")
     .replace(/[\\/:*?"<>|]/g, "")
     .replace(/\s+/g, "_")}_${formatarData(dataInicio).replace(/\//g, "-")}_a_${formatarData(dataFim).replace(/\//g, "-")}`;
 
@@ -152,10 +152,10 @@ export default function RelatorioPontosMod02() {
                     <col />
                     <col style={{ width: "15%" }} />
                     <col style={{ width: 104 }} />
-                    <col style={{ width: "14%" }} />
+                    {/* Motivo ficou com a largura da antiga coluna Área. */}
+                    <col style={{ width: "calc(14% + 50px)" }} />
                     <col style={{ width: 100 }} />
                     <col style={{ width: 122 }} />
-                    <col style={{ width: 50 }} />
                   </colgroup>
                   <thead>
                     <tr>
@@ -167,7 +167,6 @@ export default function RelatorioPontosMod02() {
                       <th>Motivo</th>
                       <th>Solução</th>
                       <th>Conclusão</th>
-                      <th>Área</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -181,7 +180,6 @@ export default function RelatorioPontosMod02() {
                         <td>{l.motivo}</td>
                         <td>{l.solucao}</td>
                         <td style={{ textAlign: "center" }}>{l.conclusao}</td>
-                        <td>{l.area}</td>
                       </tr>
                     ))}
                   </tbody>

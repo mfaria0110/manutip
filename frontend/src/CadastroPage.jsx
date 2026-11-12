@@ -135,6 +135,10 @@ export default function CadastroPage({
   acaoAposFiltro,
   // A página ocupa a altura da tela e só a listagem rola (cabeçalho da tabela fixo).
   rolagemNaLista,
+  // Chamado depois de salvar com o registro devolvido pelo servidor (ex.: abrir a execução).
+  aoSalvar,
+  // (registro) => mensagem | null: com mensagem, o registro abre só para consulta.
+  somenteLeitura,
   exigirSenhaParaExcluir,
   mensagemExclusao,
   queryExtra,
@@ -278,11 +282,29 @@ async function confirmarExclusao() {
   };
   const camposDuplicados = campos.filter((c) => duplicadoDe(c));
 
+  // Registro aberto só para consulta (ex.: reclamação concluída/validada).
+  const travaLeitura = editando && editando[idKey] && somenteLeitura ? somenteLeitura(editando) : null;
+
+  // Enter num campo não salva o formulário: vai para o próximo campo (e o
+  // "sair do campo" roda — ex.: o CEP busca o endereço). Salvar só pelo botão.
+  function enterVaiParaProximoCampo(e) {
+    if (e.key !== "Enter" || e.target.tagName !== "INPUT" || e.target.type === "submit") return;
+    e.preventDefault();
+    const campos = [...e.currentTarget.querySelectorAll("input, select, textarea")].filter(
+      (el) => !el.disabled && el.type !== "hidden" && el.tabIndex !== -1 && el.offsetParent !== null
+    );
+    const proximo = campos[campos.indexOf(e.target) + 1];
+    if (proximo) proximo.focus();
+    else e.target.blur();
+  }
+
   async function salvar(e) {
     e.preventDefault();
+    if (travaLeitura) return;
     if (camposDuplicados.length) return;
     setSalvando(true);
     setErro("");
+    let salvo = null;
     try {
       // Selects de FK (convenção "*_id") e campos numéricos (type "number" ou
       // mask "ano") sem valor ficam como "" no form, mas o backend espera
@@ -299,12 +321,13 @@ async function confirmarExclusao() {
         })
       );
       if (editando && editando[idKey]) {
-        await api.atualizar(editando[idKey], payload);
+        salvo = await api.atualizar(editando[idKey], payload);
       } else {
-        await api.criar(payload);
+        salvo = await api.criar(payload);
       }
       fechar();
       carregar();
+      if (aoSalvar && salvo) aoSalvar(salvo);
     } catch (err) {
       setErro(err.message);
     } finally {
@@ -442,9 +465,16 @@ async function confirmarExclusao() {
               ...(larguraModal ? { width: larguraModal } : undefined),
             }}
           >
-            <h2>{editando[idKey] ? "Editar" : "Novo"} registro</h2>
+            <h2>{travaLeitura ? "Consultar" : editando[idKey] ? "Editar" : "Novo"} registro</h2>
             {notaModal && <p className="aviso-msg">{notaModal}</p>}
-            <form onSubmit={salvar}>
+            {travaLeitura && (
+              <p className="aviso-msg">
+                <i className="ti ti-lock" aria-hidden="true" style={{ marginRight: 6 }} />
+                {travaLeitura}
+              </p>
+            )}
+            <form onSubmit={salvar} onKeyDown={enterVaiParaProximoCampo}>
+              <fieldset disabled={Boolean(travaLeitura)} className="fieldset-limpo">
               <div className="form-grid">
               {campos.filter((c) => !c.visivel || c.visivel(form) || c.reservarEspaco).map((c) =>
                 c.visivel && !c.visivel(form) ? (
@@ -537,19 +567,22 @@ async function confirmarExclusao() {
                 )
               )}
               </div>
+              </fieldset>
               {erro && <p className="erro-msg">{erro}</p>}
               <div className="modal-actions">
                 <button type="button" className="btn" onClick={fechar}>
-                  Cancelar
+                  Fechar
                 </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={salvando || camposDuplicados.length > 0}
-                  title={camposDuplicados.length ? "Corrija o campo repetido para salvar" : undefined}
-                >
-                  {salvando ? "Salvando..." : "Salvar"}
-                </button>
+                {!travaLeitura && (
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={salvando || camposDuplicados.length > 0}
+                    title={camposDuplicados.length ? "Corrija o campo repetido para salvar" : undefined}
+                  >
+                    {salvando ? "Salvando..." : "Salvar"}
+                  </button>
+                )}
               </div>
             </form>
           </div>

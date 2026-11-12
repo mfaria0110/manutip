@@ -228,6 +228,16 @@ export default function Reclamacoes() {
       larguraModal={900}
       classeTabela="tabela-compacta cabecalho-35 tabela-reclamacoes"
       rolagemNaLista
+      // Concluída ou Validada: abre só para consulta (editar exige reabrir com senha na execução).
+      somenteLeitura={(r) =>
+        ["CONCLUIDA", "VALIDADA"].includes(r.status) || r.validada_em
+          ? "Reclamação concluída/validada: só consulta. Para editar, reabra na tela de execução (cadeado) com a senha do Administrador."
+          : null
+      }
+      // Salvou como Concluída: abre a execução (e o formulário, se ainda não houver lançamento).
+      aoSalvar={(r) => {
+        if (r.status === "CONCLUIDA") navigate(`/reclamacoes/${r.id}/execucao?prefeitura_id=${prefeituraConfirmada}&lancar=1`);
+      }}
       exigirSenhaParaExcluir
       mensagemExclusao={(item) =>
         `Excluir a reclamação ${item.codigo}? Serão apagadas também as execuções, os materiais lançados, ` +

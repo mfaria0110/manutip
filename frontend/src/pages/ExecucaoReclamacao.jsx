@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAcesso } from "../AcessoContext";
 import ComboCriavel from "../ComboCriavel";
@@ -57,6 +57,14 @@ function totalPontosItem(item, pontos) {
     (Number(item.quantidade_retirada) || 0) * qr +
     (Number(item.quantidade_substituida) || 0) * qs
   );
+}
+
+// Validada (ou validada e depois concluída) e Em andamento ficam travadas; Concluída
+// também, exceto quando ainda não tem nenhuma execução (pode lançar a primeira).
+function travadaParaLancar(reclamacao, execucoes) {
+  if (!reclamacao) return true;
+  if (reclamacao.validada_em || ["VALIDADA", "EM_ANDAMENTO"].includes(reclamacao.status)) return true;
+  return reclamacao.status === "CONCLUIDA" && execucoes.length > 0;
 }
 
 export default function ExecucaoReclamacao() {
@@ -146,6 +154,16 @@ export default function ExecucaoReclamacao() {
       .catch((e) => setErroLista(e.message))
       .finally(() => setCarregando(false));
   }
+
+  // Veio do cadastro (salvou como Concluída): abre o formulário de execução uma vez.
+  const abriuAutomatico = useRef(false);
+  useEffect(() => {
+    if (abriuAutomatico.current || carregando || !reclamacao) return;
+    if (searchParams.get("lancar") !== "1") return;
+    abriuAutomatico.current = true;
+    if (execucoes.length === 0 && !travadaParaLancar(reclamacao, execucoes)) abrirNovaExecucao();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [carregando, reclamacao, execucoes]);
 
   useEffect(() => {
     carregar();
@@ -678,8 +696,8 @@ export default function ExecucaoReclamacao() {
   // formal como a validação).
   // Validada ou Concluída fica travada: só reabre com a senha de quem autoriza
   // (Administrador). Validada e depois Concluída idem (validada_em fica gravado).
-  const bloqueado =
-    ["VALIDADA", "EM_ANDAMENTO", "CONCLUIDA"].includes(reclamacao.status) || Boolean(reclamacao.validada_em);
+  // Concluída sem nenhuma execução ainda pode receber o primeiro lançamento.
+  const bloqueado = travadaParaLancar(reclamacao, execucoes);
 
   // Agrupa por data + equipe — só abre um card novo quando a data ou a
   // equipe mudam; a equipe fica no cabeçalho do card, não repetida linha a
@@ -1438,7 +1456,7 @@ export default function ExecucaoReclamacao() {
               {erro && <p className="erro-msg">{erro}</p>}
               <div className="modal-actions">
                 <button type="button" className="btn" onClick={() => setFormAberto(false)}>
-                  Cancelar
+                  Fechar
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={salvando}>
                   {salvando ? "Salvando..." : "Salvar"}
@@ -1528,7 +1546,7 @@ export default function ExecucaoReclamacao() {
               {erroReabrir && <p className="erro-msg">{erroReabrir}</p>}
               <div className="modal-actions">
                 <button type="button" className="btn" onClick={() => setModalReabrirAberto(false)}>
-                  Cancelar
+                  Fechar
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={reabrindo}>
                   {reabrindo ? "Verificando..." : "Reabrir"}

@@ -367,7 +367,7 @@ function EditorUsuario({ usuario, perfis, funcionarios, fechar }) {
             </button>
           )}
           <button type="button" className="btn" onClick={() => fechar(false)}>
-            Cancelar
+            Fechar
           </button>
           {podeEditar && (
             <button className="btn btn-primary" disabled={salvando}>

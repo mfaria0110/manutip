@@ -353,7 +353,7 @@ export default function EquipesDia() {
               {erro && <p className="erro-msg">{erro}</p>}
               <div className="modal-actions">
                 <button type="button" className="btn" onClick={() => setEditando(null)}>
-                  Cancelar
+                  Fechar
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={salvando}>
                   {salvando ? "Salvando..." : "Salvar"}

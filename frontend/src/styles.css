@@ -1651,3 +1651,11 @@ label.check input {
   margin-top: 0;   /* espaço entre "PREFEITURA MUNICIPAL" e "DE <CIDADE>" (+2px) */
   text-align: center;
 }
+
+/* Fieldset só para desabilitar o formulário inteiro (consulta), sem borda/espaço. */
+.fieldset-limpo {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}

@@ -102,6 +102,11 @@ class ReclamacaoUpdate(BaseModel):
     status: str | None = None
 
 
+def _validar_como_chegou(obj: Reclamacao) -> None:
+    if not (obj.tipo_reclamacao or "").strip():
+        raise HTTPException(status_code=400, detail='Informe "Como chegou" (canal da reclamação).')
+
+
 def _validar_urgencia(obj: Reclamacao) -> None:
     """Urgente pede "Pedido de" (de quem é o pedido); sem urgência o campo fica vazio."""
     obj.pedido_de = (obj.pedido_de or "").strip() or None
@@ -268,6 +273,7 @@ def obter(item_id: uuid.UUID, db: Session = Depends(get_db)):
 def criar(req: ReclamacaoCreate, db: Session = Depends(get_db)):
     codigo = _proximo_codigo(req.prefeitura_id, db)
     obj = Reclamacao(codigo=codigo, **req.model_dump(exclude={"designar_equipe_id"}))
+    _validar_como_chegou(obj)
     _validar_urgencia(obj)
     db.add(obj)
     if req.designar_equipe_id:
@@ -291,7 +297,20 @@ def atualizar(item_id: uuid.UUID, req: ReclamacaoUpdate, db: Session = Depends(g
     obj = db.get(Reclamacao, item_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Não encontrado.")
-    novo_status = req.model_dump(exclude_unset=True).get("status")
+    dados = req.model_dump(exclude_unset=True)
+    # Concluída ou Validada: cadastro travado. Só passam a mudança de status pelas
+    # regras abaixo (ex.: validar) e a etiqueta; o resto exige reabrir com senha.
+    if obj.status in ("CONCLUIDA", "VALIDADA") or obj.validada_em:
+        alterados = [
+            c for c, v in dados.items()
+            if c not in ("status", "etiqueta") and v is not None and getattr(obj, c, None) != v
+        ]
+        if alterados:
+            raise HTTPException(
+                status_code=400,
+                detail="Reclamação concluída/validada: para editar, reabra com a senha de quem autoriza.",
+            )
+    novo_status = dados.get("status")
     if novo_status and novo_status != obj.status:
         if obj.validada_em:
             # Já validada: só pode passar a Concluída. Validar de novo ou voltar
@@ -315,6 +334,7 @@ def atualizar(item_id: uuid.UUID, req: ReclamacaoUpdate, db: Session = Depends(g
         if campo in ("urgente", "foto_reclamante") and valor is None:
             continue
         setattr(obj, campo, valor)
+    _validar_como_chegou(obj)
     _validar_urgencia(obj)
     try:
         db.commit()
