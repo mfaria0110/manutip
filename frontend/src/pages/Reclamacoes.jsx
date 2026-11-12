@@ -130,27 +130,33 @@ export default function Reclamacoes() {
           <h1>Reclamações</h1>
         </header>
         <div className="content">
-          <div className="card" style={{ maxWidth: 420 }}>
+          <div className="card" style={{ maxWidth: 640, padding: "14px 20px" }}>
             <h3 style={{ marginTop: 0 }}>De qual prefeitura é essa reclamação?</h3>
-            <div className="form-field">
+            <div className="form-field" style={{ marginBottom: 0 }}>
               <label>Prefeitura</label>
-              <select value={prefeituraEscolhida} onChange={(e) => setPrefeituraEscolhida(e.target.value)}>
-                <option value="">Selecione...</option>
-                {prefeituras.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.nome}
-                  </option>
-                ))}
-              </select>
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <select
+                  style={{ flex: 1, minWidth: 0 }}
+                  value={prefeituraEscolhida}
+                  onChange={(e) => setPrefeituraEscolhida(e.target.value)}
+                >
+                  <option value="">Selecione...</option>
+                  {prefeituras.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nome}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  className="btn btn-primary"
+                  style={{ flexShrink: 0 }}
+                  disabled={!prefeituraEscolhida}
+                  onClick={() => setSearchParams({ prefeitura_id: prefeituraEscolhida })}
+                >
+                  Continuar
+                </button>
+              </div>
             </div>
-            <button
-              className="btn btn-primary"
-              style={{ marginTop: 10 }}
-              disabled={!prefeituraEscolhida}
-              onClick={() => setSearchParams({ prefeitura_id: prefeituraEscolhida })}
-            >
-              Continuar
-            </button>
           </div>
           {/* Dois grupos de cards por prefeitura: abertas (clicar entra na lista) e
               designadas para hoje (clicar abre o roteiro do dia com equipe e status). */}
@@ -221,6 +227,7 @@ export default function Reclamacoes() {
       // Mais largo para caberem Telefone, Canal, Data, Urgente e Pedido de na mesma linha.
       larguraModal={900}
       classeTabela="tabela-compacta cabecalho-35 tabela-reclamacoes"
+      rolagemNaLista
       exigirSenhaParaExcluir
       mensagemExclusao={(item) =>
         `Excluir a reclamação ${item.codigo}? Serão apagadas também as execuções, os materiais lançados, ` +
@@ -478,6 +485,8 @@ export default function Reclamacoes() {
 
 // Card de uma prefeitura com uma quantidade (abertas ou designadas para hoje).
 function CardPrefeitura({ prefeitura: p, quantidade, singular, plural, classeExtra = "", titulo, onClick }) {
+  // "PREFEITURA MUNICIPAL" fica na linha do ícone/sigla; "DE <CIDADE>" vai logo abaixo.
+  const partes = /^(PREFEITURA MUNICIPAL)\s+(.+)$/i.exec(p.nome || "");
   return (
     <button
       type="button"
@@ -487,9 +496,10 @@ function CardPrefeitura({ prefeitura: p, quantidade, singular, plural, classeExt
     >
       <div className="card-prefeitura-topo">
         <i className="ti ti-building-bank" aria-hidden="true" />
-        <div className="card-prefeitura-nome">{p.nome}</div>
+        <div className="card-prefeitura-nome">{partes ? partes[1] : p.nome}</div>
         {p.sigla && <span className="card-prefeitura-sigla">{p.sigla}</span>}
       </div>
+      {partes && <div className="card-prefeitura-cidade">{partes[2]}</div>}
       <div className={`card-prefeitura-abertas ${classeExtra}` + (quantidade ? " tem" : "")}>
         <strong>{quantidade ?? "…"}</strong>
         <span>{quantidade === 1 ? singular : plural}</span>

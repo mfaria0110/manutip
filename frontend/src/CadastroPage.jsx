@@ -133,6 +133,8 @@ export default function CadastroPage({
   idKey = "id",
   filtroTopo,
   acaoAposFiltro,
+  // A página ocupa a altura da tela e só a listagem rola (cabeçalho da tabela fixo).
+  rolagemNaLista,
   exigirSenhaParaExcluir,
   mensagemExclusao,
   queryExtra,
@@ -336,7 +338,7 @@ async function confirmarExclusao() {
         )}
       </header>
 
-      <div className="content">
+      <div className={"content" + (rolagemNaLista ? " content-lista-fixa" : "")}>
         {erroLista && <p className="erro-msg">{erroLista}</p>}
         {avisoLista && (
           <p className="aviso-msg">
@@ -369,7 +371,7 @@ async function confirmarExclusao() {
             {acaoAposFiltro}
           </div>
         </div>
-        <div className="card">
+        <div className={"card" + (rolagemNaLista ? " card-lista-rolavel" : "")}>
           {carregando ? (
             <div className="empty-state">Carregando...</div>
           ) : exigeFiltro && !queryExtra ? (
@@ -390,7 +392,7 @@ async function confirmarExclusao() {
                       {c.label}
                     </th>
                   ))}
-                  {(podeEditar || podeExcluir || acoesExtras) && <th style={{ width: 90 }} />}
+                  {(podeEditar || podeExcluir || acoesExtras) && <th style={{ width: 90 }}>Ações</th>}
                 </tr>
               </thead>
               <tbody>

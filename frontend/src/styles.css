@@ -402,6 +402,12 @@ button {
   padding: 8px 24px;
   background: var(--accent);
   flex-shrink: 0;
+  /* cabeçalho principal fixo no topo ao rolar a página */
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: 48px;
+  box-sizing: border-box;
 }
 
 .userbar .sidebar-user {
@@ -472,6 +478,9 @@ button {
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
+  position: sticky;
+  top: 48px;   /* logo abaixo da faixa do usuário (.userbar = 48px) */
+  z-index: 30;
 }
 
 .topbar h1 {
@@ -482,7 +491,7 @@ button {
 
 .content {
   flex: 1;
-  padding: 24px;
+  padding: 24px 8px;
   overflow-y: auto;
 }
 
@@ -518,8 +527,8 @@ button {
 /* Busca alinhada à direita (Reclamações): largura fixa maior. */
 .filtros-direita .filtro-wrap {
   flex: none;
-  width: 420px;
-  max-width: 420px;
+  width: 370px;
+  max-width: 370px;
 }
 
 .filtro-wrap i {
@@ -844,7 +853,7 @@ tbody tr:hover {
   }
 
   .content {
-    padding: 16px;
+    padding: 16px 8px;
   }
 
   /* Tabelas de cadastro: em telas estreitas, mantém as colunas legíveis e
@@ -1046,6 +1055,8 @@ tbody tr:hover {
   .mobile-menu-btn {
     display: none !important;
   }
+
+  .topbar { position: static !important; }
 
   .main-area,
   .content {
@@ -1301,18 +1312,18 @@ label.check input {
 .cards-prefeituras {
   display: grid;
   /* Largura fixa e estreita (o card não estica); nome longo quebra em 2 linhas. */
-  grid-template-columns: repeat(auto-fill, 270px);
+  grid-template-columns: repeat(auto-fill, 246px);
   gap: 12px;
 }
 .card-prefeitura {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 1px;
   text-align: left;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 10px 14px;
+  padding: 8px 8px;
   font: inherit;
   color: var(--text-primary);
   cursor: pointer;
@@ -1330,7 +1341,7 @@ label.check input {
 .card-prefeitura-topo {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 6px;
 }
 .card-prefeitura-topo .ti {
   font-size: 18px;
@@ -1359,7 +1370,8 @@ label.check input {
   display: flex;
   align-items: center; /* texto centralizado na altura do número */
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
+  margin-top: 3px;
   color: var(--text-secondary);
   font-size: 12.5px;
 }
@@ -1581,4 +1593,56 @@ label.check input {
 .selo-data-designacao {
   margin-left: 0;
   margin-top: 2px;
+}
+
+/* Página com rolagem só na listagem (ex.: Reclamações): ocupa a altura da tela,
+   topo e filtros fixos, cabeçalho da tabela preso no alto da lista. */
+.main-area:has(.content-lista-fixa) {
+  height: 100vh;
+  overflow: hidden;
+}
+.main-area:has(.content-lista-fixa) .topbar {
+  height: 46px;
+}
+.content-lista-fixa {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding: 9px 10px 14px;
+}
+.content-lista-fixa .filtros-linha {
+  flex-shrink: 0;
+  margin-bottom: 4px;
+}
+.content-lista-fixa .filtro-wrap {
+  margin-bottom: 8px;
+}
+.card-lista-rolavel {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px 12px 12px;
+}
+.card-lista-rolavel thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--accent-soft);
+}
+
+/* Ícone, nome e sigla na MESMA linha; se o nome for longo, quebra em 2 linhas dentro dela. */
+.card-prefeitura-topo {
+  align-items: center;
+}
+.card-prefeitura-nome {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.card-prefeitura-cidade {
+  font-size: 12px;   /* mesma fonte do .card-prefeitura-nome */
+  font-weight: 600;
+  line-height: 1.15;
+  margin-top: 0;   /* espaço entre "PREFEITURA MUNICIPAL" e "DE <CIDADE>" (+2px) */
+  text-align: center;
 }

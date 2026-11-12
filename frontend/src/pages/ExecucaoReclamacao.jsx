@@ -122,6 +122,8 @@ export default function ExecucaoReclamacao() {
   const [apagandoGrupo, setApagandoGrupo] = useState(false);
   const [importandoFotos, setImportandoFotos] = useState(false);
   const [fotosModal, setFotosModal] = useState([]); // fotos da execução em edição: [{id, previewUrl}]
+  // Execução NOVA ainda não tem id: as fotos escolhidas ficam aqui e são enviadas logo após o Salvar.
+  const [fotosPendentes, setFotosPendentes] = useState([]); // [{ key, arquivo, previewUrl }]
   const [fotosExcluindo, setFotosExcluindo] = useState(null); // ids das fotos aguardando confirmação
   const [apagandoFotosModal, setApagandoFotosModal] = useState(false);
   const [avisoFotos, setAvisoFotos] = useState("");
@@ -225,9 +227,34 @@ export default function ExecucaoReclamacao() {
     return eq.membros.map((m) => (m.papel ? `${m.papel}: ${m.funcionario_nome}` : m.funcionario_nome)).join("\n");
   };
 
+  function limparFotosPendentes() {
+    setFotosPendentes((atuais) => {
+      atuais.forEach((f) => URL.revokeObjectURL(f.previewUrl));
+      return [];
+    });
+  }
+
+  function adicionarFotosPendentes(arquivos) {
+    const novas = Array.from(arquivos || []).map((arquivo) => ({
+      key: `${arquivo.name}-${arquivo.size}-${arquivo.lastModified}-${Math.random().toString(36).slice(2, 8)}`,
+      arquivo,
+      previewUrl: URL.createObjectURL(arquivo),
+    }));
+    if (novas.length > 0) setFotosPendentes((atuais) => [...atuais, ...novas]);
+  }
+
+  function removerFotoPendente(key) {
+    setFotosPendentes((atuais) => {
+      const alvo = atuais.find((f) => f.key === key);
+      if (alvo) URL.revokeObjectURL(alvo.previewUrl);
+      return atuais.filter((f) => f.key !== key);
+    });
+  }
+
   function abrirNovaExecucao() {
     setExecucaoEditando(null);
     setFotosModal([]);
+    limparFotosPendentes();
     setIdsParaMesclar([]);
     // Em branco de propósito: o campo é obrigatório e obriga a informar a data real.
     setDataExecucao("");
@@ -296,6 +323,7 @@ export default function ExecucaoReclamacao() {
     const [principal, ...outras] = grupo;
     setExecucaoEditando(principal);
     setFotosModal([]);
+    limparFotosPendentes();
     carregarFotosDoModal(execucoes, grupo.map((g) => g.id));
     setIdsParaMesclar(outras.map((o) => o.id));
     setDataExecucao(principal.data_execucao);
@@ -441,6 +469,7 @@ export default function ExecucaoReclamacao() {
       // pontos da execução não é mais digitado — o backend recalcula como a
       // soma do total_pontos de cada item (quantidade x peso em pontos do
       // material) sempre que os itens são salvos.
+      let execucaoSalvaId = execucaoEditando?.id || null;
       if (execucaoEditando) {
         await apiExecucoesReclamacao.atualizar(execucaoEditando.id, {
           data_execucao: dataExecucao,
@@ -473,6 +502,7 @@ export default function ExecucaoReclamacao() {
           }));
           // Não sobrescreve com 00:00 uma hora já gravada (ex.: pelo app).
           const horaAlvo = formatarHora(alvo.hora_execucao) || "00:00";
+          execucaoSalvaId = alvo.id;
           await apiExecucoesReclamacao.atualizar(alvo.id, {
             data_execucao: dataExecucao,
             hora_execucao: horaExecucao && horaExecucao !== "00:00" ? horaExecucao : horaAlvo,
@@ -487,7 +517,7 @@ export default function ExecucaoReclamacao() {
             await apiExecucoesReclamacao.excluir(extra.id, alvo.id);
           }
         } else {
-          await apiExecucoesReclamacao.criar({
+          const criada = await apiExecucoesReclamacao.criar({
             reclamacao_id: id,
             data_execucao: dataExecucao,
             hora_execucao: horaExecucao || "00:00",
@@ -497,13 +527,26 @@ export default function ExecucaoReclamacao() {
             ...termoPayload,
             itens: itensPayload,
           });
+          execucaoSalvaId = criada?.id || null;
         }
       }
       const etiquetaFinal = String(etiqueta || "").trim() || "0";
       if (etiquetaFinal !== (reclamacao?.etiqueta || "0")) {
         setReclamacao(await apiReclamacoes.atualizar(id, { etiqueta: etiquetaFinal }));
       }
+      // Fotos escolhidas antes de salvar (execução nova): agora que há id, envia.
+      // Se o envio falhar, a execução JÁ está salva — avisa na lista (dá pra importar de novo ao editar).
+      let erroFotos = "";
+      if (!execucaoEditando && fotosPendentes.length > 0 && execucaoSalvaId) {
+        try {
+          await importarFotosExecucao(execucaoSalvaId, fotosPendentes.map((f) => f.arquivo));
+        } catch (err) {
+          erroFotos = `A execução foi salva, mas as fotos não foram enviadas: ${err.message} Abra a execução e use "Importar fotos".`;
+        }
+      }
+      limparFotosPendentes();
       setFormAberto(false);
+      setErroLista(erroFotos);
       carregar();
     } catch (err) {
       setErro(err.message);
@@ -1260,37 +1303,41 @@ export default function ExecucaoReclamacao() {
               <div style={{ marginTop: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
                   <label style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-secondary)" }}>
-                    Fotos {execucaoEditando ? `(${fotosModal.length})` : ""}
+                    Fotos {execucaoEditando ? `(${fotosModal.length})` : fotosPendentes.length > 0 ? `(${fotosPendentes.length})` : ""}
                   </label>
-                  {execucaoEditando ? (
-                    <label
-                      className="btn"
-                      title="Importar fotos do computador (as da equipe de campo já aparecem aqui)"
-                      style={{
-                        cursor: importandoFotos ? "not-allowed" : "pointer",
-                        opacity: importandoFotos ? 0.5 : 1,
-                        fontSize: 11,
-                        height: 24,
-                        padding: "0 8px",
+                  <label
+                    className="btn"
+                    title={
+                      execucaoEditando
+                        ? "Importar fotos do computador (as da equipe de campo já aparecem aqui)"
+                        : "Escolher fotos do computador — elas são enviadas quando você clicar em Salvar"
+                    }
+                    style={{
+                      cursor: importandoFotos ? "not-allowed" : "pointer",
+                      opacity: importandoFotos ? 0.5 : 1,
+                      fontSize: 11,
+                      height: 24,
+                      padding: "0 8px",
+                    }}
+                  >
+                    <i className="ti ti-photo-up" aria-hidden="true" style={{ marginRight: 4, fontSize: 13 }} />
+                    {importandoFotos ? "Importando..." : "Importar fotos"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      hidden
+                      disabled={importandoFotos}
+                      onChange={(e) => {
+                        if (execucaoEditando) importarFotos(execucaoEditando.id, e.target.files);
+                        else adicionarFotosPendentes(e.target.files);
+                        e.target.value = "";
                       }}
-                    >
-                      <i className="ti ti-photo-up" aria-hidden="true" style={{ marginRight: 4, fontSize: 13 }} />
-                      {importandoFotos ? "Importando..." : "Importar fotos"}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        hidden
-                        disabled={importandoFotos}
-                        onChange={(e) => {
-                          importarFotos(execucaoEditando.id, e.target.files);
-                          e.target.value = "";
-                        }}
-                      />
-                    </label>
-                  ) : (
+                    />
+                  </label>
+                  {!execucaoEditando && fotosPendentes.length > 0 && (
                     <span style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>
-                      Salve a execução para poder importar fotos.
+                      As fotos serão enviadas quando você salvar.
                     </span>
                   )}
                 </div>
@@ -1305,6 +1352,42 @@ export default function ExecucaoReclamacao() {
                     <i className="ti ti-trash" aria-hidden="true" style={{ marginRight: 4, fontSize: 13 }} />
                     Excluir todas
                   </button>
+                )}
+                {!execucaoEditando && fotosPendentes.length > 0 && (
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {fotosPendentes.map((f) => (
+                      <div key={f.key} style={{ position: "relative" }}>
+                        <img
+                          src={f.previewUrl}
+                          alt={f.arquivo.name}
+                          style={{ width: 84, height: 84, objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)" }}
+                        />
+                        <button
+                          type="button"
+                          title="Remover esta foto (ainda não enviada)"
+                          onClick={() => removerFotoPendente(f.key)}
+                          style={{
+                            position: "absolute",
+                            top: 4,
+                            right: 4,
+                            width: 22,
+                            height: 22,
+                            padding: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderRadius: 6,
+                            border: "1px solid var(--border)",
+                            background: "#fff",
+                            color: "var(--danger)",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <i className="ti ti-x" aria-hidden="true" style={{ fontSize: 13 }} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 )}
                 {execucaoEditando && fotosModal.length === 0 && (
                   <span style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>Nenhuma foto nesta execução.</span>
