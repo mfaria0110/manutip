@@ -562,7 +562,12 @@ def pontos_atendidos_mod02_excel(
     # Margens estreitas (polegadas): esquerda, direita e topo.
     ws.page_margins.left = ws.page_margins.right = 0.2
     ws.page_margins.top = 0.3
+    ws.page_margins.bottom = 0.3  # igual à de cima
     ws.page_margins.header = 0.1
+    ws.page_margins.footer = 0.1
+    # Numeração no rodapé de cada página impressa: "Página 1 de 3".
+    ws.oddFooter.center.text = "Página &P de &N"
+    ws.oddFooter.center.size = 9
 
     buffer = io.BytesIO()
     wb.save(buffer)
