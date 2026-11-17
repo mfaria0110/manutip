@@ -398,7 +398,7 @@ def pontos_atendidos_excel(
 
 # ---------------------------------------------------------------------------
 # Pontos atendidos - Mod-02: uma linha por execução, no modelo do sistema da
-# prefeitura (Nº Atend., Etiqueta, Endereço, Tipo Ocorrência, Atendimento,
+# prefeitura (Nº Atend., Endereço, Tipo Ocorrência, Atendimento,
 # Motivo, Solução, Conclusão).
 # ---------------------------------------------------------------------------
 
@@ -414,7 +414,6 @@ _LABEL_STATUS = {"ABERTA": "Aberta", "EM_ANDAMENTO": "Em andamento", "VALIDADA":
 
 class LinhaPontosMod02(BaseModel):
     n_atend: str
-    etiqueta: str
     endereco: str
     tipo_ocorrencia: str
     atendimento: str
@@ -467,9 +466,7 @@ def _linhas_mod02(prefeitura_id: uuid.UUID, data_inicio: date, data_fim: date, d
         )
         linhas.append(
             LinhaPontosMod02(
-                n_atend=(r.codigo or "")[-5:],
-                # Sem etiqueta (vazia ou 0, o padrão do lançamento) = "Descon.".
-                etiqueta=(r.etiqueta or "").strip() if (r.etiqueta or "").strip() not in ("", "0") else "Descon.",
+                n_atend=(r.codigo or "")[-6:],
                 endereco=endereco or "—",
                 tipo_ocorrencia=_unicos(tipos) or "—",
                 # Aberta/Em andamento com material já lançado = "Já atendida" (como o selo da lista).
@@ -526,7 +523,7 @@ def pontos_atendidos_mod02_excel(
     fino = Side(style="thin", color="999999")
     borda = Border(left=fino, right=fino, top=fino, bottom=fino)
     cabecalho = [
-        "Nº Atend.", "Etiqueta", "Endereço", "Tipo Ocorrência", "Atendimento", "Motivo", "Solução", "Conclusão",
+        "Nº Atend.", "Endereço", "Tipo Ocorrência", "Atendimento", "Motivo", "Solução", "Conclusão",
     ]
     for col, titulo in enumerate(cabecalho, start=1):
         c = ws.cell(row=4, column=col, value=titulo.upper())
@@ -537,7 +534,7 @@ def pontos_atendidos_mod02_excel(
     ws.row_dimensions[4].height = 24  # cabeçalho um pouco mais alto
     for i, l in enumerate(linhas, start=5):
         valores = [
-            l.n_atend, l.etiqueta, l.endereco, l.tipo_ocorrencia, l.atendimento, l.motivo, l.solucao, l.conclusao,
+            l.n_atend, l.endereco, l.tipo_ocorrencia, l.atendimento, l.motivo, l.solucao, l.conclusao,
         ]
         for col, v in enumerate(valores, start=1):
             # Nº Atend. como número com zeros à esquerda (evita o aviso de "número como texto").
@@ -545,16 +542,16 @@ def pontos_atendidos_mod02_excel(
                 v = int(v)
             c = ws.cell(row=i, column=col, value=v)
             if col == 1 and isinstance(v, int):
-                c.number_format = "00000"
+                c.number_format = "000000"
             c.font = Font(size=10)
             c.alignment = Alignment(
-                horizontal="left" if col in (3, 4, 6, 7) else "center", vertical="center", wrap_text=True
+                horizontal="left" if col in (2, 3, 5, 6) else "center", vertical="center", wrap_text=True
             )
             c.border = borda
             if i % 2 == 0:
                 c.fill = PatternFill("solid", fgColor="FFF8E1")
     # Endereço mais largo (evita quebra), Motivo mais estreito.
-    for k, largura in enumerate([11, 10, 50, 26, 13, 25, 14, 20], start=1):
+    for k, largura in enumerate([11, 60, 26, 13, 25, 14, 20], start=1):
         ws.column_dimensions[get_column_letter(k)].width = largura
     ws.page_setup.orientation = "landscape"
     ws.page_setup.paperSize = ws.PAPERSIZE_A4

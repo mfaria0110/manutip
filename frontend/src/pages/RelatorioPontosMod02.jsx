@@ -4,7 +4,7 @@ import logoSelles from "../assets/logo-selles.png";
 import { formatarData } from "../formatos";
 
 /** Pontos atendidos - Mod-02: modelo do sistema da prefeitura (uma linha por
- * execução: Nº Atend., Etiqueta, Endereço, Tipo Ocorrência, Atendimento,
+ * execução: Nº Atend., Endereço, Tipo Ocorrência, Atendimento,
  * Motivo, Solução e Conclusão). */
 export default function RelatorioPontosMod02() {
   const [prefeituras, setPrefeituras] = useState([]);
@@ -148,7 +148,6 @@ export default function RelatorioPontosMod02() {
                   {/* Larguras: colunas curtas não cortam; Endereço/Tipo/Motivo dividem o resto. */}
                   <colgroup>
                     <col style={{ width: 72 }} />
-                    <col style={{ width: 82 }} />
                     <col />
                     <col style={{ width: "15%" }} />
                     <col style={{ width: 104 }} />
@@ -160,7 +159,6 @@ export default function RelatorioPontosMod02() {
                   <thead>
                     <tr>
                       <th>Nº Atend.</th>
-                      <th>Etiqueta</th>
                       <th>Endereço</th>
                       <th>Tipo Ocorrência</th>
                       <th>Atendimento</th>
@@ -173,7 +171,6 @@ export default function RelatorioPontosMod02() {
                     {linhas.map((l, i) => (
                       <tr key={i}>
                         <td style={{ textAlign: "center" }}>{l.n_atend}</td>
-                        <td style={{ textAlign: "center" }}>{l.etiqueta}</td>
                         <td>{l.endereco}</td>
                         <td>{l.tipo_ocorrencia}</td>
                         <td style={{ textAlign: "center" }}>{l.atendimento}</td>
