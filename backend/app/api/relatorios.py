@@ -565,6 +565,8 @@ def pontos_atendidos_mod02_excel(
     ws.page_margins.bottom = 0.3  # igual à de cima
     ws.page_margins.header = 0.1
     ws.page_margins.footer = 0.1
+    # Conteúdo centralizado na folha: sobra igual à esquerda e à direita.
+    ws.print_options.horizontalCentered = True
     # Numeração no rodapé de cada página impressa: "Página 1 de 3".
     ws.oddFooter.center.text = "Página &P de &N"
     ws.oddFooter.center.size = 9
