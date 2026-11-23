@@ -136,9 +136,16 @@ export const apiDesignacoes = {
 };
 // Planilha .xlsx do roteiro (o que está listado no formulário de designação).
 // linhasEmBranco > 0: "Planilha limpa" (só cabeçalho + linhas vazias com borda).
-export async function baixarRoteiroExcel(prefeituraId, data, equipeDiaId, reclamacaoIds, nomeArquivo, linhasEmBranco = 0) {
+export function baixarRoteiroExcel(prefeituraId, data, equipeDiaId, reclamacaoIds, nomeArquivo, linhasEmBranco = 0) {
+  return baixarRoteiro("excel", prefeituraId, data, equipeDiaId, reclamacaoIds, nomeArquivo, linhasEmBranco);
+}
+// Mesmo roteiro em PDF.
+export function baixarRoteiroPdf(prefeituraId, data, equipeDiaId, reclamacaoIds, nomeArquivo, linhasEmBranco = 0) {
+  return baixarRoteiro("pdf", prefeituraId, data, equipeDiaId, reclamacaoIds, nomeArquivo, linhasEmBranco);
+}
+async function baixarRoteiro(formato, prefeituraId, data, equipeDiaId, reclamacaoIds, nomeArquivo, linhasEmBranco) {
   const t = token();
-  const resp = await fetch(`${BASE}/designacoes/excel`, {
+  const resp = await fetch(`${BASE}/designacoes/${formato}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...(t ? { Authorization: `Bearer ${t}` } : {}) },
     body: JSON.stringify({
@@ -149,7 +156,8 @@ export async function baixarRoteiroExcel(prefeituraId, data, equipeDiaId, reclam
       linhas_em_branco: linhasEmBranco,
     }),
   });
-  if (!resp.ok) throw new Error("Não foi possível gerar a planilha. Tente novamente.");
+  if (!resp.ok)
+    throw new Error(`Não foi possível gerar ${formato === "pdf" ? "o PDF" : "a planilha"}. Tente novamente.`);
   const url = URL.createObjectURL(await resp.blob());
   const a = document.createElement("a");
   a.href = url;

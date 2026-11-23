@@ -5,8 +5,17 @@ import ConfirmDialog from "../ConfirmDialog";
 import { apiBairros, apiCidades, apiDesignacoes, apiPrefeituras, apiReclamacoes } from "../api";
 import ModalDesignarEquipe from "../ModalDesignarEquipe";
 import ModalDesignadasHoje from "../ModalDesignadasHoje";
-import { formatarData } from "../formatos";
+import { formatarData, hojeLocal } from "../formatos";
 import { buscarEnderecoPorCep } from "../viacep";
+
+// Data da reclamação: de até 60 dias atrás até hoje (o servidor confere o mesmo). Na edição o limite
+// só vale se a data mudar, para não travar o salvar de reclamações antigas.
+const DIAS_MAX_DATA_RECLAMACAO = 60;
+function dataMinimaReclamacao() {
+  const d = new Date();
+  d.setDate(d.getDate() - DIAS_MAX_DATA_RECLAMACAO);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 const TIPOS_RECLAMACAO = [
   { value: "WHATSAPP", label: "WhatsApp" },
@@ -360,7 +369,11 @@ export default function Reclamacoes() {
           size: 2,
           options: TIPOS_RECLAMACAO,
         },
-        { name: "data_reclamacao", label: "Data", type: "date", required: true, size: 2, center: true },
+        {
+          name: "data_reclamacao", label: "Data", type: "date", required: true, size: 2, center: true,
+          min: (form) => (form.id ? undefined : dataMinimaReclamacao()),
+          max: (form) => (form.id ? undefined : hojeLocal()),
+        },
         // Tem foto = Sim: o reclamante tem foto do problema; o telefone vira obrigatório.
         { name: "foto_reclamante", label: "Tem foto", type: "simnao", size: 1 },
         // Obrigatório quando o reclamante tem foto (a equipe pede a foto por esse telefone).

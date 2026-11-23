@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { apiCategoriasMaterial, apiDesignacoes, baixarRoteiroExcel, apiEquipesDia, apiReclamacoes, apiVeiculos } from "./api";
+import { apiCategoriasMaterial, apiDesignacoes, baixarRoteiroExcel, baixarRoteiroPdf, apiEquipesDia, apiReclamacoes, apiVeiculos } from "./api";
 import logoSelles from "./assets/logo-selles.png";
 import ModalNovaEquipe from "./ModalNovaEquipe";
 import { formatarData, hojeLocal } from "./formatos";
@@ -100,8 +100,20 @@ export default function ModalDesignarEquipe({ prefeitura, nomeBairro, nomeCidade
     };
   };
 
+  // Lista (e Excel, PDF e WhatsApp, que seguem a ordem da lista) ordenada por bairro e data da
+  // reclamação (ambos crescentes), depois logradouro, número e código.
   const visiveis = useMemo(() => {
     const termo = busca.trim().toLowerCase();
+    const txt = (v) => String(v ?? "").trim();
+    const comparar = (a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base", numeric: true });
+    // Sem bairro ("—") vai para o fim.
+    const bairro = (r) => (r.bairro_id ? txt(nomeBairro(r.bairro_id)) : "") || "￿";
+    const ordem = (a, b) =>
+      comparar(bairro(a), bairro(b)) ||
+      txt(a.data_reclamacao).localeCompare(txt(b.data_reclamacao)) ||   // AAAA-MM-DD: mais antiga primeiro
+      comparar(txt(a.logradouro), txt(b.logradouro)) ||
+      comparar(txt(a.numero), txt(b.numero)) ||
+      comparar(txt(a.codigo), txt(b.codigo));
     return reclamacoes.filter((r) => {
       const atribuida = atribuicoes.has(r.id);
       if (situacao === "SEM_EQUIPE" && atribuida) return false;
@@ -115,7 +127,7 @@ export default function ModalDesignarEquipe({ prefeitura, nomeBairro, nomeCidade
         .join(" ")
         .toLowerCase();
       return texto.includes(termo);
-    });
+    }).sort(ordem);
   }, [reclamacoes, atribuicoes, busca, situacao, nomeBairro]);
 
   // Equipes que já têm alguma reclamação atribuída — viram opções do filtro.
@@ -332,6 +344,20 @@ export default function ModalDesignarEquipe({ prefeitura, nomeBairro, nomeCidade
         .replace(/[\\/:*?"<>|]/g, "")
         .replace(/\s+/g, "_");
       await baixarRoteiroExcel(prefeitura.id, data, equipeDaLista, visiveis.map((r) => r.id), nomeArquivo);
+    } catch (e) {
+      setErro(e.message);
+    }
+  }
+
+  // PDF do roteiro, no mesmo modelo do Excel e com as mesmas condições.
+  async function exportarPdf() {
+    setErro("");
+    try {
+      const eq = detalhesEquipe(equipeDaLista);
+      const nomeArquivo = `Reclamação_${eq.nome}_${formatarData(data).replace(/\//g, "-")}.pdf`
+        .replace(/[\\/:*?"<>|]/g, "")
+        .replace(/\s+/g, "_");
+      await baixarRoteiroPdf(prefeitura.id, data, equipeDaLista, visiveis.map((r) => r.id), nomeArquivo);
     } catch (e) {
       setErro(e.message);
     }
@@ -562,6 +588,17 @@ export default function ModalDesignarEquipe({ prefeitura, nomeBairro, nomeCidade
           >
             <i className="ti ti-file-spreadsheet" aria-hidden="true" style={{ marginRight: 6 }} />
             Exportar Excel
+          </button>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => aoExportar(exportarPdf)}
+            aria-disabled={!podeExportar}
+            title={motivoSemExportar || "Exportar em PDF o roteiro da equipe"}
+            style={{ opacity: podeExportar ? 1 : 0.55 }}
+          >
+            <i className="ti ti-file-type-pdf" aria-hidden="true" style={{ marginRight: 6 }} />
+            Exportar PDF
           </button>
           <button
             type="button"

@@ -236,20 +236,8 @@ class ExcelRoteiro(BaseModel):
     linhas_em_branco: int = Field(default=0, ge=0, le=200)
 
 
-@router.post("/excel", dependencies=[Depends(exigir("reclamacoes.acesso"))])
-def exportar_excel(req: ExcelRoteiro, db: Session = Depends(get_db)):
-    """Roteiro da equipe em planilha .xlsx, no modelo usado em campo: logo da
-    Selles, nome da cidade, funcionários da equipe e a tabela Data_Rec, Bairro,
-    Logradouro + colunas em branco (Luminária, Relê e, em "Outros", Base,
-    Perfurante, Conex e Pontos) com borda, pra preencher em campo."""
-    import math
-    from pathlib import Path
-
-    from openpyxl import Workbook
-    from openpyxl.cell.rich_text import CellRichText, TextBlock
-    from openpyxl.cell.text import InlineFont
-    from openpyxl.styles import Alignment, Border, Font, Side
-
+def _dados_roteiro(req: ExcelRoteiro, db: Session):
+    """Prefeitura, cidade, equipe (com membros) e reclamações do roteiro, na ordem enviada pela tela."""
     from app.models.localidade import Cidade
 
     prefeitura = db.get(Prefeitura, req.prefeitura_id)
@@ -268,9 +256,155 @@ def exportar_excel(req: ExcelRoteiro, db: Session = Depends(get_db)):
         if req.reclamacao_ids and not req.linhas_em_branco
         else []
     )
+    return prefeitura, cidade, equipe, reclamacoes
+
+
+_DIAS_SEMANA = ["SEGUNDA-FEIRA", "TERÇA-FEIRA", "QUARTA-FEIRA", "QUINTA-FEIRA", "SEXTA-FEIRA", "SÁBADO", "DOMINGO"]
+
+
+def _latin1(texto) -> str:
+    """As fontes padrão do PDF só têm latin-1: troca o travessão e descarta o resto."""
+    return str(texto or "").replace("—", "-").replace("–", "-").encode("latin-1", "replace").decode("latin-1")
+
+
+def _sem_marcacao(texto) -> str:
+    """Tira do texto digitado o que o PDF leria como negrito/itálico/sublinhado (**, __, --)."""
+    t = _latin1(texto)
+    for marca, troca in (("**", "*"), ("__", "_"), ("--", "-")):
+        while marca in t:
+            t = t.replace(marca, troca)
+    return t
+
+
+@router.post("/pdf", dependencies=[Depends(exigir("reclamacoes.acesso"))])
+def exportar_pdf(req: ExcelRoteiro, db: Session = Depends(get_db)):
+    """Roteiro da equipe em PDF (A4 em pé), no mesmo modelo do Excel: logo, data, funcionários e cidade no
+    topo (repetidos em cada página) e a tabela Data_Rec, Bairro, Logradouro + colunas em branco com borda
+    para preencher em campo."""
+    from pathlib import Path
+
+    from fpdf import FPDF
+
+    prefeitura, cidade, equipe, reclamacoes = _dados_roteiro(req, db)
+    nomes = ", ".join(
+        (m.funcionario.nome or "").split()[0] for m in equipe.membros if m.funcionario and m.funcionario.nome
+    ) or "—"
+    nome_cidade = cidade.nome if cidade else (prefeitura.nome if prefeitura else "")
+    data_txt = f"{_DIAS_SEMANA[req.data.weekday()]}, {req.data:%d/%m/%Y}"
+    logo = Path(__file__).resolve().parent.parent / "assets" / "logo-selles.png"
+
+    # Mesmas colunas do Excel, em 194 mm (A4 em pé, margens de 8 mm); data e títulos sem quebrar.
+    larguras = [20, 32, 56, 23, 10, 10, 19, 12, 12]
+    m = 8
+    xs = [m + sum(larguras[:i]) for i in range(len(larguras))]
+    alturas = [7, 7.5, 7.5, 8]                       # linhas 1 a 4 do cabeçalho
+    cabecalho = ["Data_Rec", "Bairro", "Logradouro", "LUMINÁRIA", "RELÊ", "BASE", "PERFURANTE", "CONEX", "PONTOS"]
+
+    class _Pdf(FPDF):
+        def caixa(self, x, y, w, h, texto="", estilo="", tam=10, alinhar="C"):
+            self.set_xy(x, y)
+            self.set_font("Helvetica", estilo, tam)
+            self.cell(w, h, _latin1(texto), border=1, align=alinhar)
+
+        def header(self):
+            self.set_draw_color(0, 0, 0)
+            y1 = m
+            y2, y3, y4 = y1 + alturas[0], y1 + sum(alturas[:2]), y1 + sum(alturas[:3])
+            # Logo centralizado na área de Data_Rec + Bairro, linhas 1 a 3.
+            if logo.exists():
+                w_logo = 36
+                area = larguras[0] + larguras[1]
+                self.image(str(logo), x=m + (area - w_logo) / 2, y=y1 + (sum(alturas[:3]) - w_logo * 104 / 400) / 2, w=w_logo)
+            resto = sum(larguras[3:])
+            self.caixa(xs[3], y1, resto, alturas[0], data_txt, "B", 11)
+            self.caixa(xs[3], y2, larguras[3], alturas[1], "Funcionários", "B", 9, "L")
+            self.caixa(xs[4], y2, resto - larguras[3], alturas[1], nomes, "", 10, "L")
+            self.caixa(xs[2], y3, larguras[2], alturas[2], nome_cidade, "B", 15)
+            self.caixa(xs[3], y3, larguras[3], alturas[2])
+            self.caixa(xs[4], y3, larguras[4], alturas[2])
+            self.caixa(xs[5], y3, sum(larguras[5:]), alturas[2], "OUTROS", "B", 10)
+            for i, titulo in enumerate(cabecalho):
+                self.caixa(xs[i], y4, larguras[i], alturas[3], titulo, "B", 9 if i <= 3 else 7, "L" if i <= 2 else "C")
+            self.set_y(y4 + alturas[3])
+
+        def footer(self):
+            self.set_y(-9)
+            self.set_font("Helvetica", size=8)
+            self.set_text_color(90, 90, 90)
+            self.cell(0, 5, f"Página {self.page_no()} de {{nb}}", align="C")
+            self.set_text_color(0, 0, 0)
+
+    pdf = _Pdf(orientation="P", unit="mm", format="A4")
+    pdf.set_margins(m, m, m)
+    pdf.set_auto_page_break(False)
+    pdf.add_page()
+    limite = pdf.h - 12
+    entrelinha = 3.9                                  # linhas da tabela em fonte 8
+
+    def nova_linha(altura: float) -> float:
+        if pdf.get_y() + altura > limite:
+            pdf.add_page()
+        return pdf.get_y()
+
+    def caixas_em_branco(y: float, altura: float, de: int) -> None:
+        pdf.set_draw_color(0, 0, 0)
+        for i in range(de, len(larguras)):
+            pdf.rect(xs[i], y, larguras[i], altura)
+
+    for r in reclamacoes:
+        logradouro = ", ".join(p for p in (r.logradouro or "—", f"Nº {r.numero}" if r.numero else "") if p)
+        # Mesmos destaques do Excel, em negrito: urgente ("Pedido de") e reclamante com foto.
+        destaques = []
+        if r.urgente and r.pedido_de:
+            destaques.append(f"Pedido de: {r.pedido_de}")
+        if r.foto_reclamante:
+            destaques.append(f"Tem foto: {r.telefone or 'sem telefone'}")
+        texto_log = _sem_marcacao(logradouro) + "".join(f" / **{_sem_marcacao(d)}**" for d in destaques)
+        textos = [f"{r.data_reclamacao:%d/%m/%Y}" if r.data_reclamacao else "", _sem_marcacao(r.bairro.nome if r.bairro else "—"), texto_log]
+        pdf.set_font("Helvetica", size=8)
+        qtd = max(
+            len(pdf.multi_cell(larguras[i] - 2, entrelinha, t, dry_run=True, output="LINES", markdown=(i == 2)))
+            for i, t in enumerate(textos)
+        )
+        altura = max(6.5, qtd * entrelinha + 2)
+        y = nova_linha(altura)
+        for i, t in enumerate(textos):
+            linhas = len(pdf.multi_cell(larguras[i] - 2, entrelinha, t, dry_run=True, output="LINES", markdown=(i == 2)))
+            pdf.set_xy(xs[i] + 1, y + (altura - linhas * entrelinha) / 2)
+            pdf.multi_cell(larguras[i] - 2, entrelinha, t, align="C" if i == 0 else "L", markdown=(i == 2))
+        caixas_em_branco(y, altura, 0)                  # borda completa em todas as colunas
+        pdf.set_y(y + altura)
+
+    # Planilha limpa: linhas vazias com borda em todas as colunas.
+    for _ in range(req.linhas_em_branco):
+        y = nova_linha(7)
+        caixas_em_branco(y, 7, 0)
+        pdf.set_y(y + 7)
+
+    return StreamingResponse(
+        io.BytesIO(bytes(pdf.output())),
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'attachment; filename="roteiro.pdf"'},
+    )
+
+
+@router.post("/excel", dependencies=[Depends(exigir("reclamacoes.acesso"))])
+def exportar_excel(req: ExcelRoteiro, db: Session = Depends(get_db)):
+    """Roteiro da equipe em planilha .xlsx, no modelo usado em campo: logo da
+    Selles, nome da cidade, funcionários da equipe e a tabela Data_Rec, Bairro,
+    Logradouro + colunas em branco (Luminária, Relê e, em "Outros", Base,
+    Perfurante, Conex e Pontos) com borda, pra preencher em campo."""
+    import math
+    from pathlib import Path
+
+    from openpyxl import Workbook
+    from openpyxl.cell.rich_text import CellRichText, TextBlock
+    from openpyxl.cell.text import InlineFont
+    from openpyxl.styles import Alignment, Border, Font, Side
+
+    prefeitura, cidade, equipe, reclamacoes = _dados_roteiro(req, db)
 
     fino = Side(style="thin", color="000000")
-    cinza = Side(style="thin", color="BFBFBF")
     caixa = Border(left=fino, right=fino, top=fino, bottom=fino)
     centro = Alignment(horizontal="center", vertical="center")
     esquerda = Alignment(horizontal="left", vertical="center", indent=1)
@@ -381,7 +515,7 @@ def exportar_excel(req: ExcelRoteiro, db: Session = Depends(get_db)):
             c = ws.cell(row=linha, column=col, value=v)
             c.font = Font(size=10)
             c.alignment = centro if col == 1 else esquerda
-            c.border = Border(left=fino, right=fino, bottom=cinza)
+            c.border = caixa                              # borda completa, como nas colunas de preenchimento
             if col == 1:
                 c.number_format = "DD/MM/YYYY"
         for col in range(4, 10):

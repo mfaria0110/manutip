@@ -545,6 +545,8 @@ async function confirmarExclusao() {
                     <input
                       type={c.type || "text"}
                       step={c.step}
+                      min={typeof c.min === "function" ? c.min(form) : c.min}
+                      max={typeof c.max === "function" ? c.max(form) : c.max}
                       required={typeof c.required === "function" ? c.required(form) : c.required}
                       disabled={c.disabled}
                       placeholder={c.placeholder}

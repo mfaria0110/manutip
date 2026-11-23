@@ -107,6 +107,24 @@ def _validar_como_chegou(obj: Reclamacao) -> None:
         raise HTTPException(status_code=400, detail='Informe "Como chegou" (canal da reclamação).')
 
 
+DIAS_MAX_DATA_RECLAMACAO = 60
+
+
+def _validar_data(d: date | None) -> None:
+    """Data da reclamação: de até 60 dias atrás até hoje (barra ano digitado errado, como 0026)."""
+    if d is None:
+        return
+    hoje = _hoje_brasil()
+    if d > hoje:
+        raise HTTPException(status_code=400, detail="A data da reclamação não pode ser depois de hoje.")
+    if d < hoje - timedelta(days=DIAS_MAX_DATA_RECLAMACAO):
+        raise HTTPException(
+            status_code=400,
+            detail=f"A data da reclamação não pode ter mais de {DIAS_MAX_DATA_RECLAMACAO} dias "
+            f"(mais antiga aceita: {hoje - timedelta(days=DIAS_MAX_DATA_RECLAMACAO):%d/%m/%Y}).",
+        )
+
+
 def _validar_urgencia(obj: Reclamacao) -> None:
     """Urgente pede "Pedido de" (de quem é o pedido); sem urgência o campo fica vazio."""
     obj.pedido_de = (obj.pedido_de or "").strip() or None
@@ -273,6 +291,7 @@ def obter(item_id: uuid.UUID, db: Session = Depends(get_db)):
 def criar(req: ReclamacaoCreate, db: Session = Depends(get_db)):
     codigo = _proximo_codigo(req.prefeitura_id, db)
     obj = Reclamacao(codigo=codigo, **req.model_dump(exclude={"designar_equipe_id"}))
+    _validar_data(obj.data_reclamacao)
     _validar_como_chegou(obj)
     _validar_urgencia(obj)
     db.add(obj)
@@ -298,6 +317,9 @@ def atualizar(item_id: uuid.UUID, req: ReclamacaoUpdate, db: Session = Depends(g
     if not obj:
         raise HTTPException(status_code=404, detail="Não encontrado.")
     dados = req.model_dump(exclude_unset=True)
+    # Data só é conferida quando muda (editar outra coisa numa reclamação antiga continua possível).
+    if dados.get("data_reclamacao") and dados["data_reclamacao"] != obj.data_reclamacao:
+        _validar_data(dados["data_reclamacao"])
     # Concluída ou Validada: cadastro travado. Só passam a mudança de status pelas
     # regras abaixo (ex.: validar) e a etiqueta; o resto exige reabrir com senha.
     if obj.status in ("CONCLUIDA", "VALIDADA") or obj.validada_em:
