@@ -579,3 +579,92 @@ def pontos_atendidos_mod02_excel(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": 'attachment; filename="pontos_atendidos.xlsx"'},
     )
+
+
+def _latin1(texto: str) -> str:
+    """As fontes padrão do PDF só têm latin-1: troca o travessão e descarta o resto."""
+    return (texto or "").replace("—", "-").replace("–", "-").encode("latin-1", "replace").decode("latin-1")
+
+
+@router.get(
+    "/pontos-atendidos-mod02/pdf",
+    dependencies=[Depends(exigir("relatorios.acesso"))],
+)
+def pontos_atendidos_mod02_pdf(
+    prefeitura_id: uuid.UUID, data_inicio: date, data_fim: date, db: Session = Depends(get_db)
+):
+    """Relatório de atendimentos em PDF (A4 deitado), com o mesmo cabeçalho e as
+    mesmas colunas da tela."""
+    from pathlib import Path
+
+    from fpdf import FPDF
+    from fpdf.fonts import FontFace
+
+    prefeitura = db.get(Prefeitura, prefeitura_id)
+    cidade = prefeitura.cidade.nome if prefeitura and prefeitura.cidade else ""
+    linhas = _linhas_mod02(prefeitura_id, data_inicio, data_fim, db)
+    atendidos = sum(1 for l in linhas if l.atendimento in ("Atendido", "Já atendida"))
+
+    class _Pdf(FPDF):
+        def footer(self):
+            self.set_y(-10)
+            self.set_font("Helvetica", size=8)
+            self.set_text_color(90, 90, 90)
+            self.cell(0, 5, f"Página {self.page_no()} de {{nb}}", align="C")
+
+    pdf = _Pdf(orientation="L", unit="mm", format="A4")
+    pdf.set_margins(8, 8, 8)
+    pdf.set_auto_page_break(True, margin=14)
+    pdf.add_page()
+
+    # Cabeçalho como na tela: logo à esquerda, cidade e período ao centro.
+    logo = Path(__file__).resolve().parent.parent / "assets" / "logo-selles.png"
+    if logo.exists():
+        pdf.image(str(logo), x=8, y=8, h=14)
+    pdf.set_xy(8, 9)
+    pdf.set_font("Helvetica", "B", 13)
+    pdf.cell(0, 6, _latin1(cidade or "-"), align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.cell(
+        0, 6, f"Atendimentos: {data_inicio:%d/%m/%Y} A {data_fim:%d/%m/%Y}",
+        align="C", new_x="LMARGIN", new_y="NEXT",
+    )
+    pdf.set_y(25)
+
+    if not linhas:
+        pdf.set_font("Helvetica", size=10)
+        pdf.cell(0, 8, _latin1("Nenhuma execução encontrada no período."), align="C")
+    else:
+        rotulo = "Atendimento" if atendidos == 1 else "Atendimentos"
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.cell(
+            0, 6, f"Tipo Ocorrência: Todos      {rotulo}: {atendidos}      Solução: Todos",
+            new_x="LMARGIN", new_y="NEXT",
+        )
+        pdf.ln(1)
+        pdf.set_font("Helvetica", size=8)
+        pdf.set_draw_color(153, 153, 153)
+        with pdf.table(
+            # Mesmas proporções do Excel (Endereço largo), em 281 mm de largura útil.
+            col_widths=(18, 97, 43, 25, 42, 23, 33),
+            text_align=("CENTER", "LEFT", "LEFT", "CENTER", "LEFT", "LEFT", "CENTER"),
+            line_height=4.2,
+            padding=1,
+            headings_style=FontFace(emphasis="BOLD", fill_color=(229, 235, 247)),
+            cell_fill_color=(255, 248, 225),
+            cell_fill_mode="EVEN_ROWS",
+            repeat_headings=1,
+        ) as tabela:
+            cab = tabela.row()
+            for titulo in ("Nº ATEND.", "ENDEREÇO", "TIPO OCORRÊNCIA", "ATENDIMENTO", "MOTIVO", "SOLUÇÃO", "CONCLUSÃO"):
+                cab.cell(titulo, align="CENTER")
+            for l in linhas:
+                linha = tabela.row()
+                for v in (l.n_atend, l.endereco, l.tipo_ocorrencia, l.atendimento, l.motivo, l.solucao, l.conclusao):
+                    linha.cell(_latin1(v))
+
+    return StreamingResponse(
+        io.BytesIO(bytes(pdf.output())),
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'attachment; filename="atendimentos.pdf"'},
+    )

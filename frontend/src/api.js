@@ -238,19 +238,28 @@ export function relatorioMateriaisGastos(prefeituraId, dataInicio, dataFim) {
   return req(`/relatorios/materiais-gastos?${params}`);
 }
 
-// Baixa a planilha .xlsx de um relatório (precisa do fetch autenticado, link
-// direto não manda o token). `relatorio`: "pontos-atendidos" | "materiais-gastos".
-export async function baixarRelatorioExcel(relatorio, prefeituraId, dataInicio, dataFim, nomeArquivo) {
+// Baixa a planilha .xlsx (ou o PDF) de um relatório (precisa do fetch autenticado,
+// link direto não manda o token). `relatorio`: "pontos-atendidos" | "materiais-gastos" | ...
+export function baixarRelatorioExcel(relatorio, prefeituraId, dataInicio, dataFim, nomeArquivo) {
+  return baixarRelatorio(relatorio, "excel", prefeituraId, dataInicio, dataFim, nomeArquivo);
+}
+
+export function baixarRelatorioPdf(relatorio, prefeituraId, dataInicio, dataFim, nomeArquivo) {
+  return baixarRelatorio(relatorio, "pdf", prefeituraId, dataInicio, dataFim, nomeArquivo);
+}
+
+async function baixarRelatorio(relatorio, formato, prefeituraId, dataInicio, dataFim, nomeArquivo) {
   const params = new URLSearchParams({
     prefeitura_id: prefeituraId,
     data_inicio: dataInicio,
     data_fim: dataFim,
   });
   const t = token();
-  const resp = await fetch(`${BASE}/relatorios/${relatorio}/excel?${params}`, {
+  const resp = await fetch(`${BASE}/relatorios/${relatorio}/${formato}?${params}`, {
     headers: t ? { Authorization: `Bearer ${t}` } : {},
   });
-  if (!resp.ok) throw new Error("Não foi possível gerar a planilha. Tente novamente.");
+  if (!resp.ok)
+    throw new Error(`Não foi possível gerar ${formato === "pdf" ? "o PDF" : "a planilha"}. Tente novamente.`);
   const url = URL.createObjectURL(await resp.blob());
   const a = document.createElement("a");
   a.href = url;

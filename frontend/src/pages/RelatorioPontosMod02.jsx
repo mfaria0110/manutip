@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiCidades, apiPrefeituras, baixarRelatorioExcel, relatorioPontosMod02 } from "../api";
+import { apiCidades, apiPrefeituras, baixarRelatorioExcel, baixarRelatorioPdf, relatorioPontosMod02 } from "../api";
 import logoSelles from "../assets/logo-selles.png";
 import { formatarData } from "../formatos";
 
@@ -15,7 +15,7 @@ export default function RelatorioPontosMod02() {
   const [linhas, setLinhas] = useState(null); // null = ainda não gerado
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
-  const [exportando, setExportando] = useState(false);
+  const [exportando, setExportando] = useState(""); // "", "excel" ou "pdf"
 
   useEffect(() => {
     apiPrefeituras.listar().then(setPrefeituras);
@@ -43,15 +43,18 @@ export default function RelatorioPontosMod02() {
     .replace(/[\\/:*?"<>|]/g, "")
     .replace(/\s+/g, "_")}_${formatarData(dataInicio).replace(/\//g, "-")}_a_${formatarData(dataFim).replace(/\//g, "-")}`;
 
-  async function exportarExcel() {
-    setExportando(true);
+  async function exportar(formato) {
+    setExportando(formato);
     setErro("");
     try {
-      await baixarRelatorioExcel("pontos-atendidos-mod02", prefeituraId, dataInicio, dataFim, `${nomeBase}.xlsx`);
+      if (formato === "pdf")
+        await baixarRelatorioPdf("pontos-atendidos-mod02", prefeituraId, dataInicio, dataFim, `${nomeBase}.pdf`);
+      else
+        await baixarRelatorioExcel("pontos-atendidos-mod02", prefeituraId, dataInicio, dataFim, `${nomeBase}.xlsx`);
     } catch (err) {
       setErro(err.message);
     } finally {
-      setExportando(false);
+      setExportando("");
     }
   }
 
@@ -114,9 +117,13 @@ export default function RelatorioPontosMod02() {
           <div className="card" style={{ marginTop: 16 }}>
             {linhas.length > 0 && (
               <div className="no-print" style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-                <button type="button" className="btn btn-primary" onClick={exportarExcel} disabled={exportando}>
+                <button type="button" className="btn btn-primary" onClick={() => exportar("excel")} disabled={!!exportando}>
                   <i className="ti ti-file-spreadsheet" aria-hidden="true" style={{ marginRight: 6 }} />
-                  {exportando ? "Gerando..." : "Exportar Excel"}
+                  {exportando === "excel" ? "Gerando..." : "Exportar Excel"}
+                </button>
+                <button type="button" className="btn btn-primary" onClick={() => exportar("pdf")} disabled={!!exportando}>
+                  <i className="ti ti-file-type-pdf" aria-hidden="true" style={{ marginRight: 6 }} />
+                  {exportando === "pdf" ? "Gerando..." : "Exportar PDF"}
                 </button>
               </div>
             )}
